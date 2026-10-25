@@ -1,1 +1,366 @@
+import './style.css';
+import Lenis from 'lenis';
+import * as THREE from 'three';
+import { Director } from './director.js';
+import { Intro, loadImages } from './intro.js';
+import { Audio } from './audio.js';
+import { splitWords, observeReveals, Cursor, magnetic, Preview, LockGame, copyEmail, clock, finePointer, reducedMotion } from './ui.js';
 
+history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+
+const $ = (s) => document.querySelector(s);
+const body = document.body;
+
+function webglOK() {
+  try {
+    const c = document.createElement('canvas');
+    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+  } catch { return false; }
+}
+
+const lowEnd = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) < 4;
+const small = Math.min(innerWidth, innerHeight) < 700;
+const quality = lowEnd || small || !finePointer ? 'low' : 'high';
+const hasGL = webglOK();
+
+const INTRO_IMAGES = [
+  'intro/drone', 'mr-tunnel', 'portrait', 'intro/rb19', 'theta-shell', 'mr-suzuka', 'intro/explode', 'mr-forest-night',
+  'mesh-electronics', 'intro/mp45', 'cd-key-1', 'theta-cart', 'intro/w11', 'mr-forest-dash', 'mesh-arena', 'intro/lift',
+  'theta-hub', 'intro/p911', 'mesh-plate', 'intro/f40',
+].map((n) => `/media/${n}.webp`);
+if (new URLSearchParams(location.search).has('clean')) document.documentElement.classList.add('clean');
+
+const audio = new Audio();
+const loaderNum = $('#load-num');
+const loaderBar = $('#load-bar');
+let progress = 0;
+function setProgress(p) {
+  progress = Math.max(progress, p);
+  loaderNum.textContent = String(Math.round(progress * 100)).padStart(3, '0');
+  loaderBar.style.transform = `scaleX(${progress})`;
+}
+
+splitWords();
+
+let world = null;
+let director = null;
+let lenis = null;
+
+const withTimeout = (p, ms) => Promise.race([Promise.resolve(p).catch(() => {}), new Promise((r) => setTimeout(r, ms))]);
+
+async function boot() {
+  setProgress(0.04);
+  const tasks = [];
+  let done = 0;
+  const track = (p) => { tasks.push(p); p.then(() => { done++; setProgress(0.04 + 0.9 * (done / tasks.length)); }); return p; };
+
+  track(document.fonts?.ready || Promise.resolve());
+  const imagesP = track(loadImages(INTRO_IMAGES));
+  await audio.init();
+  track(audio.load('intro', '/audio/intro.mp3'));
+  const ogg = new window.Audio().canPlayType('audio/ogg; codecs=vorbis');
+  track(audio.load('loop', ogg ? '/audio/loop.ogg' : '/audio/loop.mp3'));
+  ['tick', 'whoosh', 'lock'].forEach((n) => audio.load(n, `/audio/${n}.mp3`));
+  const cuesP = fetch('/audio/intro_cues.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+
+  if (hasGL) {
+    const { World } = await import('./world/world.js');
+    world = new World($('#gl'), { quality });
+    director = new Director();
+    // warm up shaders behind the loader
+    world.render(director.update(0, 0));
+    await withTimeout(world.renderer.compileAsync(world.scene, world.camera), 2500);
+    world.garage.loadAll({ lite: quality === 'low' }).then(() => withTimeout(world.renderer.compileAsync(world.scene, world.camera), 4000));
+    window.__mc = { world, director };
+  } else {
+    body.classList.add('no-webgl');
+  }
+
+  const [images] = await Promise.all([imagesP, ...tasks]);
+  const cues = await cuesP;
+  setProgress(1);
+  startLoop();
+  showEnter(images, cues);
+}
+
+function showEnter(images, cues) {
+  const enter = $('.loader__enter');
+  enter.hidden = false;
+  enter.querySelector('[data-enter="sound"]').focus({ preventScroll: true });
+  enter.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-enter]');
+    if (!btn) return;
+    const withSound = btn.dataset.enter === 'sound';
+    setSound(withSound);
+    $('#loader').classList.add('is-done');
+    await playIntro(images, cues, withSound);
+    begin();
+  });
+}
+
+async function playIntro(images, cues, withSound) {
+  const root = $('#intro');
+  if (reducedMotion || images.length < 4) return;
+  body.classList.add('is-intro');
+  const hit = cues.hitTime ?? 4.4;
+  const intro = new Intro(root, images, { hit, duration: hit + 2.1 });
+  const audioClock = withSound ? audio.playIntro() : null;
+  const t0 = performance.now();
+  const clockFn = audioClock || (() => (performance.now() - t0) / 1000);
+  const skip = root.querySelector('.intro__skip');
+  const onSkip = () => { intro.skip(); audio.stopIntro(); };
+  skip.addEventListener('click', onSkip, { once: true });
+  const onKey = (e) => { if (e.key === 'Escape') onSkip(); };
+  addEventListener('keydown', onKey);
+  await intro.play(clockFn);
+  removeEventListener('keydown', onKey);
+  root.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+  setTimeout(() => root.remove(), 950);
+}
+
+function begin() {
+  body.classList.remove('is-loading', 'is-intro');
+  $('#loader').setAttribute('aria-hidden', 'true');
+  audio.startLoop();
+  if (!reducedMotion) {
+    lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, touchMultiplier: 1.4, smoothWheel: true });
+    lenis.on('scroll', () => {});
+  }
+  observeReveals();
+  document.querySelectorAll('a[href^="#"]').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      const id = a.getAttribute('href').slice(1);
+      const target = id === 'top' ? 0 : document.getElementById(id);
+      if (target === null) return;
+      e.preventDefault();
+      if (lenis) lenis.scrollTo(target, { duration: 2.2, easing: (t) => 1 - Math.pow(1 - t, 4) });
+      else if (target === 0) window.scrollTo({ top: 0 });
+      else target.scrollIntoView();
+    });
+  });
+}
+
+// ---------- Sound toggle ----------
+const soundBtn = $('.sound');
+function setSound(on) {
+  audio.setEnabled(on);
+  soundBtn.setAttribute('aria-pressed', String(on));
+  soundBtn.setAttribute('aria-label', on ? 'Sound on. Turn sound off' : 'Sound off. Turn sound on');
+  if (on) audio.startLoop();
+}
+soundBtn.addEventListener('click', () => setSound(!audio.enabled));
+
+addEventListener('keydown', (e) => {
+  if (e.target.closest('input, textarea')) return;
+  if (e.key === 'l' || e.key === 'L') { if (world) world.lightsTarget = world.lightsTarget ? 0 : 1; }
+  if (e.key === 'm' || e.key === 'M') setSound(!audio.enabled);
+});
+
+// ---------- Pointer ----------
+addEventListener('pointermove', (e) => {
+  world?.setMouse((e.clientX / innerWidth) * 2 - 1, -((e.clientY / innerHeight) * 2 - 1));
+}, { passive: true });
+
+// ---------- Per-frame DOM ----------
+const cursor = new Cursor(audio);
+const preview = new Preview();
+const lock = new LockGame(audio);
+magnetic();
+copyEmail();
+clock();
+
+const chapterEl = $('#readout-chapter');
+const progressEl = $('#readout-bar');
+const navLinks = [...document.querySelectorAll('.nav a')];
+const steps = [...document.querySelectorAll('.drone .step')];
+const visionSection = $('#vision');
+const visionState = $('#vision-state');
+const visionBox = $('#vision-box');
+const visionAlt = $('#vision-alt');
+const visionWp = $('#vision-wp');
+const carName = $('#car-name');
+const carYear = $('#car-year');
+const speedEl = $('#speed');
+const reel = $('.reel');
+const portrait = $('.about__portrait img');
+const veil = $('.veil');
+const calloutRoot = $('#callouts');
+const CHAPTER_NAMES = ['Hello', 'Drone', 'Vision', 'Lock', 'Multiroads', 'Launch', 'Work', 'About', 'Contact'];
+
+let callouts = null;
+function buildCallouts() {
+  callouts = world.drone.anchors.map((a) => {
+    const el = document.createElement('div');
+    el.className = 'callout';
+    el.innerHTML = '<span class="callout__dot"></span><span class="callout__line"></span><span class="callout__text"></span>';
+    el.querySelector('.callout__text').textContent = a.label;
+    calloutRoot.appendChild(el);
+    return { a, el, line: el.querySelector('.callout__line'), text: el.querySelector('.callout__text'), dot: el.querySelector('.callout__dot') };
+  });
+}
+
+const tmpV = new THREE.Vector3();
+const tmpBox = new THREE.Box3();
+const P = { x: 0, y: 0, z: 0 };
+
+function projectBox(obj) {
+  tmpBox.setFromObject(obj);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < 8; i++) {
+    tmpV.set(i & 1 ? tmpBox.max.x : tmpBox.min.x, i & 2 ? tmpBox.max.y : tmpBox.min.y, i & 4 ? tmpBox.max.z : tmpBox.min.z);
+    const p = world.project(tmpV, P);
+    if (!p) return null;
+    x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+  }
+  return { x0, y0, x1, y1 };
+}
+
+const VISION_STATES = [
+  [0, 'CRUISE'], [0.24, 'DETECT'], [0.33, 'CONFIRM 5/7'], [0.42, 'BRAKE'], [0.5, 'REROUTE +5 m'],
+  [0.68, 'RESUME'], [0.8, 'ARUCO 23 LOCK'], [0.93, 'RETURN TO LAUNCH'],
+];
+let lastChapter = -1;
+let lastCar = null;
+let lastVision = '';
+
+function domFrame(st, y, dt) {
+  const vh = innerHeight;
+  veil.style.setProperty('--veil', st.veil.toFixed(3));
+
+  // chapter readout + nav
+  if (st.chapter !== lastChapter) {
+    lastChapter = st.chapter;
+    chapterEl.textContent = `${String(st.chapter + 1).padStart(2, '0')} ${CHAPTER_NAMES[st.chapter]}`;
+    const id = director.ids[st.chapter];
+    navLinks.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === `#${id}` || (id === 'launch' && a.getAttribute('href') === '#garage') || (id === 'vision' && a.getAttribute('href') === '#drone')));
+    if (lenis && audio.enabled) audio.play('whoosh', 0.35);
+  }
+  const max = document.documentElement.scrollHeight - vh;
+  progressEl.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+
+  // drone steps
+  const pd = director.pinned('drone', y);
+  const stepIdx = pd < 0.06 ? -1 : pd < 0.47 ? 0 : pd < 0.5 ? -1 : pd < 0.7 ? 1 : pd < 0.73 ? -1 : 2;
+  steps.forEach((s, i) => s.classList.toggle('is-on', i === stepIdx && pd < 0.995));
+
+  // callouts on the exploded drone
+  if (callouts) {
+    const show = st.explode > 0.8 && st.droneVisible;
+    for (const c of callouts) {
+      if (!show) { c.el.classList.remove('is-on'); continue; }
+      c.a.obj.localToWorld(tmpV.copy(c.a.local));
+      const p = world.project(tmpV, P);
+      if (!p) { c.el.classList.remove('is-on'); continue; }
+      c.el.classList.add('is-on');
+      const right = p.x > innerWidth * 0.5;
+      const len = small ? 28 : 56;
+      const dx = right ? len : -len, dy = -len * 0.55;
+      c.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
+      c.line.style.width = `${Math.hypot(dx, dy)}px`;
+      c.line.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+      c.text.style.left = `${dx + (right ? 8 : -8)}px`;
+      c.text.style.top = `${dy}px`;
+      c.text.style.setProperty('--tx', right ? '0' : '-100%');
+    }
+  }
+
+  // vision HUD
+  const pv = director.pinned('vision', y);
+  const inVision = st.chapter === 2;
+  visionSection.classList.toggle('is-active', inVision && pv > 0.02 && pv < 0.99);
+  if (inVision) {
+    let label = VISION_STATES[0][1];
+    for (const [p, l] of VISION_STATES) if (pv >= p) label = l;
+    if (label !== lastVision) { visionState.textContent = label; lastVision = label; if (audio.enabled && (label.startsWith('DETECT') || label.startsWith('ARUCO'))) audio.play('lock', 0.4); }
+    visionAlt.textContent = `ALT ${(st.drone[1] * 3.1).toFixed(1)} m`;
+    visionWp.textContent = `WP ${pv < 0.3 ? 2 : pv < 0.78 ? 3 : 4}/4`;
+    let target = null, tag = '';
+    if (pv > 0.22 && pv < 0.66) { target = world.person; tag = pv < 0.33 ? 'person 0.71' : 'person 0.94'; }
+    else if (pv > 0.78 && pv < 0.96) { target = world.marker; tag = 'aruco id 23'; }
+    const b = target && projectBox(target);
+    visionBox.classList.toggle('is-on', !!b);
+    if (b) {
+      visionBox.style.transform = `translate(${b.x0}px, ${b.y0}px)`;
+      visionBox.style.width = `${b.x1 - b.x0}px`;
+      visionBox.style.height = `${b.y1 - b.y0}px`;
+      visionBox.firstElementChild.textContent = tag;
+    }
+  }
+
+  // garage name plate
+  if (st.chapter === 4 || st.chapter === 5) {
+    const car = director.carAt(y);
+    if (car !== lastCar) {
+      lastCar = car;
+      carName.animate([{ opacity: 0, transform: 'translateY(0.6rem)' }, { opacity: 1, transform: 'none' }], { duration: 600, easing: 'cubic-bezier(.22,1,.36,1)' });
+      carName.textContent = car.name;
+      carYear.textContent = car.year;
+    }
+  }
+
+  // launch
+  if (st.chapter === 5 || st.chapter === 4) {
+    speedEl.textContent = Math.round(Math.min(1.4, st.speed) * 245);
+    const pl = director.pinned('launch', y);
+    const span = reel.scrollWidth - innerWidth * 0.55;
+    reel.style.transform = `translateX(${-span * pl}px)`;
+  }
+
+  // portrait parallax
+  if (st.chapter >= 6) {
+    const r = portrait.parentElement.getBoundingClientRect();
+    if (r.bottom > 0 && r.top < vh) portrait.style.transform = `translateY(${((r.top + r.height / 2 - vh / 2) / vh) * -8}%)`;
+  }
+
+  cursor.update(dt);
+  preview.update(dt);
+  lock.update(dt);
+}
+
+// ---------- Main loop ----------
+let last = performance.now();
+let running = false;
+function startLoop() {
+  if (running) return;
+  running = true;
+  if (world) buildCallouts();
+  const frame = (now) => {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    lenis?.raf(now);
+    const y = lenis ? lenis.animatedScroll : window.scrollY;
+    if (world && director) {
+      const st = director.update(y, now / 1000);
+      if (reducedMotion) { st.shake = 0; st.aberration = 0; st.roll = 0; }
+      if (st.fade < 0.999) world.render(st);
+      else world.timer.update();
+      audio.drive(st, dt);
+      domFrame(st, y, dt);
+    } else {
+      cursor.update(dt);
+      lock.update(dt);
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+let resizeT;
+addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => { director?.measure(); lenis?.resize(); }, 150);
+});
+
+// Credits from the media manifest
+fetch('/media/manifest.json').then((r) => r.json()).then((m) => {
+  const list = (m.credits || []).map((c) => (typeof c === 'string' ? c : `${c.title || c.model || c.name} by ${c.author} (${c.licence || c.license})`));
+  if (list.length) $('#credits').textContent = `Car models: ${list.join('; ')}. Used under their Creative Commons licences.`;
+}).catch(() => {});
+
+boot().catch((e) => {
+  console.error(e);
+  setProgress(1);
+  startLoop();
+  showEnter([], {});
+});

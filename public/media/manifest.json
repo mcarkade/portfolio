@@ -1,0 +1,1854 @@
+{
+ "generated": "2026-10-26",
+ "totalBytes": 31017957,
+ "fileCount": 70,
+ "files": [
+  {
+   "path": "/media/cd-key-1-sm.webp",
+   "bytes": 24414,
+   "type": "image",
+   "width": 720,
+   "height": 270
+  },
+  {
+   "path": "/media/cd-key-1.webp",
+   "bytes": 33998,
+   "type": "image",
+   "width": 800,
+   "height": 300
+  },
+  {
+   "path": "/media/cd-key-2-sm.webp",
+   "bytes": 22462,
+   "type": "image",
+   "width": 720,
+   "height": 270
+  },
+  {
+   "path": "/media/cd-key-2.webp",
+   "bytes": 31824,
+   "type": "image",
+   "width": 800,
+   "height": 300
+  },
+  {
+   "path": "/media/cd-key-3-sm.webp",
+   "bytes": 22010,
+   "type": "image",
+   "width": 720,
+   "height": 270
+  },
+  {
+   "path": "/media/cd-key-3.webp",
+   "bytes": 30932,
+   "type": "image",
+   "width": 800,
+   "height": 300
+  },
+  {
+   "path": "/media/cd-key-4-sm.webp",
+   "bytes": 24220,
+   "type": "image",
+   "width": 720,
+   "height": 270
+  },
+  {
+   "path": "/media/cd-key-4.webp",
+   "bytes": 34204,
+   "type": "image",
+   "width": 800,
+   "height": 300
+  },
+  {
+   "path": "/media/cd-key-5-sm.webp",
+   "bytes": 24252,
+   "type": "image",
+   "width": 720,
+   "height": 270
+  },
+  {
+   "path": "/media/cd-key-5.webp",
+   "bytes": 34270,
+   "type": "image",
+   "width": 800,
+   "height": 300
+  },
+  {
+   "path": "/media/cd-key-6-sm.webp",
+   "bytes": 24462,
+   "type": "image",
+   "width": 720,
+   "height": 270
+  },
+  {
+   "path": "/media/cd-key-6.webp",
+   "bytes": 34242,
+   "type": "image",
+   "width": 800,
+   "height": 300
+  },
+  {
+   "path": "/media/cd-key-7-sm.webp",
+   "bytes": 24126,
+   "type": "image",
+   "width": 720,
+   "height": 270
+  },
+  {
+   "path": "/media/cd-key-7.webp",
+   "bytes": 33734,
+   "type": "image",
+   "width": 800,
+   "height": 300
+  },
+  {
+   "path": "/media/cd-tracking-poster.webp",
+   "bytes": 59288,
+   "type": "image",
+   "width": 1280,
+   "height": 480
+  },
+  {
+   "path": "/media/cd-tracking.mp4",
+   "bytes": 966152,
+   "type": "video",
+   "width": 1280,
+   "height": 480,
+   "duration": 40.43,
+   "codec": "h264",
+   "audio": false,
+   "poster": "/media/cd-tracking-poster.webp"
+  },
+  {
+   "path": "/media/cd-tracking.webm",
+   "bytes": 695230,
+   "type": "video",
+   "width": 1280,
+   "height": 480,
+   "duration": 40.43,
+   "codec": "vp9",
+   "audio": false,
+   "poster": "/media/cd-tracking-poster.webp"
+  },
+  {
+   "path": "/media/cd-twodrones-poster.webp",
+   "bytes": 60002,
+   "type": "image",
+   "width": 1280,
+   "height": 480
+  },
+  {
+   "path": "/media/cd-twodrones.mp4",
+   "bytes": 1012695,
+   "type": "video",
+   "width": 1280,
+   "height": 480,
+   "duration": 41.0,
+   "codec": "h264",
+   "audio": false,
+   "poster": "/media/cd-twodrones-poster.webp"
+  },
+  {
+   "path": "/media/cd-twodrones.webm",
+   "bytes": 774924,
+   "type": "video",
+   "width": 1280,
+   "height": 480,
+   "duration": 41.0,
+   "codec": "vp9",
+   "audio": false,
+   "poster": "/media/cd-twodrones-poster.webp"
+  },
+  {
+   "path": "/media/med-video-poster.webp",
+   "bytes": 25684,
+   "type": "image",
+   "width": 480,
+   "height": 864
+  },
+  {
+   "path": "/media/med-video.mp4",
+   "bytes": 961413,
+   "type": "video",
+   "width": 480,
+   "height": 864,
+   "duration": 7.0,
+   "codec": "h264",
+   "audio": false,
+   "poster": "/media/med-video-poster.webp"
+  },
+  {
+   "path": "/media/med-video.webm",
+   "bytes": 760236,
+   "type": "video",
+   "width": 480,
+   "height": 864,
+   "duration": 7.03,
+   "codec": "vp9",
+   "audio": false,
+   "poster": "/media/med-video-poster.webp"
+  },
+  {
+   "path": "/media/mesh-arena-sm.webp",
+   "bytes": 27826,
+   "type": "image",
+   "width": 720,
+   "height": 720
+  },
+  {
+   "path": "/media/mesh-arena.webp",
+   "bytes": 53548,
+   "type": "image",
+   "width": 1024,
+   "height": 1024
+  },
+  {
+   "path": "/media/mesh-electronics-sm.webp",
+   "bytes": 10314,
+   "type": "image",
+   "width": 720,
+   "height": 504
+  },
+  {
+   "path": "/media/mesh-electronics.webp",
+   "bytes": 31312,
+   "type": "image",
+   "width": 1600,
+   "height": 1120
+  },
+  {
+   "path": "/media/mesh-motors-sm.webp",
+   "bytes": 2694,
+   "type": "image",
+   "width": 720,
+   "height": 504
+  },
+  {
+   "path": "/media/mesh-motors.webp",
+   "bytes": 7726,
+   "type": "image",
+   "width": 1600,
+   "height": 1120
+  },
+  {
+   "path": "/media/mesh-plate-sm.webp",
+   "bytes": 5584,
+   "type": "image",
+   "width": 720,
+   "height": 504
+  },
+  {
+   "path": "/media/mesh-plate.webp",
+   "bytes": 16980,
+   "type": "image",
+   "width": 1600,
+   "height": 1120
+  },
+  {
+   "path": "/media/mr-488-sm.webp",
+   "bytes": 13434,
+   "type": "image",
+   "width": 539,
+   "height": 404
+  },
+  {
+   "path": "/media/mr-488.webp",
+   "bytes": 16462,
+   "type": "image",
+   "width": 539,
+   "height": 404
+  },
+  {
+   "path": "/media/mr-911-sm.webp",
+   "bytes": 11534,
+   "type": "image",
+   "width": 498,
+   "height": 417
+  },
+  {
+   "path": "/media/mr-911.webp",
+   "bytes": 14180,
+   "type": "image",
+   "width": 498,
+   "height": 417
+  },
+  {
+   "path": "/media/mr-forest-dash-sm.webp",
+   "bytes": 27172,
+   "type": "image",
+   "width": 720,
+   "height": 382
+  },
+  {
+   "path": "/media/mr-forest-dash.webp",
+   "bytes": 130596,
+   "type": "image",
+   "width": 1600,
+   "height": 850
+  },
+  {
+   "path": "/media/mr-forest-night-sm.webp",
+   "bytes": 22312,
+   "type": "image",
+   "width": 720,
+   "height": 381
+  },
+  {
+   "path": "/media/mr-forest-night.webp",
+   "bytes": 126658,
+   "type": "image",
+   "width": 1600,
+   "height": 847
+  },
+  {
+   "path": "/media/mr-forest-poster.webp",
+   "bytes": 85376,
+   "type": "image",
+   "width": 1280,
+   "height": 720
+  },
+  {
+   "path": "/media/mr-forest.mp4",
+   "bytes": 2032813,
+   "type": "video",
+   "width": 1280,
+   "height": 720,
+   "duration": 8.0,
+   "codec": "h264",
+   "audio": false,
+   "poster": "/media/mr-forest-poster.webp"
+  },
+  {
+   "path": "/media/mr-forest.webm",
+   "bytes": 2092530,
+   "type": "video",
+   "width": 1280,
+   "height": 720,
+   "duration": 8.0,
+   "codec": "vp9",
+   "audio": false,
+   "poster": "/media/mr-forest-poster.webp"
+  },
+  {
+   "path": "/media/mr-fpv-poster.webp",
+   "bytes": 25386,
+   "type": "image",
+   "width": 1280,
+   "height": 672
+  },
+  {
+   "path": "/media/mr-fpv.mp4",
+   "bytes": 1883736,
+   "type": "video",
+   "width": 1280,
+   "height": 672,
+   "duration": 9.0,
+   "codec": "h264",
+   "audio": false,
+   "poster": "/media/mr-fpv-poster.webp"
+  },
+  {
+   "path": "/media/mr-fpv.webm",
+   "bytes": 1235616,
+   "type": "video",
+   "width": 1280,
+   "height": 672,
+   "duration": 9.0,
+   "codec": "vp9",
+   "audio": false,
+   "poster": "/media/mr-fpv-poster.webp"
+  },
+  {
+   "path": "/media/mr-mp45-sm.webp",
+   "bytes": 12212,
+   "type": "image",
+   "width": 575,
+   "height": 383
+  },
+  {
+   "path": "/media/mr-mp45.webp",
+   "bytes": 14882,
+   "type": "image",
+   "width": 575,
+   "height": 383
+  },
+  {
+   "path": "/media/mr-suzuka-sm.webp",
+   "bytes": 11788,
+   "type": "image",
+   "width": 720,
+   "height": 376
+  },
+  {
+   "path": "/media/mr-suzuka.webp",
+   "bytes": 58868,
+   "type": "image",
+   "width": 1600,
+   "height": 836
+  },
+  {
+   "path": "/media/mr-tunnel-sm.webp",
+   "bytes": 11368,
+   "type": "image",
+   "width": 720,
+   "height": 405
+  },
+  {
+   "path": "/media/mr-tunnel.webp",
+   "bytes": 50852,
+   "type": "image",
+   "width": 1600,
+   "height": 899
+  },
+  {
+   "path": "/media/multiroads-logo-sm.webp",
+   "bytes": 6028,
+   "type": "image",
+   "width": 528,
+   "height": 517
+  },
+  {
+   "path": "/media/multiroads-logo.webp",
+   "bytes": 6994,
+   "type": "image",
+   "width": 528,
+   "height": 517
+  },
+  {
+   "path": "/media/portrait-sm.webp",
+   "bytes": 12780,
+   "type": "image",
+   "width": 720,
+   "height": 480
+  },
+  {
+   "path": "/media/portrait.webp",
+   "bytes": 31644,
+   "type": "image",
+   "width": 1280,
+   "height": 853
+  },
+  {
+   "path": "/media/theta-cart-cut.webp",
+   "bytes": 32602,
+   "type": "image",
+   "width": 1400,
+   "height": 1120,
+   "alpha": true
+  },
+  {
+   "path": "/media/theta-cart-sm.webp",
+   "bytes": 10752,
+   "type": "image",
+   "width": 720,
+   "height": 576
+  },
+  {
+   "path": "/media/theta-cart.webp",
+   "bytes": 26646,
+   "type": "image",
+   "width": 1400,
+   "height": 1120
+  },
+  {
+   "path": "/media/theta-hub-cut.webp",
+   "bytes": 23700,
+   "type": "image",
+   "width": 1400,
+   "height": 1120,
+   "alpha": true
+  },
+  {
+   "path": "/media/theta-hub-sm.webp",
+   "bytes": 5380,
+   "type": "image",
+   "width": 720,
+   "height": 576
+  },
+  {
+   "path": "/media/theta-hub.webp",
+   "bytes": 14882,
+   "type": "image",
+   "width": 1400,
+   "height": 1120
+  },
+  {
+   "path": "/media/theta-shell-sm.webp",
+   "bytes": 14292,
+   "type": "image",
+   "width": 720,
+   "height": 576
+  },
+  {
+   "path": "/media/theta-shell.webp",
+   "bytes": 54008,
+   "type": "image",
+   "width": 1400,
+   "height": 1120
+  },
+  {
+   "path": "/models/f40.glb",
+   "bytes": 2440304,
+   "type": "model"
+  },
+  {
+   "path": "/models/f488.glb",
+   "bytes": 1124336,
+   "type": "model"
+  },
+  {
+   "path": "/models/mp45.glb",
+   "bytes": 3421188,
+   "type": "model"
+  },
+  {
+   "path": "/models/p911.glb",
+   "bytes": 2809028,
+   "type": "model"
+  },
+  {
+   "path": "/models/rb19.glb",
+   "bytes": 3970160,
+   "type": "model"
+  },
+  {
+   "path": "/models/vantage.glb",
+   "bytes": 737964,
+   "type": "model"
+  },
+  {
+   "path": "/models/w11.glb",
+   "bytes": 2526736,
+   "type": "model"
+  }
+ ],
+ "models": {
+  "mp45": {
+   "file": "/models/mp45.glb",
+   "title": "McLaren MP4/5 (1989)",
+   "trisSource": 328937,
+   "note": "Real car is ~4.3 m long, so the model is ~1.69x oversize; scale 0.59 for real size. Original node tree kept, no join/flatten. Meshes split into 65 parts (connected components) with pivots at each part centre: every part is a group node named in parts[], whose single child \"<name>_mesh\" carries the meshopt quantization transform. Move/rotate the group node. center/size in parts[] are world-space metres at rest.",
+   "bytes": 3421188,
+   "trianglesAfter": 328937,
+   "meshNodes": 65,
+   "materials": 5,
+   "textures": 16,
+   "bboxMin": [
+    -1.784,
+    -0.062,
+    -3.663
+   ],
+   "bboxMax": [
+    1.784,
+    1.55,
+    3.667
+   ],
+   "sizeMeters": {
+    "x": 3.568,
+    "y": 1.612,
+    "z": 7.33
+   },
+   "up": "+Y",
+   "forward": "+Z (nose); car left side = +X",
+   "units": "meters",
+   "parts": [
+    {
+     "name": "axle_front_L",
+     "role": "axle/hub",
+     "material": "wheels_mat",
+     "tris": 1151,
+     "center": [
+      1.37,
+      0.47,
+      2.056
+     ],
+     "size": [
+      0.441,
+      0.451,
+      0.451
+     ]
+    },
+    {
+     "name": "axle_front_R",
+     "role": "axle/hub",
+     "material": "wheels_mat",
+     "tris": 1151,
+     "center": [
+      -1.37,
+      0.47,
+      2.056
+     ],
+     "size": [
+      0.441,
+      0.451,
+      0.451
+     ]
+    },
+    {
+     "name": "axle_rear_L",
+     "role": "axle/hub",
+     "material": "wheels_mat",
+     "tris": 5555,
+     "center": [
+      0.847,
+      0.51,
+      -2.749
+     ],
+     "size": [
+      1.36,
+      0.451,
+      0.451
+     ]
+    },
+    {
+     "name": "axle_rear_R",
+     "role": "axle/hub",
+     "material": "wheels_mat",
+     "tris": 5555,
+     "center": [
+      -0.847,
+      0.51,
+      -2.749
+     ],
+     "size": [
+      1.36,
+      0.451,
+      0.451
+     ]
+    },
+    {
+     "name": "body_m5_0",
+     "role": "main_bodywork (monocoque+sidepods+engine cover)",
+     "material": "body_mat",
+     "tris": 58740,
+     "center": [
+      0,
+      0.786,
+      -0.452
+     ],
+     "size": [
+      2.261,
+      1.505,
+      5.416
+     ]
+    },
+    {
+     "name": "body_m5_1",
+     "role": "rear_bodywork",
+     "material": "body_mat",
+     "tris": 19072,
+     "center": [
+      0.48,
+      0.391,
+      -2.667
+     ],
+     "size": [
+      0.061,
+      0.514,
+      0.967
+     ]
+    },
+    {
+     "name": "body_m5_10",
+     "role": "front_wing",
+     "material": "body_mat",
+     "tris": 1088,
+     "center": [
+      -0.685,
+      0.232,
+      2.942
+     ],
+     "size": [
+      0.98,
+      0.084,
+      0.203
+     ]
+    },
+    {
+     "name": "body_m5_11",
+     "role": "rear_wing",
+     "material": "body_mat",
+     "tris": 1464,
+     "center": [
+      0,
+      1.075,
+      -3.259
+     ],
+     "size": [
+      1.643,
+      0.948,
+      0.809
+     ]
+    },
+    {
+     "name": "body_m5_12",
+     "role": "rear_wing",
+     "material": "body_mat",
+     "tris": 576,
+     "center": [
+      0,
+      1.453,
+      -3.47
+     ],
+     "size": [
+      1.609,
+      0.14,
+      0.284
+     ]
+    },
+    {
+     "name": "body_m5_13",
+     "role": "rear_wing",
+     "material": "body_mat",
+     "tris": 576,
+     "center": [
+      0,
+      1.331,
+      -3.14
+     ],
+     "size": [
+      1.609,
+      0.083,
+      0.454
+     ]
+    },
+    {
+     "name": "body_m5_2",
+     "role": "rear_bodywork",
+     "material": "body_mat",
+     "tris": 15394,
+     "center": [
+      -0.48,
+      0.391,
+      -2.667
+     ],
+     "size": [
+      0.061,
+      0.514,
+      0.967
+     ]
+    },
+    {
+     "name": "body_m5_3",
+     "role": "front_wing",
+     "material": "body_mat",
+     "tris": 5456,
+     "center": [
+      1.197,
+      0.368,
+      3.016
+     ],
+     "size": [
+      0.035,
+      0.71,
+      1.08
+     ]
+    },
+    {
+     "name": "body_m5_4",
+     "role": "front_wing",
+     "material": "body_mat",
+     "tris": 5456,
+     "center": [
+      -1.197,
+      0.368,
+      3.016
+     ],
+     "size": [
+      0.035,
+      0.71,
+      1.08
+     ]
+    },
+    {
+     "name": "body_m5_5",
+     "role": "nose_cone",
+     "material": "body_mat",
+     "tris": 5424,
+     "center": [
+      0,
+      0.358,
+      2.906
+     ],
+     "size": [
+      0.707,
+      0.638,
+      1.523
+     ]
+    },
+    {
+     "name": "body_m5_6",
+     "role": "front_wing",
+     "material": "body_mat",
+     "tris": 2624,
+     "center": [
+      0,
+      0.12,
+      3.262
+     ],
+     "size": [
+      2.35,
+      0.099,
+      0.468
+     ]
+    },
+    {
+     "name": "body_m5_7",
+     "role": "front_wing",
+     "material": "body_mat",
+     "tris": 1552,
+     "center": [
+      1.183,
+      -0.008,
+      2.952
+     ],
+     "size": [
+      0.086,
+      0.043,
+      1.071
+     ]
+    },
+    {
+     "name": "body_m5_8",
+     "role": "front_wing",
+     "material": "body_mat",
+     "tris": 1552,
+     "center": [
+      -1.183,
+      -0.008,
+      2.952
+     ],
+     "size": [
+      0.086,
+      0.043,
+      1.071
+     ]
+    },
+    {
+     "name": "body_m5_9",
+     "role": "front_wing",
+     "material": "body_mat",
+     "tris": 1088,
+     "center": [
+      0.685,
+      0.232,
+      2.942
+     ],
+     "size": [
+      0.98,
+      0.084,
+      0.203
+     ]
+    },
+    {
+     "name": "body_m6_0",
+     "role": "cockpit_surround",
+     "material": "body_mat",
+     "tris": 5438,
+     "center": [
+      0,
+      0.955,
+      1.025
+     ],
+     "size": [
+      0.912,
+      0.161,
+      1.011
+     ]
+    },
+    {
+     "name": "body_m6_1",
+     "role": "rear_bodywork",
+     "material": "body_mat",
+     "tris": 2399,
+     "center": [
+      -0.48,
+      0.399,
+      -2.668
+     ],
+     "size": [
+      0.058,
+      0.498,
+      0.965
+     ]
+    },
+    {
+     "name": "body_m6_2",
+     "role": "rear_bodywork",
+     "material": "body_mat",
+     "tris": 1279,
+     "center": [
+      -0.492,
+      0.437,
+      -2.933
+     ],
+     "size": [
+      0.026,
+      0.327,
+      0.435
+     ]
+    },
+    {
+     "name": "bottom_details_m0_0",
+     "role": "underbody_sidepod_internals",
+     "material": "bottom_details_mat",
+     "tris": 18603,
+     "center": [
+      0,
+      0.377,
+      -1.135
+     ],
+     "size": [
+      2.267,
+      0.774,
+      3.65
+     ]
+    },
+    {
+     "name": "bottom_details_m0_1",
+     "role": "airbox_engine_cover",
+     "material": "bottom_details_mat",
+     "tris": 12260,
+     "center": [
+      0,
+      1.131,
+      -1.059
+     ],
+     "size": [
+      0.618,
+      0.768,
+      1.509
+     ]
+    },
+    {
+     "name": "bottom_details_m0_10",
+     "role": "rear_diffuser_floor",
+     "material": "bottom_details_mat",
+     "tris": 748,
+     "center": [
+      -0.939,
+      0.115,
+      -2.509
+     ],
+     "size": [
+      0.36,
+      0.249,
+      0.868
+     ]
+    },
+    {
+     "name": "bottom_details_m0_2",
+     "role": "underbody_sidepod_internals",
+     "material": "bottom_details_mat",
+     "tris": 3436,
+     "center": [
+      0.762,
+      0.386,
+      -0.36
+     ],
+     "size": [
+      0.65,
+      0.595,
+      1.043
+     ]
+    },
+    {
+     "name": "bottom_details_m0_3",
+     "role": "underbody_sidepod_internals",
+     "material": "bottom_details_mat",
+     "tris": 3436,
+     "center": [
+      -0.762,
+      0.386,
+      -0.36
+     ],
+     "size": [
+      0.65,
+      0.595,
+      1.043
+     ]
+    },
+    {
+     "name": "bottom_details_m0_4",
+     "role": "rear_diffuser_floor",
+     "material": "bottom_details_mat",
+     "tris": 1652,
+     "center": [
+      0,
+      0.532,
+      -2.124
+     ],
+     "size": [
+      0.864,
+      0.55,
+      0.18
+     ]
+    },
+    {
+     "name": "bottom_details_m0_5",
+     "role": "rear_diffuser_floor",
+     "material": "bottom_details_mat",
+     "tris": 1440,
+     "center": [
+      0,
+      0.441,
+      -2.33
+     ],
+     "size": [
+      0.549,
+      0.702,
+      1.069
+     ]
+    },
+    {
+     "name": "bottom_details_m0_6",
+     "role": "underbody_sidepod_internals",
+     "material": "bottom_details_mat",
+     "tris": 1272,
+     "center": [
+      0,
+      0.361,
+      1.894
+     ],
+     "size": [
+      0.938,
+      0.692,
+      3.504
+     ]
+    },
+    {
+     "name": "bottom_details_m0_7",
+     "role": "underbody_sidepod_internals",
+     "material": "bottom_details_mat",
+     "tris": 1448,
+     "center": [
+      0.466,
+      0.362,
+      -1.823
+     ],
+     "size": [
+      0.596,
+      0.609,
+      2.079
+     ]
+    },
+    {
+     "name": "bottom_details_m0_8",
+     "role": "underbody_sidepod_internals",
+     "material": "bottom_details_mat",
+     "tris": 1448,
+     "center": [
+      -0.466,
+      0.362,
+      -1.823
+     ],
+     "size": [
+      0.596,
+      0.609,
+      2.079
+     ]
+    },
+    {
+     "name": "bottom_details_m0_9",
+     "role": "rear_diffuser_floor",
+     "material": "bottom_details_mat",
+     "tris": 748,
+     "center": [
+      0.939,
+      0.115,
+      -2.509
+     ],
+     "size": [
+      0.36,
+      0.249,
+      0.868
+     ]
+    },
+    {
+     "name": "bottom_details_m3_0",
+     "role": "suspension",
+     "material": "bottom_details_mat",
+     "tris": 1536,
+     "center": [
+      0,
+      0.467,
+      -2.804
+     ],
+     "size": [
+      0.687,
+      0.448,
+      0.265
+     ]
+    },
+    {
+     "name": "bottom_details_m8_0",
+     "role": "rear_wing_support",
+     "material": "bottom_details_mat",
+     "tris": 2300,
+     "center": [
+      0,
+      0.702,
+      -3.069
+     ],
+     "size": [
+      0.163,
+      1.226,
+      0.404
+     ]
+    },
+    {
+     "name": "glass_details_m11_0",
+     "role": "windscreen_glass",
+     "material": "glass_details_mat",
+     "tris": 1540,
+     "center": [
+      0,
+      1.007,
+      0.988
+     ],
+     "size": [
+      0.585,
+      0.214,
+      0.866
+     ]
+    },
+    {
+     "name": "glass_details_m9_0",
+     "role": "rear_light",
+     "material": "glass_details_mat",
+     "tris": 556,
+     "center": [
+      0,
+      0.658,
+      -3.281
+     ],
+     "size": [
+      0.139,
+      0.139,
+      0.021
+     ]
+    },
+    {
+     "name": "interior_m10_0",
+     "role": "cockpit_interior",
+     "material": "interior_mat",
+     "tris": 3416,
+     "center": [
+      0,
+      0.89,
+      1.134
+     ],
+     "size": [
+      0.603,
+      0.11,
+      0.568
+     ]
+    },
+    {
+     "name": "interior_m10_1",
+     "role": "cockpit_interior",
+     "material": "interior_mat",
+     "tris": 3082,
+     "center": [
+      -0.243,
+      0.508,
+      0.634
+     ],
+     "size": [
+      0.069,
+      0.533,
+      0.815
+     ]
+    },
+    {
+     "name": "interior_m10_2",
+     "role": "cockpit_interior",
+     "material": "interior_mat",
+     "tris": 5867,
+     "center": [
+      0.004,
+      0.56,
+      0.302
+     ],
+     "size": [
+      0.586,
+      0.599,
+      1.075
+     ]
+    },
+    {
+     "name": "interior_m10_3",
+     "role": "cockpit_interior",
+     "material": "interior_mat",
+     "tris": 3273,
+     "center": [
+      -0.013,
+      0.937,
+      0.838
+     ],
+     "size": [
+      0.397,
+      0.25,
+      0.122
+     ]
+    },
+    {
+     "name": "interior_m10_4",
+     "role": "cockpit_interior",
+     "material": "interior_mat",
+     "tris": 2371,
+     "center": [
+      0.017,
+      0.89,
+      0.894
+     ],
+     "size": [
+      0.522,
+      0.352,
+      0.489
+     ]
+    },
+    {
+     "name": "interior_m10_5",
+     "role": "cockpit_interior",
+     "material": "interior_mat",
+     "tris": 3584,
+     "center": [
+      -0.014,
+      0.59,
+      0.82
+     ],
+     "size": [
+      0.695,
+      0.916,
+      2.287
+     ]
+    },
+    {
+     "name": "interior_m10_6",
+     "role": "cockpit_interior",
+     "material": "interior_mat",
+     "tris": 960,
+     "center": [
+      0.232,
+      0.59,
+      0.647
+     ],
+     "size": [
+      0.095,
+      0.305,
+      0.879
+     ]
+    },
+    {
+     "name": "interior_m10_7",
+     "role": "cockpit_interior",
+     "material": "interior_mat",
+     "tris": 796,
+     "center": [
+      0.01,
+      0.234,
+      0.951
+     ],
+     "size": [
+      0.288,
+      0.217,
+      0.217
+     ]
+    },
+    {
+     "name": "interior_m10_8",
+     "role": "cockpit_interior",
+     "material": "interior_mat",
+     "tris": 776,
+     "center": [
+      0,
+      0.346,
+      0.447
+     ],
+     "size": [
+      0.09,
+      0.056,
+      0.092
+     ]
+    },
+    {
+     "name": "interior_m10_9",
+     "role": "cockpit_interior",
+     "material": "interior_mat",
+     "tris": 768,
+     "center": [
+      0.212,
+      0.384,
+      0.586
+     ],
+     "size": [
+      0.126,
+      0.311,
+      0.741
+     ]
+    },
+    {
+     "name": "interior_m12_0",
+     "role": "gear_lever",
+     "material": "interior_mat",
+     "tris": 854,
+     "center": [
+      -0.288,
+      0.724,
+      0.685
+     ],
+     "size": [
+      0.089,
+      0.162,
+      0.101
+     ]
+    },
+    {
+     "name": "interior_m13_0",
+     "role": "steering_wheel",
+     "material": "interior_mat",
+     "tris": 7377,
+     "center": [
+      0,
+      0.884,
+      0.735
+     ],
+     "size": [
+      0.401,
+      0.374,
+      0.213
+     ]
+    },
+    {
+     "name": "wheel_front_L",
+     "role": "wheel (spin about local X)",
+     "material": "wheels_mat",
+     "tris": 16016,
+     "center": [
+      1.447,
+      0.47,
+      2.056
+     ],
+     "size": [
+      0.571,
+      1.065,
+      1.065
+     ]
+    },
+    {
+     "name": "wheel_front_R",
+     "role": "wheel (spin about local X)",
+     "material": "wheels_mat",
+     "tris": 16016,
+     "center": [
+      -1.447,
+      0.47,
+      2.056
+     ],
+     "size": [
+      0.571,
+      1.065,
+      1.065
+     ]
+    },
+    {
+     "name": "wheel_rear_L",
+     "role": "wheel (spin about local X)",
+     "material": "wheels_mat",
+     "tris": 17440,
+     "center": [
+      1.389,
+      0.51,
+      -2.749
+     ],
+     "size": [
+      0.79,
+      1.132,
+      1.132
+     ]
+    },
+    {
+     "name": "wheel_rear_R",
+     "role": "wheel (spin about local X)",
+     "material": "wheels_mat",
+     "tris": 17440,
+     "center": [
+      -1.389,
+      0.51,
+      -2.749
+     ],
+     "size": [
+      0.79,
+      1.132,
+      1.132
+     ]
+    },
+    {
+     "name": "wheels_m14_0",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 3340,
+     "center": [
+      0.816,
+      0.539,
+      1.945
+     ],
+     "size": [
+      1.033,
+      0.37,
+      0.699
+     ]
+    },
+    {
+     "name": "wheels_m14_1",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 3340,
+     "center": [
+      -0.816,
+      0.539,
+      1.945
+     ],
+     "size": [
+      1.033,
+      0.37,
+      0.699
+     ]
+    },
+    {
+     "name": "wheels_m14_2",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 1584,
+     "center": [
+      0.775,
+      0.226,
+      1.709
+     ],
+     "size": [
+      1.034,
+      0.086,
+      1.001
+     ]
+    },
+    {
+     "name": "wheels_m14_3",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 1584,
+     "center": [
+      -0.775,
+      0.226,
+      1.709
+     ],
+     "size": [
+      1.034,
+      0.086,
+      1.001
+     ]
+    },
+    {
+     "name": "wheels_m14_4",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 1998,
+     "center": [
+      0.857,
+      0.387,
+      2.005
+     ],
+     "size": [
+      1.253,
+      0.485,
+      0.506
+     ]
+    },
+    {
+     "name": "wheels_m14_5",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 1996,
+     "center": [
+      -0.857,
+      0.387,
+      2.005
+     ],
+     "size": [
+      1.253,
+      0.485,
+      0.506
+     ]
+    },
+    {
+     "name": "wheels_m14_6",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 1240,
+     "center": [
+      0,
+      0.482,
+      2.286
+     ],
+     "size": [
+      0.681,
+      0.049,
+      0.03
+     ]
+    },
+    {
+     "name": "wheels_m1_0",
+     "role": "underfloor_trim",
+     "material": "wheels_mat",
+     "tris": 2116,
+     "center": [
+      0,
+      0.332,
+      -0.302
+     ],
+     "size": [
+      2.129,
+      0.633,
+      5.117
+     ]
+    },
+    {
+     "name": "wheels_m2_0",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 3904,
+     "center": [
+      0.597,
+      0.41,
+      -2.647
+     ],
+     "size": [
+      1.073,
+      0.317,
+      0.958
+     ]
+    },
+    {
+     "name": "wheels_m2_1",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 3880,
+     "center": [
+      -0.597,
+      0.41,
+      -2.647
+     ],
+     "size": [
+      1.073,
+      0.317,
+      0.958
+     ]
+    },
+    {
+     "name": "wheels_m2_2",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 3768,
+     "center": [
+      0.742,
+      0.524,
+      -2.623
+     ],
+     "size": [
+      1.327,
+      0.409,
+      0.861
+     ]
+    },
+    {
+     "name": "wheels_m2_3",
+     "role": "suspension",
+     "material": "wheels_mat",
+     "tris": 3768,
+     "center": [
+      -0.742,
+      0.524,
+      -2.623
+     ],
+     "size": [
+      1.327,
+      0.409,
+      0.861
+     ]
+    },
+    {
+     "name": "wheels_m7_0",
+     "role": "body_trim",
+     "material": "wheels_mat",
+     "tris": 1370,
+     "center": [
+      0,
+      0.779,
+      -0.104
+     ],
+     "size": [
+      2.371,
+      1.301,
+      6.517
+     ]
+    }
+   ]
+  },
+  "rb19": {
+   "file": "/models/rb19.glb",
+   "title": "Red Bull RB19",
+   "trisSource": 354292,
+   "bytes": 3970160,
+   "trianglesAfter": 354292,
+   "meshNodes": 171,
+   "materials": 48,
+   "textures": 48,
+   "bboxMin": [
+    -1.043,
+    0.028,
+    -2.226
+   ],
+   "bboxMax": [
+    1.043,
+    1.168,
+    3.306
+   ],
+   "sizeMeters": {
+    "x": 2.086,
+    "y": 1.14,
+    "z": 5.532
+   },
+   "up": "+Y",
+   "forward": "+Z (nose); car left side = +X",
+   "units": "meters"
+  },
+  "f40": {
+   "file": "/models/f40.glb",
+   "title": "Ferrari F40",
+   "trisSource": 145760,
+   "note": "Source authored at 1/100 scale; root node scaled x100 to metres. 875 mesh nodes (many draw calls).",
+   "bytes": 2440304,
+   "trianglesAfter": 145760,
+   "meshNodes": 875,
+   "materials": 19,
+   "textures": 24,
+   "bboxMin": [
+    -0.984,
+    -0.007,
+    -2.101
+   ],
+   "bboxMax": [
+    0.984,
+    1.112,
+    2.281
+   ],
+   "sizeMeters": {
+    "x": 1.968,
+    "y": 1.119,
+    "z": 4.382
+   },
+   "up": "+Y",
+   "forward": "+Z (nose); car left side = +X",
+   "units": "meters"
+  },
+  "p911": {
+   "file": "/models/p911.glb",
+   "title": "Porsche 911 GT3 (992.2)",
+   "trisSource": 308387,
+   "note": "Source authored at 1/100 scale; root node scaled x100 to metres.",
+   "bytes": 2809028,
+   "trianglesAfter": 308387,
+   "meshNodes": 32,
+   "materials": 20,
+   "textures": 30,
+   "bboxMin": [
+    -1.014,
+    -0.003,
+    -2.283
+   ],
+   "bboxMax": [
+    1.014,
+    1.299,
+    2.286
+   ],
+   "sizeMeters": {
+    "x": 2.027,
+    "y": 1.302,
+    "z": 4.569
+   },
+   "up": "+Y",
+   "forward": "+Z (nose); car left side = +X",
+   "units": "meters"
+  },
+  "f488": {
+   "file": "/models/f488.glb",
+   "title": "Ferrari 488 GT3",
+   "trisSource": 53439,
+   "note": "Source authored at 1/100 scale; root node scaled x100 to metres.",
+   "bytes": 1124336,
+   "trianglesAfter": 53439,
+   "meshNodes": 106,
+   "materials": 16,
+   "textures": 13,
+   "bboxMin": [
+    -1.122,
+    -0.079,
+    -2.365
+   ],
+   "bboxMax": [
+    1.122,
+    1.16,
+    2.355
+   ],
+   "sizeMeters": {
+    "x": 2.244,
+    "y": 1.239,
+    "z": 4.72
+   },
+   "up": "+Y",
+   "forward": "+Z (nose); car left side = +X",
+   "units": "meters"
+  },
+  "vantage": {
+   "file": "/models/vantage.glb",
+   "title": "Aston Martin Vantage GT3",
+   "trisSource": 28191,
+   "note": "Mesh Object_39 (LOD_A_BODY_mm_misc_13) reaches y=1.84 m, so bbox height is inflated (real car ~1.2 m). Unchanged from source.",
+   "bytes": 737964,
+   "trianglesAfter": 28191,
+   "meshNodes": 65,
+   "materials": 10,
+   "textures": 11,
+   "bboxMin": [
+    -0.996,
+    0.021,
+    -2.376
+   ],
+   "bboxMax": [
+    0.996,
+    1.842,
+    2.242
+   ],
+   "sizeMeters": {
+    "x": 1.992,
+    "y": 1.822,
+    "z": 4.618
+   },
+   "up": "+Y",
+   "forward": "+Z (nose); car left side = +X",
+   "units": "meters"
+  },
+  "w11": {
+   "file": "/models/w11.glb",
+   "title": "Mercedes-AMG F1 W11 (2020)",
+   "trisSource": 185287,
+   "bytes": 2526736,
+   "trianglesAfter": 185287,
+   "meshNodes": 43,
+   "materials": 39,
+   "textures": 38,
+   "bboxMin": [
+    -1.014,
+    0.001,
+    -2.982
+   ],
+   "bboxMax": [
+    1.014,
+    1.156,
+    2.718
+   ],
+   "sizeMeters": {
+    "x": 2.029,
+    "y": 1.156,
+    "z": 5.699
+   },
+   "up": "+Y",
+   "forward": "+Z (nose); car left side = +X",
+   "units": "meters"
+  }
+ },
+ "credits": [
+  {
+   "model": "mp45",
+   "title": "McLaren MP4/5 | www.vecarz.com",
+   "author": "vecarz (https://sketchfab.com/heynic)",
+   "license": "CC-BY-4.0",
+   "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+   "url": "https://sketchfab.com/3d-models/mclaren-mp45-wwwvecarzcom-b0db423a98584469a73ad9b5df2ab969",
+   "evidence": "glb asset.extras; not in Multiroads CREDITS.md"
+  },
+  {
+   "model": "rb19",
+   "title": "Redbull RB19 Oracle | www.vecarz.com",
+   "author": "vecarz (https://sketchfab.com/heynic)",
+   "license": "CC-BY-NC-SA-4.0",
+   "licenseUrl": "http://creativecommons.org/licenses/by-nc-sa/4.0/",
+   "url": "https://sketchfab.com/3d-models/redbull-rb19-oracle-wwwvecarzcom-9789fd7386ee4924bf8e7ed54577f8cf",
+   "evidence": "glb asset.extras; not in CREDITS.md",
+   "warning": "NonCommercial + ShareAlike"
+  },
+  {
+   "model": "f40",
+   "title": "1987 Ferrari F40",
+   "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
+   "license": "CC-BY-4.0",
+   "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+   "url": "https://sketchfab.com/3d-models/1987-ferrari-f40-80b0cdeb364b4223a006f3be12f16dc4",
+   "evidence": "glb asset.extras; not in CREDITS.md"
+  },
+  {
+   "model": "p911",
+   "title": "2025 Porsche 911 GT3 (992-2)",
+   "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
+   "license": "CC-BY-NC-SA-4.0",
+   "licenseUrl": "http://creativecommons.org/licenses/by-nc-sa/4.0/",
+   "url": "https://sketchfab.com/3d-models/2025-porsche-911-gt3-992-2-1503f8d08f154ec7ab52f95a99c55134",
+   "shortUrl": "https://skfb.ly/pByFp",
+   "evidence": "glb asset.extras + Multiroads docs/CREDITS.md",
+   "warning": "NonCommercial + ShareAlike"
+  },
+  {
+   "model": "f488",
+   "title": "2018 Ferrari 488 GT3",
+   "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
+   "license": "CC-BY-4.0",
+   "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+   "url": "https://sketchfab.com/3d-models/2018-ferrari-488-gt3-bb14ee3833564f349a317d704a506cd3",
+   "shortUrl": "https://skfb.ly/prvGN",
+   "evidence": "glb asset.extras + Multiroads docs/CREDITS.md"
+  },
+  {
+   "model": "vantage",
+   "title": "2013 Aston Martin Vantage GT3",
+   "author": "OUTPISTON (https://sketchfab.com/outpiston)",
+   "license": "CC-BY-NC-SA-4.0",
+   "licenseUrl": "http://creativecommons.org/licenses/by-nc-sa/4.0/",
+   "url": "https://sketchfab.com/3d-models/2013-aston-martin-vantage-gt3-2673986fc0484af28291d85548f3c976",
+   "shortUrl": "https://skfb.ly/pBCxx",
+   "evidence": "glb asset.extras + Multiroads docs/CREDITS.md",
+   "warning": "NonCommercial + ShareAlike"
+  },
+  {
+   "model": "w11",
+   "title": "Mercedec F1 2020 [sic]",
+   "author": "Kevin Love SketchFab (https://sketchfab.com/Tyler_Kevin)",
+   "license": "CC-BY-4.0",
+   "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+   "url": "https://sketchfab.com/3d-models/mercedec-f1-2020-0d97207d829441ba95952598f84e8d63",
+   "evidence": "glb asset.extras; not in CREDITS.md"
+  }
+ ],
+ "notes": [
+  "Car textures are WebP (EXT_texture_webp) and geometry is meshopt-compressed (EXT_meshopt_compression + KHR_mesh_quantization): load with GLTFLoader + MeshoptDecoder; no Draco. Source textures were all <=1024 px so nothing needed downscaling.",
+  "Models are metres, +Y up, nose toward +Z, car left = +X. mp45 is ~1.69x oversize (7.33 m long).",
+  "mp45 wheels: wheel_front_L/R and wheel_rear_L/R pivots sit on the axle centre; spin about local X.",
+  "Part roles in models.mp45.parts[] are heuristic (material, parent, position) and were not render-checked.",
+  "NonCommercial licences (RB19, 911, Vantage; also ShareAlike) restrict commercial use of the site.",
+  "portrait.webp is landscape (1280x853, man holding a drone), not a portrait crop.",
+  "theta-shell-cut skipped: the render has a pale grey disc behind the model that a white-key cut left ragged. theta-cart-cut and theta-hub-cut are clean.",
+  "Videos have no audio. mr-fpv is very dark (the whole night-forest source is dark). Loops are plain trims, not crossfaded. med-video is 480x864 (source resolution, not upscaled to 960w). cd-* are 1280x480 side-by-side proof videos at the source 7 fps.",
+  "cd-key-N map to sorted key_*.jpg: 1 combined_sweep, 2 empty_background, 3 hidden, 4 horizontal, 5 reintroduced, 6 stationary, 7 vertical.",
+  "Images narrower than the target width keep native size (no upscaling): logo 528, mr-911/488/mp45 ~500-575, portrait 1280, arena 1024, cd-key 800.",
+  "Skipped: ShopEZ (no real UI screenshots anywhere in the project) and medicine-dispenser stills (PDFs only contain a logo; video frames were blurry 480 px grabs). Use med-video + poster."
+ ]
+}
