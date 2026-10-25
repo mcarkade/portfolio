@@ -11,7 +11,6 @@ export const SPACING = 7;
 export const CARS = [
   { id: 'rb19', file: '/models/rb19.glb', name: 'Red Bull RB19', year: '2023', length: 5.3 },
   { id: 'w11', file: '/models/w11.glb', name: 'Mercedes W11', year: '2020', length: 5.4 },
-  { id: 'f40', file: '/models/f40.glb', name: 'Ferrari F40', year: '1987', length: 4.36 },
   { id: 'p911', file: '/models/p911.glb', name: 'Porsche 911 GT3', year: '2025', length: 4.57 },
   { id: 'f488', file: '/models/f488.glb', name: 'Ferrari 488 GT3', year: '2018', length: 4.7 },
   { id: 'vantage', file: '/models/vantage.glb', name: 'Aston Martin Vantage GT3', year: '2013', length: 4.4 },
@@ -35,6 +34,7 @@ export class Garage {
     this.hero = null;
     this.heroParts = [];
     this.loaded = 0;
+    this.ready = new Set();
     this.total = CARS.length + 1;
     this._turntable();
 
@@ -45,7 +45,7 @@ export class Garage {
     CARS.forEach((c, i) => {
       const slot = new THREE.Group();
       slot.position.set(lineupX(i), 0, 0);
-      slot.rotation.y = 0.62; // models face +Z (the camera); turn for a three-quarter view
+      slot.rotation.y = 1.25; // models face +Z; turn so the camera sees a three-quarter front
       this.group.add(slot);
       this.slots.push({ car: c, slot, model: null });
     });
@@ -75,11 +75,10 @@ export class Garage {
     this.ring = ring;
   }
 
-  // Load hero first, then the lineup in scroll order. Mobile loads fewer.
-  async loadAll({ lite = false } = {}) {
+  // Load the hero first, then the lineup in scroll order.
+  async loadAll() {
     await this._load(HERO, this.heroSlot, true).catch((e) => console.warn('hero car', e));
-    const list = lite ? this.slots.slice(0, 3) : this.slots;
-    for (const s of list) {
+    for (const s of this.slots) {
       await this._load(s.car, s.slot, false).then((m) => { s.model = m; }).catch((e) => console.warn(s.car.id, e));
     }
   }
@@ -91,7 +90,7 @@ export class Garage {
         this._normalize(model, car);
         model.traverse((o) => {
           if (o.isMesh) {
-            o.castShadow = true;
+            o.castShadow = isHero; // only the hero car is worth a shadow pass
             o.receiveShadow = true;
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             mats.forEach((m) => { if (m.envMapIntensity !== undefined) m.envMapIntensity = 1.0; });
@@ -103,6 +102,7 @@ export class Garage {
           this._prepareExplode(model);
         }
         this.loaded++;
+        this.ready.add(car.id);
         resolve(model);
       }, undefined, reject);
     });

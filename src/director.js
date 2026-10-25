@@ -2,6 +2,9 @@
 // so the whole film plays forwards and backwards exactly.
 import { lineupX, HERO_X, GARAGE_Z, CARS, HERO } from './world/garage.js';
 
+// Lineup stops share the garage chapter from 0.08 to 0.405, however many cars there are.
+const STEP = 0.325 / Math.max(1, CARS.length - 1);
+
 const ORDER = ['hero', 'drone', 'vision', 'lock', 'garage', 'launch', 'work', 'about', 'contact'];
 const GZ = GARAGE_Z;
 const TAU = Math.PI * 2;
@@ -51,7 +54,7 @@ function keys() {
     ['garage', 0.07, { cam: [L(0) + 3.6, 1.45, GZ + 5.9], look: [L(0), 0.6, GZ], fov: 34, strip: 1, stripX: L(0), light: 26, lightDist: 3.0, lightLift: 1.8, lightAngle: 0.34, fog: 0.05, grid: 0.2, env: 0.26, kick: 0 }],
   ];
   CARS.forEach((_, i) => {
-    const p = 0.08 + i * 0.065;
+    const p = 0.08 + i * STEP;
     k.push(['garage', p, { cam: [L(i) + 3.6, 1.45, GZ + 5.9], look: [L(i), 0.6, GZ], stripX: L(i) }]);
   });
   k.push(
@@ -182,7 +185,7 @@ export class Director {
   carAt(y) {
     const p = (this.sAt(y) - ORDER.indexOf('garage'));
     if (p >= 0.475) return HERO;
-    const i = Math.max(0, Math.min(CARS.length - 1, Math.round((p - 0.08) / 0.065)));
+    const i = Math.max(0, Math.min(CARS.length - 1, Math.round((p - 0.08) / STEP)));
     return CARS[i];
   }
 }

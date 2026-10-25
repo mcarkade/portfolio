@@ -55,14 +55,12 @@ async function boot() {
   let done = 0;
   const track = (p) => { tasks.push(p); p.then(() => { done++; setProgress(0.04 + 0.9 * (done / tasks.length)); }); return p; };
 
-  track(document.fonts?.ready || Promise.resolve());
-  const imagesP = track(loadImages(INTRO_IMAGES));
-  await audio.init();
-  track(audio.load('intro', '/audio/intro.mp3'));
-  const ogg = new window.Audio().canPlayType('audio/ogg; codecs=vorbis');
-  audio.load('loop', ogg ? '/audio/loop.ogg' : '/audio/loop.mp3').then(() => { if (audio.enabled && !document.body.classList.contains('is-loading')) audio.startLoop(); });
+  track(withTimeout(document.fonts?.ready, 4000));
+  const imagesP = track(loadImages(INTRO_IMAGES, 7000));
+  await withTimeout(audio.init(), 2000);
+  track(withTimeout(audio.load('intro', '/audio/intro.mp3'), 6000));
   ['tick', 'whoosh', 'lock'].forEach((n) => audio.load(n, `/audio/${n}.mp3`));
-  const cuesP = fetch('/audio/intro_cues.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+  const cuesP = withTimeout(fetch('/audio/intro_cues.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({})), 4000).then((c) => c || {});
 
   if (hasGL) {
     const { World } = await import('./world/world.js');
@@ -71,13 +69,15 @@ async function boot() {
     // warm up shaders behind the loader
     world.render(director.update(0, 0));
     await withTimeout(world.renderer.compileAsync(world.scene, world.camera), 2500);
-    world.garage.loadAll({ lite: quality === 'low' }).then(() => withTimeout(world.renderer.compileAsync(world.scene, world.camera), 4000));
+    world.garage.loadAll().then(() => withTimeout(world.renderer.compileAsync(world.scene, world.camera), 4000));
     window.__mc = { world, director };
   } else {
     body.classList.add('no-webgl');
   }
 
-  const [images] = await Promise.all([imagesP, ...tasks]);
+  // hard deadline: whatever has arrived by now is enough to enter
+  await withTimeout(Promise.all(tasks), 12000);
+  const images = (await withTimeout(imagesP, 10)) || [];
   const cues = await cuesP;
   setProgress(1);
   startLoop();
@@ -94,6 +94,7 @@ function showEnter(images, cues) {
     const withSound = btn.dataset.enter === 'sound';
     setSound(withSound);
     $('#loader').classList.add('is-done');
+    $('#loader').inert = true;
     await playIntro(images, cues, withSound);
     begin();
   });
@@ -107,8 +108,11 @@ async function playIntro(images, cues, withSound) {
   const intro = new Intro(root, images, { hit, duration: hit + 2.1 });
   const audioClock = withSound ? audio.playIntro() : null;
   const t0 = performance.now();
-  const clockFn = audioClock || (() => (performance.now() - t0) / 1000);
+  const wall = () => (performance.now() - t0) / 1000;
+  // follow the audio clock for sync, but never fall far behind the wall clock (suspended audio, muted tab)
+  const clockFn = audioClock ? () => Math.max(audioClock(), wall() - 0.25) : wall;
   const skip = root.querySelector('.intro__skip');
+  skip.focus({ preventScroll: true });
   const onSkip = () => { intro.skip(); audio.stopIntro(); };
   skip.addEventListener('click', onSkip, { once: true });
   const onKey = (e) => { if (e.key === 'Escape') onSkip(); };
@@ -123,7 +127,8 @@ async function playIntro(images, cues, withSound) {
 let assembleStart = -1;
 const ASSEMBLE = 2.6;
 function assembleAt(now) {
-  if (assembleStart < 0) return reducedMotion ? 0 : 1;
+  if (reducedMotion) return 0;
+  if (assembleStart < 0) return 1;
   const u = Math.min(1, (now - assembleStart) / (ASSEMBLE * 1000));
   return 1 - (1 - Math.pow(1 - u, 3));
 }
@@ -131,8 +136,13 @@ function assembleAt(now) {
 function begin() {
   assembleStart = performance.now() - 250;
   body.classList.remove('is-loading', 'is-intro');
+  setInert(false);
   $('#loader').setAttribute('aria-hidden', 'true');
-  audio.startLoop();
+  $('#hero').focus({ preventScroll: true });
+  if (audio.enabled) loadLoop();
+  director?.measure();
+  // the hero's own reveal, staged after the title sequence
+  document.querySelectorAll('.hero .split, .hero .reveal').forEach((el, i) => setTimeout(() => el.classList.add('is-in'), 350 + i * 160));
   if (!reducedMotion) {
     lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, touchMultiplier: 1.4, smoothWheel: true });
     lenis.on('scroll', () => {});
@@ -144,21 +154,53 @@ function begin() {
       const target = id === 'top' ? 0 : document.getElementById(id);
       if (target === null) return;
       e.preventDefault();
-      if (lenis) lenis.scrollTo(target, { duration: 2.2, easing: (t) => 1 - Math.pow(1 - t, 4) });
-      else if (target === 0) window.scrollTo({ top: 0 });
-      else target.scrollIntoView();
+      closeMenu();
+      const arrive = () => {
+        history.replaceState(null, '', id === 'top' ? location.pathname : `#${id}`);
+        (target === 0 ? $('#hero') : target).focus({ preventScroll: true });
+      };
+      if (lenis) lenis.scrollTo(target, { duration: 2.2, easing: (t) => 1 - Math.pow(1 - t, 4), onComplete: arrive });
+      else { if (target === 0) window.scrollTo({ top: 0 }); else target.scrollIntoView(); arrive(); }
     });
   });
 }
 
 // ---------- Sound toggle ----------
 const soundBtn = $('.sound');
+let loopP = null;
+// The ambient score only downloads once someone asks for sound, and never plays over the intro.
+function loadLoop() {
+  if (!loopP) {
+    const ogg = new window.Audio().canPlayType('audio/ogg; codecs=vorbis');
+    loopP = audio.load('loop', ogg ? '/audio/loop.ogg' : '/audio/loop.mp3');
+  }
+  loopP.then(() => { if (audio.enabled && !body.classList.contains('is-loading') && !body.classList.contains('is-intro')) audio.startLoop(); });
+}
 function setSound(on) {
   audio.setEnabled(on);
   soundBtn.setAttribute('aria-pressed', String(on));
   soundBtn.setAttribute('aria-label', on ? 'Sound on. Turn sound off' : 'Sound off. Turn sound on');
-  if (on) audio.startLoop();
+  if (on) loadLoop();
 }
+
+// While the loader and intro run, nothing behind them can take focus.
+function setInert(on) {
+  document.querySelectorAll('main, .hud, footer').forEach((el) => { el.inert = on; });
+}
+setInert(true);
+
+// Small-screen menu
+const menuBtn = $('.menu-btn');
+const menu = $('#menu');
+function closeMenu() { menu.classList.remove('is-open'); menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.textContent = 'Menu'; }
+menuBtn.addEventListener('click', () => {
+  const open = !menu.classList.contains('is-open');
+  menu.classList.toggle('is-open', open);
+  menuBtn.setAttribute('aria-expanded', String(open));
+  menuBtn.textContent = open ? 'Close' : 'Menu';
+  if (open) menu.querySelector('a').focus();
+});
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && menu.classList.contains('is-open')) { closeMenu(); menuBtn.focus(); } });
 soundBtn.addEventListener('click', () => setSound(!audio.enabled));
 
 addEventListener('keydown', (e) => {
@@ -195,8 +237,16 @@ const speedEl = $('#speed');
 const reel = $('.reel');
 const portrait = $('.about__portrait img');
 const veil = $('.veil');
+const heroEl = $('#hero');
 const calloutRoot = $('#callouts');
 const CHAPTER_NAMES = ['Hello', 'Drone', 'Vision', 'Lock', 'Multiroads', 'Launch', 'Work', 'About', 'Contact'];
+const MOBILE_LABELS = new Set(['Pixhawk 2.4.8', 'Raspberry Pi 4', 'GPS', '4S LiPo', 'A2212 motor', 'Camera']);
+let maxScroll = 1;
+let reelSpan = 0;
+function measureDom() {
+  maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+  reelSpan = reel.scrollWidth - innerWidth * 0.55;
+}
 
 let callouts = null;
 function buildCallouts() {
@@ -237,6 +287,8 @@ let lastVision = '';
 function domFrame(st, y, dt) {
   const vh = innerHeight;
   veil.style.setProperty('--veil', st.veil.toFixed(3));
+  // hero copy fades out before it slides under the header
+  if (y < vh) heroEl.style.opacity = (1 - Math.min(1, y / (vh * 0.5)) ** 1.5).toFixed(3);
 
   // chapter readout + nav
   if (st.chapter !== lastChapter) {
@@ -245,10 +297,11 @@ function domFrame(st, y, dt) {
     const id = director.ids[st.chapter];
     navLinks.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === `#${id}` || (id === 'launch' && a.getAttribute('href') === '#garage') || (id === 'vision' && a.getAttribute('href') === '#drone')));
     if (lenis && audio.enabled) audio.play('whoosh', 0.35);
+    // pinned headings can sit outside the reveal observer's band after a jump; show them on arrival
+    document.querySelectorAll(`#${id} .sticky .split`).forEach((el) => el.classList.add('is-in'));
   }
   body.classList.toggle('is-scrolled', st.chapter >= 6);
-  const max = document.documentElement.scrollHeight - vh;
-  progressEl.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+  progressEl.style.transform = `scaleX(${Math.min(1, y / maxScroll)})`;
 
   // drone steps
   const pd = director.pinned('drone', y);
@@ -264,14 +317,19 @@ function domFrame(st, y, dt) {
       c.a.obj.localToWorld(tmpV.copy(c.a.local));
       const p = world.project(tmpV, P);
       if (!p) { c.el.classList.remove('is-on'); continue; }
+      const narrow = innerWidth < 700;
+      if (narrow && !MOBILE_LABELS.has(c.a.label)) { c.el.classList.remove('is-on'); continue; }
       c.el.classList.add('is-on');
       const right = p.x > innerWidth * 0.5;
-      const len = small ? 28 : 56;
+      const len = narrow ? 26 : 56;
       const dx = right ? len : -len, dy = -len * 0.55;
+      // keep the label inside the viewport
+      const tw = c.tw || (c.tw = c.text.offsetWidth);
+      const tx = right ? Math.min(dx + 8, innerWidth - 12 - p.x - tw) : Math.max(dx - 8, 12 - p.x + tw);
       c.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
       c.line.style.width = `${Math.hypot(dx, dy)}px`;
       c.line.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
-      c.text.style.left = `${dx + (right ? 8 : -8)}px`;
+      c.text.style.left = `${tx}px`;
       c.text.style.top = `${dy}px`;
       c.text.style.setProperty('--tx', right ? '0' : '-100%');
     }
@@ -285,8 +343,8 @@ function domFrame(st, y, dt) {
     let label = VISION_STATES[0][1];
     for (const [p, l] of VISION_STATES) if (pv >= p) label = l;
     if (label !== lastVision) { visionState.textContent = label; lastVision = label; if (audio.enabled && (label.startsWith('DETECT') || label.startsWith('ARUCO'))) audio.play('lock', 0.4); }
-    visionAlt.textContent = `ALT ${(st.drone[1] * 3.1).toFixed(1)} m`;
-    visionWp.textContent = `WP ${pv < 0.3 ? 2 : pv < 0.78 ? 3 : 4}/4`;
+    setText(visionAlt, `ALT ${(st.drone[1] * 3.1).toFixed(1)} m`);
+    setText(visionWp, `WP ${pv < 0.3 ? 2 : pv < 0.78 ? 3 : 4}/4`);
     let target = null, tag = '';
     if (pv > 0.22 && pv < 0.66) { target = world.person; tag = pv < 0.33 ? 'person 0.71' : 'person 0.94'; }
     else if (pv > 0.78 && pv < 0.96) { target = world.marker; tag = 'aruco id 23'; }
@@ -296,7 +354,7 @@ function domFrame(st, y, dt) {
       visionBox.style.transform = `translate(${b.x0}px, ${b.y0}px)`;
       visionBox.style.width = `${b.x1 - b.x0}px`;
       visionBox.style.height = `${b.y1 - b.y0}px`;
-      visionBox.firstElementChild.textContent = tag;
+      setText(visionBox.firstElementChild, tag);
     }
   }
 
@@ -307,16 +365,15 @@ function domFrame(st, y, dt) {
       lastCar = car;
       carName.animate([{ opacity: 0, transform: 'translateY(0.6rem)' }, { opacity: 1, transform: 'none' }], { duration: 600, easing: 'cubic-bezier(.22,1,.36,1)' });
       carName.textContent = car.name;
-      carYear.textContent = car.year;
     }
+    setText(carYear, world.garage.ready.has(car.id) ? car.year : 'Loading');
   }
 
   // launch
   if (st.chapter === 5 || st.chapter === 4) {
-    speedEl.textContent = Math.round(Math.min(1.4, st.speed) * 245);
+    setText(speedEl, String(Math.round(Math.min(1.4, st.speed) * 245)));
     const pl = director.pinned('launch', y);
-    const span = reel.scrollWidth - innerWidth * 0.55;
-    reel.style.transform = `translateX(${-span * pl}px)`;
+    reel.style.transform = `translateX(${-reelSpan * pl}px)`;
   }
 
   // portrait parallax
@@ -325,10 +382,19 @@ function domFrame(st, y, dt) {
     if (r.bottom > 0 && r.top < vh) portrait.style.transform = `translateY(${((r.top + r.height / 2 - vh / 2) / vh) * -8}%)`;
   }
 
+  // on touch screens the turret tracks the 3D drone by itself
+  if (!finePointer && st.chapter === 3 && st.droneVisible) {
+    world.drone.group.getWorldPosition(tmpV);
+    const p = world.project(tmpV, P);
+    if (p) lock.setTarget(p.x, p.y);
+  }
+
   cursor.update(dt);
   preview.update(dt);
   lock.update(dt);
 }
+
+function setText(el, v) { if (el.textContent !== v) el.textContent = v; }
 
 // ---------- Main loop ----------
 let last = performance.now();
@@ -337,6 +403,7 @@ function startLoop() {
   if (running) return;
   running = true;
   if (world) buildCallouts();
+  cursor.enable();
   const frame = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
@@ -348,7 +415,7 @@ function startLoop() {
       if (asm > 0) { st.explode = Math.max(st.explode, asm); st.droneYaw += asm * 1.4; }
       // fast scrolling smears the colour channels a little
       if (lenis) st.aberration += Math.min(0.0035, Math.abs(lenis.velocity) * 0.00006);
-      if (reducedMotion) { st.shake = 0; st.aberration = 0; st.roll = 0; }
+      if (reducedMotion) { st.shake = 0; st.aberration = 0; st.roll = 0; st.speed = 0; st.spin = Math.min(st.spin, 0.2); }
       if (st.fade < 0.999) { world.render(st); world.blank = false; }
       else {
         world.timer.update();
@@ -357,6 +424,10 @@ function startLoop() {
       audio.drive(st, dt);
       domFrame(st, y, dt);
     } else {
+      const y = window.scrollY;
+      const i = [...document.querySelectorAll('.chapter')].filter((el) => el.offsetTop <= y + innerHeight * 0.4).length - 1;
+      setText(chapterEl, `${String(Math.max(0, i) + 1).padStart(2, '0')} ${CHAPTER_NAMES[Math.max(0, i)]}`);
+      progressEl.style.transform = `scaleX(${Math.min(1, y / maxScroll)})`;
       cursor.update(dt);
       lock.update(dt);
     }
@@ -366,10 +437,14 @@ function startLoop() {
 }
 
 let resizeT;
+function remeasure() { director?.measure(); measureDom(); lenis?.resize(); }
 addEventListener('resize', () => {
   clearTimeout(resizeT);
-  resizeT = setTimeout(() => { director?.measure(); lenis?.resize(); }, 150);
+  resizeT = setTimeout(remeasure, 150);
 });
+document.fonts?.ready.then(remeasure);
+new ResizeObserver(() => { clearTimeout(resizeT); resizeT = setTimeout(remeasure, 150); }).observe(document.querySelector('main'));
+measureDom();
 
 boot().catch((e) => {
   console.error(e);

@@ -49,7 +49,7 @@ const FinalShader = {
         col.g = texture2D(tDiffuse, vUv).g;
         col.b = texture2D(tDiffuse, vUv - dir * ab).b;
       }
-      float vig = smoothstep(0.95, 0.18, r * uVignette);
+      float vig = 1.0 - smoothstep(0.18, 0.95, r * uVignette);
       col *= mix(0.35, 1.0, vig);
       col += uFlash;
       col *= 1.0 - uFade;
@@ -73,7 +73,7 @@ export class World {
     renderer.toneMappingExposure = 1.0;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer = renderer;
     this.dprCap = quality === 'high' ? 1.75 : 1.25;
 
@@ -186,7 +186,7 @@ export class World {
           float minor = max(line(vW.x * 4.0, 1.0), line(vW.z * 4.0, 1.0)) * 0.35;
           float major = max(line(vW.x, 1.2), line(vW.z, 1.2));
           float d = length(vW.xz - uCenter.xz);
-          float fade = smoothstep(4.5, 0.4, d);
+          float fade = 1.0 - smoothstep(0.4, 4.5, d);
           float a = max(minor, major) * fade * uOpacity;
           gl_FragColor = vec4(vec3(0.92, 0.9, 0.87), a * 0.13);
         }`,
@@ -208,7 +208,7 @@ export class World {
       fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float uStrength; varying vec4 vUv; varying vec2 vUv2;
         void main(){
           vec3 base = texture2DProj(tDiffuse, vUv).rgb;
-          float fade = smoothstep(0.0, 0.08, vUv2.x) * smoothstep(1.0, 0.92, vUv2.x) * smoothstep(0.0, 0.3, vUv2.y) * smoothstep(1.0, 0.7, vUv2.y);
+          float fade = smoothstep(0.0, 0.08, vUv2.x) * (1.0 - smoothstep(0.92, 1.0, vUv2.x)) * smoothstep(0.0, 0.3, vUv2.y) * (1.0 - smoothstep(0.7, 1.0, vUv2.y));
           gl_FragColor = vec4(base * color * fade * uStrength, 1.0);
         }`,
     };
@@ -254,12 +254,12 @@ export class World {
           p.y = mod(p.y, 7.0);
           p.z += cos(uTime * 0.12 + aSeed * 30.0) * 0.25;
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
-          float lit = smoothstep(3.5, 0.0, distance(p, uLight));
+          float lit = 1.0 - smoothstep(0.0, 3.5, distance(p, uLight));
           vA = (0.08 + lit * 0.9) * (0.4 + aSeed * 0.6);
           gl_PointSize = uPx * (1.0 + aSeed * 2.2) * (6.0 / -mv.z);
           gl_Position = projectionMatrix * mv;
         }`,
-      fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.0, d); gl_FragColor = vec4(vec3(1.0, 0.95, 0.9), a * vA); }`,
+      fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); float a = 1.0 - smoothstep(0.0, 0.5, d); gl_FragColor = vec4(vec3(1.0, 0.95, 0.9), a * vA); }`,
     });
     const pts = new THREE.Points(g, m);
     pts.frustumCulled = false;
@@ -291,7 +291,7 @@ export class World {
           // white edge lines
           float el = (1.0 - step(0.07, abs(edge - 4.8)));
           col = mix(col, vec3(0.85), el);
-          float fade = smoothstep(6.5, 5.9, edge);
+          float fade = 1.0 - smoothstep(5.9, 6.5, edge);
           gl_FragColor = vec4(col, uOpacity * fade);
         }`,
     });
@@ -393,7 +393,7 @@ export class World {
 
   // Project a world point to CSS pixels. Returns null when behind the camera.
   project(v, out = { x: 0, y: 0, z: 0 }) {
-    const p = v.clone().project(this.camera);
+    const p = (this._proj || (this._proj = new THREE.Vector3())).copy(v).project(this.camera);
     if (p.z > 1) return null;
     out.x = (p.x * 0.5 + 0.5) * window.innerWidth;
     out.y = (-p.y * 0.5 + 0.5) * window.innerHeight;
@@ -498,7 +498,7 @@ export class World {
     // Post
     const u = this.final.uniforms;
     u.uTime.value = t;
-    u.uSpeed.value = speed;
+    u.uSpeed.value = this.quality === 'high' ? speed : 0; // radial blur is desktop-only
     u.uAberration.value = 0.0006 + state.aberration;
     u.uFade.value = state.fade;
     u.uFlash.value = state.flash;

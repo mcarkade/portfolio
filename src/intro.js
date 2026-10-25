@@ -8,12 +8,14 @@ const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const clamp01 = (t) => Math.max(0, Math.min(1, t));
 
-export function loadImages(srcs) {
+// Each image gets its own deadline, so one slow file never holds up the title sequence.
+export function loadImages(srcs, timeout = 8000) {
   return Promise.all(srcs.map((src) => new Promise((res) => {
     const img = new Image();
     img.decoding = 'async';
-    img.onload = () => res(img);
-    img.onerror = () => res(null);
+    const t = setTimeout(() => res(null), timeout);
+    img.onload = () => { clearTimeout(t); res(img); };
+    img.onerror = () => { clearTimeout(t); res(null); };
     img.src = src;
   }))).then((list) => list.filter(Boolean));
 }

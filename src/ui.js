@@ -52,6 +52,12 @@ export class Cursor {
       if (t && t !== this._last) audio?.play('tick', 0.5);
       this._last = t;
     });
+  }
+
+  // Hide the system cursor only once the replacement is actually being drawn.
+  enable() {
+    if (!finePointer || this.enabled) return;
+    this.enabled = true;
     document.body.style.cursor = 'none';
     const style = document.createElement('style');
     style.textContent = 'a, button, summary { cursor: none; }';
@@ -148,8 +154,10 @@ export class LockGame {
     }, { threshold: 0.35 }).observe(this.section);
   }
 
+  setTarget(x, y) { this.tx = x; this.ty = y; }
+
   update(dt) {
-    const on = this.active && finePointer;
+    const on = this.active;
     this.reticle.classList.toggle('is-on', on);
     if (!on) return;
     // PD controller with a little lag, like a real pan-tilt servo loop
