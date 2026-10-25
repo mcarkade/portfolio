@@ -7,7 +7,8 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { Drone } from './drone.js';
-import { Garage } from './garage.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
+import { Garage, GARAGE_Z, HERO_X } from './garage.js';
 
 const FinalShader = {
   uniforms: {
@@ -102,6 +103,7 @@ export class World {
 
     this.garage = new Garage(this);
     scene.add(this.garage.group);
+    if (quality === 'high') this._showroomFloor();
 
     // Post-processing
     const composer = new EffectComposer(renderer);
@@ -194,6 +196,35 @@ export class World {
     grid.position.y = 0.002;
     this.scene.add(grid);
     this.grid = grid;
+  }
+
+  // Glossy showroom floor under the garage: a half-resolution mirror added onto the dark floor.
+  _showroomFloor() {
+    const shader = {
+      name: 'ShowroomReflector',
+      uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, uStrength: { value: 0 } },
+      vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec2 vUv2;
+        void main(){ vUv = textureMatrix * vec4(position, 1.0); vUv2 = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float uStrength; varying vec4 vUv; varying vec2 vUv2;
+        void main(){
+          vec3 base = texture2DProj(tDiffuse, vUv).rgb;
+          float fade = smoothstep(0.0, 0.08, vUv2.x) * smoothstep(1.0, 0.92, vUv2.x) * smoothstep(0.0, 0.3, vUv2.y) * smoothstep(1.0, 0.7, vUv2.y);
+          gl_FragColor = vec4(base * color * fade * uStrength, 1.0);
+        }`,
+    };
+    const w = 64, d = 26;
+    const refl = new Reflector(new THREE.PlaneGeometry(w, d), {
+      textureWidth: Math.round(window.innerWidth * 0.5), textureHeight: Math.round(window.innerHeight * 0.5),
+      clipBias: 0.003, color: 0xffffff, shader,
+    });
+    refl.material.transparent = true;
+    refl.material.blending = THREE.AdditiveBlending;
+    refl.material.depthWrite = false;
+    refl.rotation.x = -Math.PI / 2;
+    refl.position.set(HERO_X / 2 + 4, 0.003, GARAGE_Z);
+    refl.renderOrder = -1;
+    this.scene.add(refl);
+    this.reflector = refl;
   }
 
   _dust() {
@@ -437,6 +468,11 @@ export class World {
 
     // Garage + launch
     this.garage.update(dt, state);
+    if (this.reflector) {
+      const r = state.garage && state.road < 0.5 ? 0.32 * (1 - state.road * 2) : 0;
+      this.reflector.visible = r > 0.001;
+      this.reflector.material.uniforms.uStrength.value = r;
+    }
     const speed = state.speed;
     this.road.visible = state.road > 0.001;
     this.road.material.uniforms.uOpacity.value = state.road;
