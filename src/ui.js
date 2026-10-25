@@ -98,7 +98,7 @@ export class Preview {
     this.x = 0; this.y = 0; this.px = 0; this.py = 0;
     addEventListener('pointermove', (e) => { this.x = e.clientX; this.y = e.clientY; }, { passive: true });
     document.querySelectorAll('.work__item').forEach((li) => {
-      li.addEventListener('pointerenter', () => this.show(li.dataset.preview));
+      li.addEventListener('pointerenter', () => { this.el.classList.toggle('is-invert', li.hasAttribute('data-invert')); this.show(li.dataset.preview); });
       li.addEventListener('pointerleave', () => this.el.classList.remove('is-on'));
     });
   }
@@ -134,7 +134,6 @@ export class LockGame {
     this.reticle = document.getElementById('reticle');
     this.stateEl = document.getElementById('lock-state');
     this.timeEl = document.getElementById('lock-time');
-    this.video = this.section.querySelector('video');
     this.audio = audio;
     this.x = innerWidth / 2; this.y = innerHeight / 2;
     this.vx = 0; this.vy = 0;
@@ -146,9 +145,7 @@ export class LockGame {
     addEventListener('pointermove', (e) => { this.tx = e.clientX; this.ty = e.clientY; }, { passive: true });
     new IntersectionObserver(([e]) => {
       this.active = e.isIntersecting;
-      if (e.isIntersecting) this.video.play().catch(() => {});
-      else this.video.pause();
-    }, { threshold: 0.2 }).observe(this.section);
+    }, { threshold: 0.35 }).observe(this.section);
   }
 
   update(dt) {

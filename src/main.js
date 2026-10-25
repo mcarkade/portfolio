@@ -60,7 +60,7 @@ async function boot() {
   await audio.init();
   track(audio.load('intro', '/audio/intro.mp3'));
   const ogg = new window.Audio().canPlayType('audio/ogg; codecs=vorbis');
-  track(audio.load('loop', ogg ? '/audio/loop.ogg' : '/audio/loop.mp3'));
+  audio.load('loop', ogg ? '/audio/loop.ogg' : '/audio/loop.mp3').then(() => { if (audio.enabled && !document.body.classList.contains('is-loading')) audio.startLoop(); });
   ['tick', 'whoosh', 'lock'].forEach((n) => audio.load(n, `/audio/${n}.mp3`));
   const cuesP = fetch('/audio/intro_cues.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
 
@@ -119,7 +119,17 @@ async function playIntro(images, cues, withSound) {
   setTimeout(() => root.remove(), 950);
 }
 
+// The drone flies together out of its parts as the title sequence clears.
+let assembleStart = -1;
+const ASSEMBLE = 2.6;
+function assembleAt(now) {
+  if (assembleStart < 0) return reducedMotion ? 0 : 1;
+  const u = Math.min(1, (now - assembleStart) / (ASSEMBLE * 1000));
+  return 1 - (1 - Math.pow(1 - u, 3));
+}
+
 function begin() {
+  assembleStart = performance.now() - 250;
   body.classList.remove('is-loading', 'is-intro');
   $('#loader').setAttribute('aria-hidden', 'true');
   audio.startLoop();
@@ -246,7 +256,7 @@ function domFrame(st, y, dt) {
 
   // callouts on the exploded drone
   if (callouts) {
-    const show = st.explode > 0.8 && st.droneVisible;
+    const show = st.explode > 0.8 && st.droneVisible && st.chapter === 1;
     for (const c of callouts) {
       if (!show) { c.el.classList.remove('is-on'); continue; }
       c.a.obj.localToWorld(tmpV.copy(c.a.local));
@@ -332,9 +342,14 @@ function startLoop() {
     const y = lenis ? lenis.animatedScroll : window.scrollY;
     if (world && director) {
       const st = director.update(y, now / 1000);
+      const asm = assembleAt(now);
+      if (asm > 0) { st.explode = Math.max(st.explode, asm); st.droneYaw += asm * 1.4; }
       if (reducedMotion) { st.shake = 0; st.aberration = 0; st.roll = 0; }
-      if (st.fade < 0.999) world.render(st);
-      else world.timer.update();
+      if (st.fade < 0.999) { world.render(st); world.blank = false; }
+      else {
+        world.timer.update();
+        if (!world.blank) { world.renderer.setRenderTarget(null); world.renderer.clear(); world.blank = true; }
+      }
       audio.drive(st, dt);
       domFrame(st, y, dt);
     } else {

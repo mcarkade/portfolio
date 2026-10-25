@@ -21,7 +21,7 @@ const DEFAULTS = {
 function keys() {
   const L = (i) => lineupX(i);
   const k = [
-    ['hero', 0, { cam: [0.04, 1.22, 1.22], look: [-0.34, 1.12, 0], fov: 34, drone: [0, 1.1, 0], light: 55, lightDist: 1.5, grid: 0.6, veil: 0 }],
+    ['hero', 0, { cam: [0.04, 1.24, 1.42], look: [-0.36, 1.11, 0], fov: 34, drone: [0, 1.1, 0], light: 55, lightDist: 1.5, grid: 0.6, veil: 0 }],
     ['drone', 0, { cam: [0.35, 1.32, 0.92], look: [0, 1.12, 0], fov: 36 }],
     ['drone', 0.1, { cam: [0.62, 1.45, 0.95], look: [0, 1.13, 0], explode: 0, light: 60 }],
     ['drone', 0.36, { cam: [1.05, 1.95, 1.5], look: [0, 1.22, 0], fov: 41, explode: 1, lightDist: 2.3, light: 95, lightAngle: 0.55 }],

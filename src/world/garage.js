@@ -204,7 +204,7 @@ export class Garage {
       this._lastExplode = null;
     }
     // Only draw the cars near the camera's focus
-    this.slots.forEach((s) => { s.slot.visible = state.lineup && Math.abs(s.slot.position.x - state.stripX) < SPACING * 1.7; });
+    this.slots.forEach((s) => { s.slot.visible = state.lineup && Math.abs(s.slot.position.x - state.stripX) < SPACING * 1.15; });
 
     // Studio strips follow the focused car.
     const w = this.world;

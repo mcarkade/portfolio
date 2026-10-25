@@ -127,17 +127,12 @@
 
     <!-- 07 Lock-on -->
     <section class="chapter lock" id="lock" data-chapter="Lock">
-      <div class="lock__stage">
-        <div class="lock__video">
-          <video muted loop playsinline preload="none" poster="/media/cd-tracking-poster.webp" aria-label="Pan-tilt turret tracking a drone in real time">
-            <source src="/media/cd-tracking.webm" type="video/webm" />
-            <source src="/media/cd-tracking.mp4" type="video/mp4" />
-          </video>
-        </div>
+      <div class="sticky">
         <div class="lock__copy">
+          <p class="kicker">Counter-drone turret, built in a two-hour hackathon</p>
           <h2 class="title split">Try to escape.</h2>
-          <p>A Raspberry Pi 5 turret that finds a drone and keeps it in the crosshair. In here, the drone is you.</p>
-          <p class="lock__status" aria-live="polite"><span id="lock-state">SEARCHING</span> <span id="lock-time">0.0 s</span></p>
+          <p>A Raspberry Pi 5 finds a drone with YOLO and steers a pan-tilt turret to keep it in the crosshair. It held a still drone every time, and a weaving one 78% of the time. In here, the drone is you.</p>
+          <p class="lock__status" aria-live="polite"><span id="lock-state">SEARCHING</span> <span id="lock-time">escaped 0.0 s</span></p>
         </div>
       </div>
       <div id="reticle" aria-hidden="true"><span></span></div>
@@ -188,21 +183,21 @@
             <span class="work__year">2026</span>
           </a>
         </li>
-        <li class="work__item" data-preview="/media/theta-shell.webp">
+        <li class="work__item" data-preview="/media/theta-shell.webp" data-invert>
           <a href="https://github.com/mcarkade" target="_blank" rel="noopener" class="work__link">
             <span class="work__name">ThetaShift</span>
             <span class="work__what">A robot that drives from inside a sphere</span>
             <span class="work__year">2026</span>
           </a>
         </li>
-        <li class="work__item" data-preview="/media/mesh-plate.webp">
+        <li class="work__item" data-preview="/media/mesh-electronics.webp" data-invert>
           <a href="https://github.com/mcarkade" target="_blank" rel="noopener" class="work__link">
             <span class="work__name">Meshmerize</span>
             <span class="work__what">A maze-solving line follower</span>
             <span class="work__year">2026</span>
           </a>
         </li>
-        <li class="work__item" data-preview="/media/med-1.webp">
+        <li class="work__item" data-preview="/media/med-video-poster.webp">
           <a href="#work" class="work__link">
             <span class="work__name">Medicine box</span>
             <span class="work__what">Reminds you, and remembers if you didn't</span>

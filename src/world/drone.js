@@ -30,7 +30,7 @@ function materials() {
     black: new THREE.MeshStandardMaterial({ color: 0x0e0e10, roughness: 0.55 }),
     rubber: new THREE.MeshStandardMaterial({ color: 0x151517, roughness: 0.9 }),
     carbon: new THREE.MeshStandardMaterial({ color: 0x1c1c1f, metalness: 0.35, roughness: 0.3 }),
-    blue: new THREE.MeshPhysicalMaterial({ color: 0x2341c9, roughness: 0.32, clearcoat: 0.5 }),
+    blue: new THREE.MeshStandardMaterial({ color: 0x1f3bb8, roughness: 0.55 }),
     escBlue: new THREE.MeshPhysicalMaterial({ color: 0x1b2f7a, roughness: 0.25, clearcoat: 0.9, transmission: 0 }),
     green: new THREE.MeshStandardMaterial({ color: 0x0e5b35, roughness: 0.5 }),
     silver: new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: 0.5, roughness: 0.32 }),

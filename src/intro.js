@@ -168,6 +168,16 @@ export class Intro {
       octx.globalCompositeOperation = 'source-over';
       octx.clearRect(0, 0, w, h);
       this._drawFlip(octx, t, w, h, 1);
+      // the frames bleed red as the hit approaches
+      const tint = clamp01((t - (this.hit - 1.3)) / 1.2);
+      if (tint > 0) {
+        octx.globalCompositeOperation = 'multiply';
+        octx.fillStyle = `rgba(227,38,47,${tint * 0.9})`;
+        octx.fillRect(0, 0, w, h);
+        octx.globalCompositeOperation = 'source-over';
+        octx.fillStyle = `rgba(227,38,47,${tint * 0.25})`;
+        octx.fillRect(0, 0, w, h);
+      }
       octx.globalCompositeOperation = 'destination-in';
       octx.save();
       applyCam(octx);
