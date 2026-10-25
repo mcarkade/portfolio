@@ -416,7 +416,7 @@ function startLoop() {
       // fast scrolling smears the colour channels a little
       if (lenis) st.aberration += Math.min(0.0035, Math.abs(lenis.velocity) * 0.00006);
       if (reducedMotion) { st.shake = 0; st.aberration = 0; st.roll = 0; st.speed = 0; st.spin = Math.min(st.spin, 0.2); }
-      if (st.fade < 0.999) { world.render(st); world.blank = false; }
+      if (st.fade < 0.999) { world.render(st); world.blank = false; if (!document.hidden) world.adapt(dt); }
       else {
         world.timer.update();
         if (!world.blank) { world.renderer.setRenderTarget(null); world.renderer.clear(); world.blank = true; }

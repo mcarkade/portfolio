@@ -372,6 +372,26 @@ export class World {
     this.marker = marker;
   }
 
+  // Adaptive quality: if the median frame over a 1.5 s window is slower than ~48 fps,
+  // render fewer pixels; once at 1x, drop the mirror floor and bloom. Only ever steps down.
+  adapt(dt) {
+    const a = this._adapt || (this._adapt = { t: -2, dts: [] }); // skip the first 2 s (shader warm-up)
+    a.t += dt;
+    if (a.t < 0) return;
+    a.dts.push(dt);
+    if (a.t < 1.5) return;
+    const sorted = a.dts.sort((x, y) => x - y);
+    const median = sorted[sorted.length >> 1];
+    a.t = 0; a.dts.length = 0;
+    if (median < 1 / 48) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
+    if (dpr > 1.01) { this.dprCap = Math.max(1, dpr * 0.8); this.resize(); }
+    else if (this.reflector || this.bloom) {
+      if (this.reflector) { this.scene.remove(this.reflector); this.reflector = null; }
+      if (this.bloom) { this.bloom.enabled = false; this.bloom = null; }
+    } else if (dpr > 0.76) { this.dprCap = Math.max(0.75, dpr * 0.85); this.resize(); }
+  }
+
   resize() {
     const w = window.innerWidth, h = window.innerHeight;
     const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
