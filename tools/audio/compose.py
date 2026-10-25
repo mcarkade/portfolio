@@ -28,7 +28,7 @@ from scipy.ndimage import minimum_filter1d, uniform_filter1d
 
 SR = 44100
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.dirname(HERE)
+OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "public", "audio")
 SCRATCH = os.environ.get("MC_AUDIO_SCRATCH", os.path.join(tempfile.gettempdir(), "mc-audio"))
 os.makedirs(SCRATCH, exist_ok=True)
 
