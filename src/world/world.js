@@ -350,6 +350,9 @@ export class World {
     this.composer.setSize(w, h);
     if (this.bloom) this.bloom.resolution.set(w / 2, h / 2);
     this.camera.aspect = w / h;
+    // Portrait screens: lift the subject into the top part of the frame, above the copy.
+    if (w < h) this.camera.setViewOffset(w, h, 0, h * 0.14, w, h);
+    else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
     this.dust.material.uniforms.uPx.value = dpr * (h / 900);
     this.aspect = w / h;
@@ -379,6 +382,13 @@ export class World {
     const cam = this.camera;
     const m = this.mouseSmooth;
     cam.position.set(state.cam[0] + m.x * 0.06 * state.parallax, state.cam[1] + m.y * 0.04 * state.parallax, state.cam[2]);
+    // Narrow screens see less sideways, so back the camera off along its line of sight.
+    const pull = this.aspect < 1.25 ? Math.min(2.1, 1.25 / this.aspect) : 1;
+    if (pull > 1) {
+      this._tmp = this._tmp || new THREE.Vector3();
+      this._tmp.set(...state.look);
+      cam.position.sub(this._tmp).multiplyScalar(pull).add(this._tmp);
+    }
     if (state.shake) {
       cam.position.x += (Math.sin(t * 37) + Math.sin(t * 23)) * 0.004 * state.shake;
       cam.position.y += (Math.sin(t * 41) + Math.cos(t * 29)) * 0.003 * state.shake;

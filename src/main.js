@@ -246,6 +246,7 @@ function domFrame(st, y, dt) {
     navLinks.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === `#${id}` || (id === 'launch' && a.getAttribute('href') === '#garage') || (id === 'vision' && a.getAttribute('href') === '#drone')));
     if (lenis && audio.enabled) audio.play('whoosh', 0.35);
   }
+  body.classList.toggle('is-scrolled', st.chapter >= 6);
   const max = document.documentElement.scrollHeight - vh;
   progressEl.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
 

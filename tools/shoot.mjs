@@ -9,7 +9,8 @@ const browser = await chromium.launch({
   executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
   args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'],
 });
-const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+const mobile = !!process.env.MOBILE;
+const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: mobile ? 2 : 1, isMobile: mobile, hasTouch: mobile });
 const logs = [];
 page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) logs.push(`${m.type()}: ${m.text().slice(0, 300)}`); });
 page.on('pageerror', (e) => logs.push(`pageerror: ${e.message}`));

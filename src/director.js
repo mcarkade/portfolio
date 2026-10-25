@@ -142,6 +142,12 @@ export class Director {
     const st = this.sample(s);
     this.sNow = s;
 
+    // On portrait screens the hero centres the drone instead of framing it beside the headline.
+    if (window.innerWidth < window.innerHeight) {
+      const k = clamp01(1 - (s - 1.0) / 0.3);
+      st.look[0] += (0 - st.look[0]) * k;
+    }
+
     // Layered motion that keyframes can't express
     const heroIdle = 1 - clamp01((s - this.s('drone', 0.6)) * 4);
     st.drone[1] += Math.sin(time * 1.3) * 0.012 * heroIdle;
