@@ -63,9 +63,12 @@ function keys() {
     ['launch', 0.84, { heroZ: 0, fade: 0, speed: 1.2 }],
     ['launch', 1, { heroZ: -48, fade: 1, speed: 1.4, fov: 66 }],
     ['work', 0, { fade: 1, speed: 0, road: 0, heroZ: 0, shake: 0, roll: 0, aberration: 0, fov: 38 }],
-    ['about', 0.85, { fade: 1, cam: [HERO_X + 3.2, 1.1, GZ + 4.6], look: [HERO_X, 1.0, GZ], drone: [HERO_X + 0.3, 2.0, GZ], explode: 0, spin: 0.7, heroYaw: 5.4, turntable: 1, strip: 1, stripX: HERO_X, veil: 0.4, fog: 0.05, light: 45, lightDist: 2.8, lightLift: 0.8 }],
+    // hold the garage still through the launch and the calm sections, so nothing drifts off-screen
+    ['launch', 1, { heroYaw: 3 * Math.PI, turntable: 0, strip: 0, stripX: HERO_X, carExplode: 0 }],
+    ['about', 0.8, { heroYaw: 3 * Math.PI, turntable: 0, strip: 0, stripX: HERO_X, carExplode: 0 }],
+    ['about', 0.85, { fade: 1, cam: [HERO_X + 4.0, 1.25, GZ + 5.2], look: [HERO_X + 0.4, 0.95, GZ], drone: [HERO_X + 1.3, 1.5, GZ + 0.9], explode: 0, spin: 0.7, heroYaw: 5.4, turntable: 1, strip: 1, stripX: HERO_X, veil: 0.4, fog: 0.05, light: 45, lightDist: 2.8, lightLift: 0.8 }],
     ['contact', 0.15, { fade: 0 }],
-    ['contact', 1, { cam: [HERO_X + 5.6, 2.3, GZ + 6.4], look: [HERO_X, 1.1, GZ], heroYaw: 6.6, droneYaw: 0.8 }],
+    ['contact', 1, { cam: [HERO_X + 4.8, 1.7, GZ + 6.0], look: [HERO_X + 0.4, 1.0, GZ], heroYaw: 6.2, droneYaw: 0.8 }],
   );
   return k;
 }

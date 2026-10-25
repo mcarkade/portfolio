@@ -258,6 +258,7 @@ function domFrame(st, y, dt) {
   // callouts on the exploded drone
   if (callouts) {
     const show = st.explode > 0.8 && st.droneVisible && st.chapter === 1;
+    calloutRoot.style.visibility = st.chapter === 1 ? 'visible' : 'hidden';
     for (const c of callouts) {
       if (!show) { c.el.classList.remove('is-on'); continue; }
       c.a.obj.localToWorld(tmpV.copy(c.a.local));
@@ -367,12 +368,6 @@ addEventListener('resize', () => {
   clearTimeout(resizeT);
   resizeT = setTimeout(() => { director?.measure(); lenis?.resize(); }, 150);
 });
-
-// Credits from the media manifest
-fetch('/media/manifest.json').then((r) => r.json()).then((m) => {
-  const list = (m.credits || []).map((c) => (typeof c === 'string' ? c : `${c.title || c.model || c.name} by ${c.author} (${c.licence || c.license})`));
-  if (list.length) $('#credits').textContent = `Car models: ${list.join('; ')}. Used under their Creative Commons licences.`;
-}).catch(() => {});
 
 boot().catch((e) => {
   console.error(e);
