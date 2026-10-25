@@ -346,6 +346,8 @@ function startLoop() {
       const st = director.update(y, now / 1000);
       const asm = assembleAt(now);
       if (asm > 0) { st.explode = Math.max(st.explode, asm); st.droneYaw += asm * 1.4; }
+      // fast scrolling smears the colour channels a little
+      if (lenis) st.aberration += Math.min(0.0035, Math.abs(lenis.velocity) * 0.00006);
       if (reducedMotion) { st.shake = 0; st.aberration = 0; st.roll = 0; }
       if (st.fade < 0.999) { world.render(st); world.blank = false; }
       else {
