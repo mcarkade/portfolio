@@ -374,6 +374,10 @@ function domFrame(st, y, dt) {
   cursor.update(dt);
   preview.update(dt);
   lock.update(dt);
+  // the 3D turret aims along the reticle's line of sight, out to the drone's depth
+  const turretOn = st.chapter === 3 && st.droneVisible && st.morph < 0.02;
+  if (turretOn) world.drone.group.getWorldPosition(tmpV);
+  world.turret.update(dt, turretOn, (lock.x / innerWidth) * 2 - 1, -(lock.y / innerHeight) * 2 + 1, turretOn ? world.camera.position.distanceTo(tmpV) : 0, lock.locked);
 }
 
 function setText(el, v) { if (el.textContent !== v) el.textContent = v; }

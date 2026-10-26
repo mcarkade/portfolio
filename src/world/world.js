@@ -12,6 +12,7 @@ import { Garage, GARAGE_Z, HERO_X } from './garage.js';
 import { Morph } from './morph.js';
 import { Fluid } from './fluid.js';
 import { LaunchFX, GATE_GAP } from './launch.js';
+import { Turret } from './turret.js';
 
 const FinalShader = {
   uniforms: {
@@ -136,6 +137,7 @@ export class World {
     scene.add(this.garage.group);
     this.morph = new Morph(this);
     this.launch = new LaunchFX(this);
+    this.turret = new Turret(this);
     if (quality === 'high') this._showroomFloor();
 
     // Post-processing
