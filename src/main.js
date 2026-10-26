@@ -26,7 +26,7 @@ const hasGL = webglOK();
 
 const INTRO_IMAGES = [
   'intro/drone', 'mr-tunnel', 'portrait', 'intro/rb19', 'theta-shell', 'mr-suzuka', 'intro/explode', 'mr-forest-night',
-  'mesh-electronics', 'intro/mp45', 'cd-key-1', 'theta-cart', 'intro/w11', 'mr-forest-dash', 'mesh-arena', 'intro/lift',
+  'mesh-electronics', 'intro/mp45', 'reaper', 'theta-cart', 'intro/w11', 'mr-forest-dash', 'mesh-arena', 'intro/lift',
   'theta-hub', 'intro/p911', 'mesh-plate', 'intro/f40',
 ].map((n) => `/media/${n}.webp`);
 if (new URLSearchParams(location.search).has('clean')) document.documentElement.classList.add('clean');

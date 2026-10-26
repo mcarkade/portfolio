@@ -41,14 +41,16 @@
 
   <!-- Loader -->
   <div id="loader" role="dialog" aria-modal="true" aria-labelledby="loader-title">
-    <div class="loader__inner">
-      <p class="loader__count" aria-live="polite"><span id="load-num">000</span></p>
-      <div class="loader__bar"><span id="load-bar"></span></div>
-      <p id="loader-title" class="loader__title">mcarkade</p>
-      <div class="loader__enter" hidden>
-        <button class="btn btn--solid" data-enter="sound">Enter with sound</button>
-        <button class="btn btn--ghost" data-enter="silent">Enter in silence</button>
-      </div>
+    <p class="loader__name">Abhinav Pullela</p>
+    <p class="loader__count" data-n="0" aria-hidden="true"></p>
+    <p id="loader-title" class="loader__title">
+      <span class="loader__sr">mcarkade</span>
+      <span class="loader__word" aria-hidden="true"><span>MCAR</span><span>KADE</span></span>
+    </p>
+    <div class="loader__bar loader__sr" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="load-bar"></span><span id="load-num">000</span></div>
+    <div class="loader__enter" hidden>
+      <button class="loader__go" type="button" data-enter="sound" aria-label="Enter with sound"><span class="loader__eq" aria-hidden="true"><i></i><i></i><i></i></span>Enter</button>
+      <button class="loader__quiet" type="button" data-enter="silent" aria-label="Enter without sound">Without sound</button>
       <p class="loader__hint">Headphones recommended</p>
     </div>
   </div>

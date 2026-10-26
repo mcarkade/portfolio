@@ -1,12 +1,25 @@
 // Studio-style title sequence: project images flip through giant letters at an
 // accelerating rate while the camera pulls back, then the word slams into a red block.
+// The block keeps the proportions of the nav mark and docks into it, so the hand-off
+// to the site is the same pixels, not a cross-fade.
 const WORD = 'MCARKADE';
 const RED = '#e3262f';
 const BONE = '#ede9e3';
 
+// Same box as `.mark span`: padding .18em .28em .14em, line-height 1, letter-spacing -.005em.
+const PAD_X = 0.28, PAD_TOP = 0.18, PAD_BOTTOM = 0.14, SPACING = -0.005;
+
+// Seconds after the hit.
+const SWEEP_AT = 0.14, SWEEP_LEN = 1.0;
+const SETTLE = 1.4;
+const DOCK_AT = 1.55, DOCK_LEN = 0.8;
+
 const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const easeInOutQuart = (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2);
+const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
 const clamp01 = (t) => Math.max(0, Math.min(1, t));
+const lerp = (a, b, k) => a + (b - a) * k;
 
 // Each image gets its own deadline, so one slow file never holds up the title sequence.
 export function loadImages(srcs, timeout = 8000) {
@@ -29,7 +42,8 @@ export class Intro {
     this.octx = this.off.getContext('2d');
     this.images = images;
     this.hit = hit;
-    this.duration = duration;
+    // the sequence always runs through the dock, however short the audio is
+    this.end = Math.max(duration, hit + DOCK_AT + DOCK_LEN);
     this.flips = this._flipSchedule();
     this._resize = this._resize.bind(this);
     window.addEventListener('resize', this._resize);
@@ -49,10 +63,12 @@ export class Intro {
   }
 
   _resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = window.innerWidth, h = window.innerHeight;
+    // phones get up to 3x so the final lockup is as sharp as the screen allows
+    const dpr = Math.min(window.devicePixelRatio || 1, w * h < 600000 ? 3 : 2);
     for (const c of [this.canvas, this.off]) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
     this.w = w; this.h = h; this.dpr = dpr;
+    this.dock = null;
     this._layoutType();
   }
 
@@ -63,22 +79,42 @@ export class Intro {
   _setFont(ctx, size) {
     ctx.font = this._font(size);
     if ('fontStretch' in ctx) ctx.fontStretch = 'extra-condensed';
-    ctx.textAlign = 'center';
+    if ('letterSpacing' in ctx) ctx.letterSpacing = `${SPACING * size}px`;
+    if ('textRendering' in ctx) ctx.textRendering = 'geometricPrecision';
+    ctx.imageSmoothingQuality = 'high';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
   }
 
+  // Word width and font metrics per em, so the lockup box can be built at any size.
   _layoutType() {
     const ctx = this.ctx;
     const base = 200;
     this._setFont(ctx, base);
     const m = ctx.measureText(WORD);
-    const target = Math.min(this.w * 0.84, this.h * 1.9);
-    this.size = (base * target) / m.width;
+    this.wEm = m.width / base;
+    this.fa = (m.fontBoundingBoxAscent || base * 0.878) / base;
+    this.fd = (m.fontBoundingBoxDescent || base * 0.21) / base;
+    const boxEm = this.wEm + PAD_X * 2;
+    this.size = Math.min(this.w * 0.84, this.h * 2.1) / boxEm;
     this._setFont(ctx, this.size);
-    const mm = ctx.measureText(WORD);
-    this.textW = mm.width;
-    this.asc = mm.actualBoundingBoxAscent || this.size * 0.72;
-    this.desc = mm.actualBoundingBoxDescent || 0;
+  }
+
+  // The red block and the word's origin for a lockup of font size S centred on (cx, cy).
+  _lockup(S, cx, cy, snap) {
+    const q = snap ? (v) => Math.round(v * this.dpr) / this.dpr : (v) => v;
+    const w = (this.wEm + PAD_X * 2) * S, h = (1 + PAD_TOP + PAD_BOTTOM) * S;
+    const x = q(cx - w / 2), y = q(cy - h / 2);
+    const base = q(y + (PAD_TOP + (1 - this.fa - this.fd) / 2 + this.fa) * S);
+    return { x, y, w: q(cx + w / 2) - x, h: q(cy + h / 2) - y, tx: x + PAD_X * S, base, S };
+  }
+
+  // Where the nav mark sits, so the lockup can land exactly on it.
+  _measureDock() {
+    const el = document.querySelector('.mark span');
+    const r = el && el.getBoundingClientRect();
+    if (!r || !r.width) return null;
+    return { S: r.width / (this.wEm + PAD_X * 2), cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
   }
 
   _imageAt(t) {
@@ -131,31 +167,61 @@ export class Intro {
   _camera(t) {
     const u = clamp01(t / this.hit);
     const pull = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
-    const scale = 5.2 - 4.2 * pull + (t > this.hit ? -0.035 * easeOutExpo(clamp01((t - this.hit) / 1.4)) : 0);
+    const scale = 5.2 - 4.2 * pull;
     const rot = (1 - pull) * -0.08;
-    const pan = (1 - pull) * this.textW * 0.28;
+    const pan = (1 - pull) * this.size * this.wEm * 0.28;
     return { scale, rot, pan };
+  }
+
+  // A raking glint: a soft shoulder and a thin hot core, added to the light already in the block.
+  _sweep(ctx, r, p) {
+    const dx = 0.92, dy = 0.39; // gradient direction, so the band leans like a "/"
+    const reach = r.w + r.h * 0.5;
+    const pos = r.x - r.h * 0.25 + reach * easeInOutSine(p);
+    const my = r.y + r.h / 2;
+    const band = (half, stops) => {
+      const g = ctx.createLinearGradient(pos - dx * half, my - dy * half, pos + dx * half, my + dy * half);
+      for (const [o, c] of stops) g.addColorStop(o, c);
+      return g;
+    };
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.x, r.y, r.w, r.h);
+    ctx.clip();
+    ctx.globalCompositeOperation = 'lighter';
+    // three nested bands (shoulder, body, core) with smooth falloff, so the glint has depth instead of one hard line
+    const layers = [
+      [0.17, 0.2, '255,120,100'],
+      [0.05, 0.3, '255,170,150'],
+      [0.012, 0.5, '255,244,238'],
+    ];
+    for (const [half, peak, rgb] of layers) {
+      ctx.fillStyle = band(r.w * half, [
+        [0, `rgba(${rgb},0)`], [0.25, `rgba(${rgb},${peak * 0.18})`], [0.4, `rgba(${rgb},${peak * 0.6})`],
+        [0.5, `rgba(${rgb},${peak})`], [0.6, `rgba(${rgb},${peak * 0.6})`], [0.75, `rgba(${rgb},${peak * 0.18})`], [1, `rgba(${rgb},0)`],
+      ]);
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+    }
+    ctx.restore();
   }
 
   frame(t) {
     const { ctx, octx, w, h, dpr } = this;
-    const cx = w / 2, cy = h / 2 + (this.asc - this.desc) / 2;
-    const cam = this._camera(t);
     const after = t >= this.hit;
-    const shake = after ? Math.max(0, 1 - (t - this.hit) / 0.35) : 0;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, w, h);
 
-    const applyCam = (c) => {
-      c.translate(w / 2 + (Math.random() - 0.5) * 14 * shake, h / 2 + (Math.random() - 0.5) * 10 * shake);
-      c.rotate(cam.rot);
-      c.scale(cam.scale, cam.scale);
-      c.translate(-w / 2 + cam.pan, -h / 2);
-    };
-
     if (!after) {
+      const cam = this._camera(t);
+      const L = this._lockup(this.size, w / 2, h / 2, false);
+      const applyCam = (c) => {
+        c.translate(w / 2, h / 2);
+        c.rotate(cam.rot);
+        c.scale(cam.scale, cam.scale);
+        c.translate(-w / 2 + cam.pan, -h / 2);
+      };
       // Full-frame flipping, dimmed, fading out as the word resolves
       const bgA = 0.55 * (1 - clamp01((t - 2.2) / 1.6));
       if (bgA > 0.01) {
@@ -185,7 +251,7 @@ export class Intro {
       applyCam(octx);
       this._setFont(octx, this.size);
       octx.fillStyle = '#fff';
-      octx.fillText(WORD, cx, cy);
+      octx.fillText(WORD, L.tx, L.base);
       octx.restore();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(this.off, 0, 0);
@@ -196,41 +262,43 @@ export class Intro {
       this._setFont(ctx, this.size);
       ctx.lineWidth = 1.2 / cam.scale;
       ctx.strokeStyle = `rgba(237,233,227,${0.25 + 0.4 * clamp01(t / this.hit)})`;
-      ctx.strokeText(WORD, cx, cy);
+      ctx.strokeText(WORD, L.tx, L.base);
       ctx.restore();
-    } else {
-      // The logo: a red block with bone-white letters, a light sweep, then a slow settle
-      const a = t - this.hit;
-      ctx.save();
-      applyCam(ctx);
-      const padX = this.size * 0.09, padY = this.size * 0.1;
-      const bx = cx - this.textW / 2 - padX, by = cy - this.asc - padY;
-      const bw = this.textW + padX * 2, bh = this.asc + this.desc + padY * 2;
-      ctx.fillStyle = RED;
-      ctx.fillRect(bx, by, bw, bh);
-      this._setFont(ctx, this.size);
-      ctx.fillStyle = BONE;
-      ctx.fillText(WORD, cx, cy);
-      // light sweep across the face
-      const sweep = clamp01((a - 0.12) / 1.1);
-      if (sweep > 0 && sweep < 1) {
-        const sx = bx - bw * 0.4 + sweep * bw * 1.8;
-        const g = ctx.createLinearGradient(sx - bw * 0.18, by, sx + bw * 0.18, by + bh);
-        g.addColorStop(0, 'rgba(255,255,255,0)');
-        g.addColorStop(0.5, 'rgba(255,255,255,0.55)');
-        g.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.globalCompositeOperation = 'source-atop';
-        ctx.fillStyle = g;
-        ctx.fillRect(bx, by, bw, bh);
+      return;
+    }
+
+    // The logo: a red block with bone-white letters, a glint, a slow settle, then it docks into the nav mark.
+    const a = t - this.hit;
+    if (!this._hit) { this._hit = true; this.root.classList.add('is-hit'); }
+    const shake = Math.max(0, 1 - a / 0.35);
+    const settled = a >= SETTLE;
+    let S = this.size * (1 - 0.035 * easeOutExpo(clamp01(a / SETTLE)));
+    let cx = w / 2 + (Math.random() - 0.5) * 14 * shake;
+    let cy = h / 2 + (Math.random() - 0.5) * 10 * shake;
+    const du = clamp01((a - DOCK_AT) / DOCK_LEN);
+    if (du > 0) {
+      this.dock ||= this._measureDock();
+      if (this.dock) {
+        const e = easeInOutQuart(du);
+        S = this.size * 0.965 * Math.pow(this.dock.S / (this.size * 0.965), e);
+        cx = lerp(w / 2, this.dock.cx, e);
+        cy = lerp(h / 2, this.dock.cy, e);
       }
-      ctx.restore();
-      // white flash on impact
-      const flash = Math.max(0, 1 - a / 0.22);
-      if (flash > 0) {
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.fillStyle = `rgba(255,255,255,${flash * 0.55})`;
-        ctx.fillRect(0, 0, w, h);
-      }
+    }
+    // at rest and on arrival the box sits on whole device pixels, like the DOM mark it hands over to
+    const L = this._lockup(S, cx, cy, settled && (du === 0 || du === 1));
+    ctx.fillStyle = RED;
+    ctx.fillRect(L.x, L.y, L.w, L.h);
+    this._setFont(ctx, S);
+    ctx.fillStyle = BONE;
+    ctx.fillText(WORD, L.tx, L.base);
+    const sweep = (a - SWEEP_AT) / SWEEP_LEN;
+    if (sweep > 0 && sweep < 1) this._sweep(ctx, L, sweep);
+    // white flash on impact
+    const flash = Math.max(0, 1 - a / 0.22);
+    if (flash > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${flash * 0.55})`;
+      ctx.fillRect(0, 0, w, h);
     }
   }
 
@@ -240,7 +308,13 @@ export class Intro {
     return new Promise((resolve) => {
       const tick = () => {
         const t = clock();
-        if (this._skip || t >= this.duration) {
+        if (this._skip) {
+          this.stop();
+          resolve();
+          return;
+        }
+        if (t >= this.end) {
+          this.frame(this.end);
           this.stop();
           resolve();
           return;
@@ -258,4 +332,25 @@ export class Intro {
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this._resize);
   }
+}
+
+// Loader progress for CSS. main.js writes the percentage into #load-num; mirror it to --loader-p
+// (fills the wordmark), the counter and the progressbar, and reveal the loader once its fonts are in.
+const loadNum = document.getElementById('load-num');
+const loader = document.getElementById('loader');
+if (loadNum && loader) {
+  const count = loader.querySelector('.loader__count');
+  const bar = loader.querySelector('[role="progressbar"]');
+  const sync = () => {
+    const n = Math.min(100, parseInt(loadNum.textContent, 10) || 0);
+    loader.style.setProperty('--loader-p', n / 100);
+    if (count) count.dataset.n = n;
+    if (bar) bar.setAttribute('aria-valuenow', n);
+  };
+  new MutationObserver(sync).observe(loadNum, { childList: true, characterData: true, subtree: true });
+  sync();
+  const show = () => loader.classList.add('is-set');
+  const fonts = document.fonts?.load("900 1em 'Archivo Variable'", 'MCARKADE Abhinav Pullela Enter');
+  if (fonts) Promise.race([fonts, new Promise((r) => setTimeout(r, 1500))]).then(show, show);
+  else show();
 }
