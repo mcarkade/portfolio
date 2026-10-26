@@ -202,11 +202,3 @@ export function copyEmail() {
     btn._t = setTimeout(() => { toast.textContent = ''; }, 3200);
   });
 }
-
-export function clock() {
-  const el = document.getElementById('readout-clock');
-  const fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
-  const tick = () => { el.textContent = `HYD ${fmt.format(new Date())}`; };
-  tick();
-  setInterval(tick, 15000);
-}

@@ -154,7 +154,6 @@ main { position: relative; z-index: 2; }
 
 .readout--progress { flex: 1; height: 1px; background: var(--line); position: relative; max-width: 22rem; }
 .readout--progress span { position: absolute; inset: 0; background: var(--red); transform-origin: left; transform: scaleX(0); }
-#readout-clock { margin-left: auto; }
 
 /* ---------- Cursor ---------- */
 #cursor { position: fixed; left: 0; top: 0; z-index: 90; pointer-events: none; mix-blend-mode: difference; }
@@ -188,20 +187,12 @@ main { position: relative; z-index: 2; }
 .hero__title {
   margin: 0; font-size: clamp(3.2rem, min(10.4vw, 15.5vh), 12rem); font-weight: 800; font-stretch: 72%; line-height: .86; letter-spacing: -.02em; max-width: 6.6em; /* always breaks after "machines", clear of the drone */
 }
-.hero__sub { max-width: 30rem; margin: 1.6rem 0 0; color: var(--ash); }
 .hero__cue { position: absolute; right: var(--pad); top: calc(100svh - 15vh - 3rem); margin: 0; display: flex; align-items: center; gap: .8rem; font-size: .85rem; color: var(--ash); }
 .cue-line { width: 1px; height: 3rem; background: linear-gradient(var(--red), transparent); animation: cue 2.2s var(--ease) infinite; transform-origin: top; }
 @keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
 
 .drone { height: 380vh; }
 .drone__head { position: absolute; left: 0; top: 18vh; max-width: 40rem; }
-.drone__steps { position: absolute; left: 0; bottom: 14vh; width: min(25rem, 86vw); min-height: 6rem; }
-.step {
-  position: absolute; left: 0; bottom: 0; margin: 0; font-size: clamp(1.05rem, 1.25vw, 1.3rem); line-height: 1.4;
-  opacity: 0; transform: translateY(1rem); transition: opacity .8s var(--ease), transform .8s var(--ease);
-  padding-left: 1rem; border-left: 1px solid var(--red);
-}
-.step.is-on { opacity: 1; transform: none; }
 
 
 .vision { height: 220vh; }
@@ -274,7 +265,6 @@ main { position: relative; z-index: 2; }
   .work__item:hover div.work__link .work__name { transform: translateX(1.2rem); }
 }
 .work__thumb { display: none; }
-.step a { color: var(--bone); text-decoration-color: var(--red); text-underline-offset: 3px; white-space: nowrap; }
 .only-touch { display: none; }
 @media (hover: none), (pointer: coarse) {
   .only-fine { display: none; }
@@ -333,8 +323,7 @@ kbd { font-family: var(--mono); border: 1px solid var(--line); padding: 0 .35em;
   .hero__copy { padding-bottom: 18vh; }
   .hero__cue { left: var(--pad); right: auto; top: calc(100svh - 12vh); }
   .drone__head { top: 12vh; }
-  .drone__steps { bottom: 10vh; }
-  .garage__head { top: 11vh; }
+    .garage__head { top: 11vh; }
   .garage__logo { width: 3rem; height: 3rem; }
   .garage__plate { bottom: 22vh; }
   .garage__cta { bottom: 10vh; }
@@ -360,5 +349,4 @@ kbd { font-family: var(--mono); border: 1px solid var(--line); padding: 0 .35em;
 .no-webgl .hero__copy { z-index: 1; }
 .no-webgl .drone, .no-webgl .vision, .no-webgl .lock, .no-webgl .garage, .no-webgl .launch { height: auto; min-height: 100vh; }
 .no-webgl .sticky { position: relative; height: auto; min-height: 100vh; }
-.no-webgl .drone__head, .no-webgl .drone__steps, .no-webgl .garage__head, .no-webgl .garage__plate, .no-webgl .garage__cta, .no-webgl .launch__title, .no-webgl .vision__title, .no-webgl .lock__copy { position: relative; inset: auto; padding-top: 2rem; }
-.no-webgl .step { position: static; opacity: 1; transform: none; margin-bottom: 1rem; }
+.no-webgl .drone__head, .no-webgl .garage__head, .no-webgl .garage__plate, .no-webgl .garage__cta, .no-webgl .launch__title, .no-webgl .vision__title, .no-webgl .lock__copy { position: relative; inset: auto; padding-top: 2rem; }

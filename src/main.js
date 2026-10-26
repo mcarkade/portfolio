@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { Director } from './director.js';
 import { Intro, loadImages } from './intro.js';
 import { Audio } from './audio.js';
-import { splitWords, observeReveals, Cursor, magnetic, Preview, LockGame, copyEmail, clock, finePointer, reducedMotion } from './ui.js';
+import { splitWords, observeReveals, Cursor, magnetic, Preview, LockGame, copyEmail, finePointer, reducedMotion } from './ui.js';
 
 history.scrollRestoration = 'manual';
 window.scrollTo(0, 0);
@@ -244,12 +244,9 @@ const preview = new Preview();
 const lock = new LockGame(audio);
 magnetic();
 copyEmail();
-clock();
 
-const chapterEl = $('#readout-chapter');
 const progressEl = $('#readout-bar');
 const navLinks = [...document.querySelectorAll('.nav a')];
-const steps = [...document.querySelectorAll('.drone .step')];
 const visionSection = $('#vision');
 const visionState = $('#vision-state');
 const visionBox = $('#vision-box');
@@ -261,7 +258,6 @@ const speedEl = $('#speed');
 const portrait = $('.about__portrait img');
 const veil = $('.veil');
 const heroEl = $('#hero');
-const CHAPTER_NAMES = ['Hello', 'Drone', 'Vision', 'Lock', 'Multiroads', 'Launch', 'Work', 'About', 'Contact'];
 let maxScroll = 1;
 function measureDom() {
   maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
@@ -300,7 +296,6 @@ function domFrame(st, y, dt) {
   // chapter readout + nav
   if (st.chapter !== lastChapter) {
     lastChapter = st.chapter;
-    chapterEl.textContent = `${String(st.chapter + 1).padStart(2, '0')} ${CHAPTER_NAMES[st.chapter]}`;
     const id = director.ids[st.chapter];
     navLinks.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === `#${id}` || (id === 'launch' && a.getAttribute('href') === '#garage') || (id === 'vision' && a.getAttribute('href') === '#drone')));
     if (lenis && audio.enabled) audio.play('whoosh', 0.35);
@@ -310,11 +305,6 @@ function domFrame(st, y, dt) {
   body.classList.toggle('is-scrolled', st.chapter >= 6);
   if (st.chapter >= 1 && y > vh * 2) loadCars();
   progressEl.style.transform = `scaleX(${Math.min(1, y / maxScroll)})`;
-
-  // drone steps
-  const pd = director.pinned('drone', y);
-  const stepIdx = pd < 0.06 ? -1 : pd < 0.56 ? 0 : pd < 0.65 ? -1 : pd < 0.81 ? 1 : pd < 0.84 ? -1 : 2;
-  steps.forEach((s, i) => s.classList.toggle('is-on', i === stepIdx && pd < 0.995));
 
   // vision HUD
   const pv = director.pinned('vision', y);
@@ -422,8 +412,6 @@ function startLoop() {
       domFrame(st, y, dt);
     } else {
       const y = window.scrollY;
-      const i = [...document.querySelectorAll('.chapter')].filter((el) => el.offsetTop <= y + innerHeight * 0.4).length - 1;
-      setText(chapterEl, `${String(Math.max(0, i) + 1).padStart(2, '0')} ${CHAPTER_NAMES[Math.max(0, i)]}`);
       progressEl.style.transform = `scaleX(${Math.min(1, y / maxScroll)})`;
       cursor.update(dt);
       lock.update(dt);
