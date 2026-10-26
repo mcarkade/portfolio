@@ -49,14 +49,14 @@
     <div class="loader__bar loader__sr" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="load-bar"></span><span id="load-num">000</span></div>
     <div class="loader__enter" hidden>
       <button class="loader__go" type="button" data-enter="sound" aria-label="Enter with sound"><span class="loader__eq" aria-hidden="true"><i></i><i></i><i></i></span>Enter</button>
-      <button class="loader__quiet" type="button" data-enter="silent" aria-label="Enter without sound">Without sound</button>
+      <button class="loader__quiet" type="button" data-enter="silent" aria-label="Enter without sound">Silent</button>
           </div>
   </div>
 
   <!-- Marvel-style title sequence -->
   <div id="intro">
     <canvas id="intro-canvas" aria-hidden="true"></canvas>
-    <button class="intro__skip" type="button">Skip intro</button>
+    <button class="intro__skip" type="button" aria-label="Skip intro">Skip</button>
   </div>
 
   <!-- Persistent HUD -->
@@ -75,8 +75,18 @@
     </button>
   </header>
 
-  <div class="hud hud--bottom" aria-hidden="true">
-    <span class="readout readout--progress"><span id="readout-bar"></span></span>
+  <nav class="hud chapter-rail" aria-label="Chapters">
+    <span class="readout readout--progress" aria-hidden="true"><span id="readout-bar"></span></span>
+    <a href="#garage" aria-label="Multiroads"><span>Multiroads</span></a>
+    <a href="#drone" aria-label="Drone"><span>Drone</span></a>
+    <a href="#work" aria-label="Work"><span>Work</span></a>
+    <a href="#about" aria-label="About"><span>About</span></a>
+    <a href="#contact" aria-label="Contact"><span>Contact</span></a>
+  </nav>
+
+  <div class="hud tour" role="group" aria-label="Film tour">
+    <button class="tour__play" type="button" aria-label="Start tour" aria-pressed="false"><span class="tour__icon" aria-hidden="true"></span>Tour</button>
+    <button class="tour__speed" type="button" aria-label="Tour speed 1x">1x</button>
   </div>
 
   <div id="cursor" aria-hidden="true"><span class="cursor__ring"></span><span class="cursor__dot"></span><span class="cursor__label"></span></div>
@@ -105,7 +115,7 @@
           <p class="garage__car" id="car-name">McLaren MP4/5</p>
                   </div>
         <div class="garage__cta">
-          <a class="btn btn--solid magnetic" href="https://multiroads.vercel.app" target="_blank" rel="noopener">Play Multiroads</a>
+          <a class="btn btn--solid magnetic" href="https://multiroads.vercel.app" target="_blank" rel="noopener" aria-label="Play Multiroads">Play</a>
         </div>
       </div>
     </section>
@@ -156,7 +166,7 @@
         <li><a href="https://multiroads.vercel.app" target="_blank" rel="noopener" data-gallery="Multiroads" data-year="2026" data-image="mr-forest-poster.webp" data-video="mr-forest.mp4" data-cursor="Play">Multiroads, 2026. Play the game</a></li>
         <li><a href="#lock" data-gallery="Counter-drone turret" data-year="2026" data-image="turret-scene.webp" data-cursor="Track">Counter-drone turret, 2026. Try tracking</a></li>
         <li><a href="/media/theta-cart.webp" target="_blank" rel="noopener" data-gallery="ThetaShift" data-year="2026" data-image="theta-shell-dark.webp" data-alternate="theta-cart-dark.webp" data-cursor="Explore">ThetaShift, 2026. View robot detail</a></li>
-        <li><a href="/media/mesh-arena.webp" target="_blank" rel="noopener" data-gallery="Meshmerize" data-year="2026" data-image="mesh-electronics-dark.webp" data-cursor="Explore">Meshmerize, 2026. View arena</a></li>
+        <li><a href="/media/mesh-arena.webp" target="_blank" rel="noopener" data-gallery="Meshmerize" data-year="2026" data-image="mesh-electronics-dark.webp" data-alternate="mesh-arena.webp" data-cursor="Explore">Meshmerize</a></li>
         <li><a href="https://github.com/mcarkade/Reaper" target="_blank" rel="noopener" data-gallery="Reaper" data-year="2026" data-image="reaper.webp" data-alternate="reaper-top.webp" data-cursor="Source">Reaper, 2026. Open source on GitHub</a></li>
         <li><a href="/media/nxp-track.webp" target="_blank" rel="noopener" data-gallery="NXP Cup" data-year="Top 100" data-image="nxp-track.webp" data-cursor="View">NXP Cup, top 100 at the regional finale</a></li>
       </ul>
@@ -169,7 +179,6 @@
       </figure>
       <div class="about__copy">
         <h2 class="title split">Hi, I'm Abhinav.</h2>
-        <p class="about__lede">Physics at BITS Pilani, Hyderabad. I build things that fly, drive and race.</p>
               </div>
     </section>
 
@@ -177,7 +186,7 @@
     <section class="chapter contact" id="contact" tabindex="-1" data-chapter="Contact">
       <h2 class="contact__title split">Got something that should move?</h2>
       <div class="contact__links">
-        <button class="btn btn--solid magnetic" type="button" id="copy-email" data-email="f20251199@hyderabad.bits-pilani.ac.in">Copy my email</button>
+        <button class="btn btn--solid magnetic" type="button" id="copy-email" aria-label="Copy email" data-email="f20251199@hyderabad.bits-pilani.ac.in">Email</button>
         <a class="btn btn--ghost magnetic" href="https://github.com/mcarkade" target="_blank" rel="noopener">GitHub</a>
         <a class="btn btn--ghost magnetic" href="https://www.linkedin.com/in/abhinav-pullela-486670395" target="_blank" rel="noopener">LinkedIn</a>
       </div>

@@ -5,6 +5,9 @@ import { Director } from './director.js';
 import { Intro, loadImages } from './intro.js';
 import { Audio } from './audio.js';
 import { splitWords, observeReveals, Cursor, magnetic, LockGame, copyEmail, finePointer, reducedMotion } from './ui.js';
+import { initViewer } from './viewer.js';
+import { initTour, initChapterRail } from './tour.js';
+import { initTouchPilot } from './touch-pilot.js';
 
 history.scrollRestoration = 'manual';
 window.scrollTo(0, 0);
@@ -180,6 +183,7 @@ function begin() {
     lenis.on('scroll', () => {});
   }
   observeReveals();
+  initChapterRail();
   // Back and Forward move between sections visited through the menu
   addEventListener('popstate', () => {
     const el = location.hash ? document.getElementById(location.hash.slice(1)) : null;
@@ -240,22 +244,34 @@ setInert(true);
 const menuBtn = $('.menu-btn');
 const menu = $('#menu');
 // while the menu is open, the page behind it can't take focus
-function menuInert(on) { document.querySelectorAll('main, footer').forEach((el) => { el.inert = on; }); }
-function closeMenu() { menu.classList.remove('is-open'); menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.textContent = 'Menu'; menuInert(false); }
+function menuInert(on) { document.querySelectorAll('main, footer, .tour, .chapter-rail, .gallery-labels').forEach((el) => { el.inert = on; }); }
+function closeMenu() { menu.classList.remove('is-open'); menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.textContent = 'Menu'; menuInert(false); if (!body.matches('.is-loading, .is-intro, .viewer-open')) lenis?.start(); }
 menuBtn.addEventListener('click', () => {
   const open = !menu.classList.contains('is-open');
   menu.classList.toggle('is-open', open);
   menuInert(open);
   menuBtn.setAttribute('aria-expanded', String(open));
   menuBtn.textContent = open ? 'Close' : 'Menu';
-  if (open) menu.querySelector('a').focus();
+  if (open) { lenis?.stop(); menu.querySelector('a').focus(); }
+  else lenis?.start();
 });
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && menu.classList.contains('is-open')) { closeMenu(); menuBtn.focus(); } });
+menu.addEventListener('click', e => { if (e.target === menu) { closeMenu(); menuBtn.focus(); } });
+$('.hud--top').addEventListener('keydown', e => {
+  if (e.key !== 'Tab' || !menu.classList.contains('is-open')) return;
+  const first = $('.mark'), last = soundBtn;
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 soundBtn.addEventListener('click', () => setSound(!audio.enabled));
 // a keyboard user tabbing into the header brings it back into view
 $('.hud--top').addEventListener('focusin', () => body.classList.remove('hud-away'));
+matchMedia('(max-width: 860px)').addEventListener('change', () => { if (menu.classList.contains('is-open')) closeMenu(); });
+const tour = initTour({ getLenis: () => lenis });
+initViewer({ getLenis: () => lenis, onOpen: () => { tour.stop(); closeMenu(); } });
 
 addEventListener('keydown', (e) => {
+  if (body.classList.contains('viewer-open')) return;
   if (e.target.closest('input, textarea')) return;
   if (e.key === 'l' || e.key === 'L') { if (world) world.lightsTarget = world.lightsTarget ? 0 : 1; }
   if (e.key === 'm' || e.key === 'M') setSound(!audio.enabled);
@@ -263,8 +279,13 @@ addEventListener('keydown', (e) => {
 
 // ---------- Pointer ----------
 addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'touch' || body.classList.contains('viewer-open')) return;
   world?.setMouse((e.clientX / innerWidth) * 2 - 1, -((e.clientY / innerHeight) * 2 - 1));
 }, { passive: true });
+const touchPilot = initTouchPilot({
+  isActive: () => !!world && !body.matches('.is-loading, .is-intro, .viewer-open') && director?.ids[director.state.chapter] === 'lock',
+  setMouse: (x, y) => world?.setMouse(x, y),
+});
 
 // ---------- Per-frame DOM ----------
 const cursor = new Cursor(audio);
@@ -326,9 +347,11 @@ function domFrame(st, y, dt) {
   body.classList.toggle('is-scrolled', st.chapter >= 6);
   // the header gets out of the way on the way down and comes back on the way up
   const dy = y - lastY;
-  lastY = y;
-  if (Math.abs(dy) > 2) body.classList.toggle('hud-away', dy > 0 && y > vh * 0.8 && !menu.classList.contains('is-open') && !document.querySelector('.hud--top:focus-within'));
-  progressEl.style.transform = `scaleX(${Math.min(1, y / maxScroll)})`;
+  if (Math.abs(dy) > 12 || y < 20) {
+    lastY = y;
+    body.classList.toggle('hud-away', dy > 0 && y > vh * 0.8 && !menu.classList.contains('is-open') && !document.querySelector('.hud--top:focus-within'));
+  }
+  progressEl.style.setProperty('--progress', Math.min(1, y / maxScroll));
 
   // vision HUD
   const pv = director.pinned('vision', y);
@@ -374,7 +397,7 @@ function domFrame(st, y, dt) {
     if (r.bottom > 0 && r.top < vh) portrait.style.transform = `translateY(${((r.top + r.height / 2 - vh / 2) / vh) * -8}%)`;
   }
 
-  // the turret always chases the 3D drone (flown by the cursor on desktop, by itself on touch)
+  // The turret chases the drone's projected position.
   if (at === 'lock' && st.droneVisible) {
     world.drone.group.getWorldPosition(tmpV);
     const p = world.project(tmpV, P);
@@ -392,10 +415,10 @@ function domFrame(st, y, dt) {
 function setText(el, v) { if (el.textContent !== v) el.textContent = v; }
 
 // ---------- Main loop ----------
-// Lock chapter on desktop: the cursor flies the drone, with inertia and banking.
+// The cursor or a horizontal touch drag flies the drone, with inertia and banking.
 const pilot = { w: 0, x: 0, y: 0 };
 function flyDrone(st, dt) {
-  const on = finePointer && !reducedMotion && director.ids[st.chapter] === 'lock';
+  const on = (finePointer || touchPilot.active) && !reducedMotion && !body.classList.contains('viewer-open') && director.ids[st.chapter] === 'lock';
   pilot.w += ((on ? 1 : 0) - pilot.w) * (1 - Math.exp(-dt * 2.5));
   if (pilot.w < 0.001) return;
   const k = 1 - Math.exp(-dt * 2.4);
@@ -453,7 +476,7 @@ function startLoop() {
       domFrame(st, y, dt);
     } else {
       const y = window.scrollY;
-      progressEl.style.transform = `scaleX(${Math.min(1, y / maxScroll)})`;
+      progressEl.style.setProperty('--progress', Math.min(1, y / maxScroll));
       cursor.update(dt);
       lock.update(dt);
     }
