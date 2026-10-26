@@ -178,6 +178,8 @@ main { position: relative; z-index: 2; }
 .hud { position: fixed; left: 0; right: 0; z-index: 50; display: flex; align-items: center; padding: var(--pad); pointer-events: none; }
 .hud > * { pointer-events: auto; }
 .hud--top { top: 0; justify-content: space-between; gap: 2rem; }
+.hud.hud--top { transition: opacity 1s var(--ease), transform .7s var(--ease); }
+.hud-away .hud--top { transform: translateY(-110%); }
 .hud--top::before { content: ''; position: absolute; inset: 0 0 -2rem; z-index: -1; pointer-events: none; background: linear-gradient(rgba(0,0,0,.7), transparent); opacity: 0; transition: opacity .6s var(--ease); }
 .is-scrolled .hud--top::before { opacity: 1; }
 .hud--bottom::before { content: ''; position: absolute; inset: -2rem 0 0; z-index: -1; pointer-events: none; background: linear-gradient(transparent, rgba(0,0,0,.75)); opacity: 0; transition: opacity .6s var(--ease); }

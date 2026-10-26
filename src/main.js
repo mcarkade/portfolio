@@ -286,6 +286,7 @@ const VISION_STATES = [
 ];
 let lastChapter = -1;
 let lastCar = null;
+let lastY = 0;
 let lastVision = '';
 
 function domFrame(st, y, dt) {
@@ -304,6 +305,10 @@ function domFrame(st, y, dt) {
     document.querySelectorAll(`#${id} .sticky .split`).forEach((el) => el.classList.add('is-in'));
   }
   body.classList.toggle('is-scrolled', st.chapter >= 6);
+  // the header gets out of the way on the way down and comes back on the way up
+  const dy = y - lastY;
+  lastY = y;
+  if (Math.abs(dy) > 2) body.classList.toggle('hud-away', dy > 0 && y > vh * 0.8 && !menu.classList.contains('is-open') && !document.querySelector('.hud--top:focus-within'));
   if (st.chapter >= 1 && y > vh * 2) loadCars();
   progressEl.style.transform = `scaleX(${Math.min(1, y / maxScroll)})`;
 
