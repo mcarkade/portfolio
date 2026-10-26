@@ -9,11 +9,9 @@ import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUnifo
 import { Drone } from './drone.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { Garage, GARAGE_Z, HERO_X } from './garage.js';
-import { Morph } from './morph.js';
 import { LaunchFX, GATE_GAP } from './launch.js';
 import { Turret } from './turret.js';
 import { Atmosphere, atmosphereNoise, atmosphereColor, atmosphereVolume } from './atmosphere.js';
-import { HeroType } from './hero-type.js';
 import { Gallery } from './gallery.js';
 
 const FinalShader = {
@@ -223,11 +221,9 @@ export class World {
       o.geometry.computeBoundingSphere();
       o.castShadow = o.geometry.boundingSphere.radius > 0.035;
     });
-    this.heroType = new HeroType(scene, renderer);
 
     this.garage = new Garage(this);
     scene.add(this.garage.group);
-    this.morph = new Morph(this);
     this.launch = new LaunchFX(this);
     this.turret = new Turret(this);
     if (quality === 'high') this._showroomFloor();
@@ -583,7 +579,6 @@ export class World {
     this.camera.updateProjectionMatrix();
     this.dust.material.uniforms.uPx.value = dpr * (h / 900);
     this.final.uniforms.uResolution.value.set(w * dpr, h * dpr);
-    this.heroType.resize();
     this.aspect = w / h;
     this.gallery?.resize();
   }
@@ -658,7 +653,6 @@ export class World {
     this.spot.angle = state.lightAngle;
     this.spot.color.setRGB(1, 1 - state.warmth * .18, 1 - state.warmth * .38);
     this.atmosphere.update(state, t, m, this.spot, this.aspect);
-    this.heroType.update(state, cam, m, t);
     this.kick.position.set(f.x + 1.4, f.y - 0.6, f.z + 1.0);
     this.kick.intensity = state.kick;
     this.rim.intensity = state.rim;
@@ -692,7 +686,6 @@ export class World {
 
     // Garage + launch
     this.garage.update(dt, state);
-    this.morph.update(state.morph, t, state);
     if (this.reflector) {
       const r = state.garage && state.road < 0.5 ? 0.32 * (1 - state.road * 2) : 0;
       this.reflector.visible = r > 0.001;

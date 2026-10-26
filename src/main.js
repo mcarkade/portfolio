@@ -67,8 +67,6 @@ async function boot() {
       const { World } = await import('./world/world.js');
       world = new World($('#gl'), { quality });
       await withTimeout(document.fonts.ready, 4000);
-      world.heroType.resize();
-      body.classList.add('has-scene-type');
       director = new Director();
       world.director = director;
       document.fonts.ready.then(() => world?.gallery.resize());
@@ -80,13 +78,12 @@ async function boot() {
       // Exercise the gallery's real vertex buffers and composer draw behind the loader.
       world.render(director.update(director.tops[6], 0));
       world.render(director.update(0, 0));
-      // phones fetch the cars (about 15 MB) once the visitor heads past the drone
-      if (quality === 'high') { loadCars(); track(withTimeout(carsP, 6000)); }
+      // the film opens on the cars, so they load behind the loader on every device
+      loadCars(); track(withTimeout(carsP, 6000));
       window.__mc = { world, director };
     } catch (e) {
       console.warn('3D disabled', e);
       world = null; director = null;
-      body.classList.remove('has-scene-type');
     }
   }
   if (!world) body.classList.add('no-webgl');
@@ -164,24 +161,12 @@ async function replayIntro() {
   setInert(false);
   audio.duckLoop(false);
   lenis?.start();
-  assembleStart = performance.now() - 250;
   $('#hero').focus({ preventScroll: true });
   replaying = false;
   return true;
 }
 
-// The drone flies together out of its parts as the title sequence clears.
-let assembleStart = -1;
-const ASSEMBLE = 2.6;
-function assembleAt(now) {
-  if (reducedMotion) return 0;
-  if (assembleStart < 0) return 1;
-  const u = Math.min(1, (now - assembleStart) / (ASSEMBLE * 1000));
-  return 1 - (1 - Math.pow(1 - u, 3));
-}
-
 function begin() {
-  assembleStart = performance.now() - 250;
   body.classList.remove('is-loading', 'is-intro');
   setInert(false);
   $('#loader').setAttribute('aria-hidden', 'true');
@@ -297,7 +282,6 @@ const launchTitle = $('.launch__title');
 const portrait = $('.about__portrait img');
 const veil = $('.veil');
 const heroEl = $('#hero');
-const garageEl = $('#garage');
 let maxScroll = 1;
 function measureDom() {
   maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
@@ -344,12 +328,12 @@ function domFrame(st, y, dt) {
   const dy = y - lastY;
   lastY = y;
   if (Math.abs(dy) > 2) body.classList.toggle('hud-away', dy > 0 && y > vh * 0.8 && !menu.classList.contains('is-open') && !document.querySelector('.hud--top:focus-within'));
-  if ((st.chapter >= 1 && st.chapter <= 5 && y > vh * 2) || st.chapter >= 7) loadCars();
   progressEl.style.transform = `scaleX(${Math.min(1, y / maxScroll)})`;
 
   // vision HUD
   const pv = director.pinned('vision', y);
-  const inVision = st.chapter === 2;
+  const at = director.ids[st.chapter];
+  const inVision = at === 'vision';
   visionSection.classList.toggle('is-active', inVision && pv > 0.02 && pv < 0.99);
   visionSection.classList.toggle('is-pov', st.thermal > 0.5);
   if (inVision) {
@@ -367,11 +351,8 @@ function domFrame(st, y, dt) {
     }
   }
 
-  // the plate and the play button wait until the swarm has become the car
-  garageEl.classList.toggle('is-formed', st.morph > 0.95);
-
   // garage name plate
-  if (st.chapter === 4 || st.chapter === 5) {
+  if (at === 'garage' || at === 'launch') {
     const car = director.carAt(y);
     if (car !== lastCar) {
       lastCar = car;
@@ -381,7 +362,7 @@ function domFrame(st, y, dt) {
   }
 
   // launch
-  if (st.chapter === 5 || st.chapter === 4) {
+  if (at === 'garage' || at === 'launch') {
     setText(speedEl, String(Math.round(Math.min(1.4, st.speed) * 245)));
     // the line has been said by the time the car is flat out; let the light gates have the frame
     launchTitle.style.opacity = (1 - Math.min(1, Math.max(0, (st.speed - 0.45) / 0.35))).toFixed(3);
@@ -394,7 +375,7 @@ function domFrame(st, y, dt) {
   }
 
   // the turret always chases the 3D drone (flown by the cursor on desktop, by itself on touch)
-  if (st.chapter === 3 && st.droneVisible) {
+  if (at === 'lock' && st.droneVisible) {
     world.drone.group.getWorldPosition(tmpV);
     const p = world.project(tmpV, P);
     if (p) lock.setTarget(p.x, p.y);
@@ -403,7 +384,7 @@ function domFrame(st, y, dt) {
   cursor.update(dt);
   lock.update(dt);
   // the 3D turret aims along the reticle's line of sight, out to the drone's depth
-  const turretOn = st.chapter === 3 && st.droneVisible && st.morph < 0.02;
+  const turretOn = at === 'lock' && st.droneVisible;
   if (turretOn) world.drone.group.getWorldPosition(tmpV);
   world.turret.update(dt, turretOn, (lock.x / innerWidth) * 2 - 1, -(lock.y / innerHeight) * 2 + 1, turretOn ? world.camera.position.distanceTo(tmpV) : 0, lock.locked);
 }
@@ -414,7 +395,7 @@ function setText(el, v) { if (el.textContent !== v) el.textContent = v; }
 // Lock chapter on desktop: the cursor flies the drone, with inertia and banking.
 const pilot = { w: 0, x: 0, y: 0 };
 function flyDrone(st, dt) {
-  const on = finePointer && !reducedMotion && st.chapter === 3;
+  const on = finePointer && !reducedMotion && director.ids[st.chapter] === 'lock';
   pilot.w += ((on ? 1 : 0) - pilot.w) * (1 - Math.exp(-dt * 2.5));
   if (pilot.w < 0.001) return;
   const k = 1 - Math.exp(-dt * 2.4);
@@ -442,8 +423,6 @@ function startLoop() {
     const y = lenis ? lenis.animatedScroll : window.scrollY;
     if (world && director) {
       const st = director.update(y, reducedMotion ? 0 : now / 1000);
-      const asm = assembleAt(now);
-      if (asm > 0) { st.explode = Math.max(st.explode, asm); st.droneYaw += asm * 1.4; }
       // fast scrolling smears the colour channels a little
       if (lenis) st.aberration += Math.min(0.0035, Math.abs(lenis.velocity) * 0.00006);
       st.scrollVelocity = lenis?.velocity || 0;

@@ -256,8 +256,6 @@ main { position: relative; }
 .hero__title {
   margin: 0; font-size: clamp(3.2rem, min(10.4vw, 15.5vh), 12rem); font-weight: 800; font-stretch: 72%; line-height: .86; letter-spacing: -.02em; max-width: 6.6em; /* always breaks after "machines", clear of the drone */
 }
-.has-scene-type .hero__title { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.has-scene-type .hero__copy { width: min(64rem, 92vw); }
 .hero__cue { position: absolute; right: var(--pad); top: calc(100svh - 15vh - 3rem); margin: 0; display: flex; align-items: center; gap: .8rem; font-size: .85rem; color: var(--ash); }
 .cue-line { width: 1px; height: 3rem; background: linear-gradient(var(--red), transparent); animation: cue 2.2s var(--ease) infinite; transform-origin: top; }
 @keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
@@ -305,7 +303,6 @@ main { position: relative; }
 .garage__car { margin: 0; font-size: clamp(1.6rem, 3vw, 3rem); font-weight: 700; font-stretch: 118%; letter-spacing: -.03em; line-height: 1; }
 .garage__cta { position: absolute; left: 0; bottom: 14vh; }
 .garage__plate, .garage__cta { transition: opacity .6s var(--ease); }
-.garage:not(.is-formed) .garage__plate, .garage:not(.is-formed) .garage__cta { opacity: 0; visibility: hidden; }
 .no-webgl .garage .garage__plate, .no-webgl .garage .garage__cta { opacity: 1; visibility: visible; }
 
 .launch { height: 300vh; }

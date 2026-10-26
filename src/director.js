@@ -3,12 +3,12 @@
 import { galleryCamera, galleryPortrait } from './world/gallery-path.js';
 import { lineupX, HERO_X, GARAGE_Z, CARS, HERO } from './world/garage.js';
 
-// After the drone-to-McLaren morph, each lineup car gets its own three-shot pass
+// After the opening on the McLaren, each lineup car gets its own three-shot pass
 // (low nose, side dolly, high rear crane) before the camera returns to the McLaren.
 const TOUR_AT = 0.27, TOUR_SHOT = 0.06, TOUR_CAR = TOUR_SHOT * 3;
 const TOUR_END = TOUR_AT + TOUR_CAR * CARS.length;
 
-const ORDER = ['hero', 'drone', 'vision', 'lock', 'garage', 'launch', 'work', 'about', 'contact'];
+const ORDER = ['hero', 'garage', 'launch', 'drone', 'vision', 'lock', 'work', 'about', 'contact'];
 const GZ = GARAGE_Z;
 const TAU = Math.PI * 2;
 
@@ -19,62 +19,27 @@ const DEFAULTS = {
   drone: [0, 1.1, 0], droneYaw: 0, dronePitch: 0, droneRoll: 0, explode: 0, spin: 0,
   grid: 0.6, person: 0, personX: 0,
   heroYaw: 0.6, heroZ: 0, turntable: 0, carExplode: 0, strip: 0, stripX: 0,
-  speed: 0, road: 0, veil: 0, morph: 0, thermal: 0, rim: 0.22,
-  warmth: 0, haze: 1, heroType: 0, transition: 0, sweep: 0, riso: 0,
+  speed: 0, road: 0, veil: 0, thermal: 0, rim: 0.22,
+  warmth: 0, haze: 1, transition: 0, sweep: 0, riso: 0,
   roadPos: [HERO_X, 0, GZ],
 };
 
 // [section, progress, values]
 function keys() {
   const L = (i) => lineupX(i);
-  // the morph's flight path was framed for the McLaren at x = -36.5; scale it to wherever it stands
-  const M = (x) => x * HERO_X / -36.5;
   const k = [
-    ['hero', 0, { warmth: 0, haze: .42, heroType: 1, rim: 1.6 }],
-    ['hero', .3, { heroType: .65 }],
-    ['hero', .65, { heroType: 0 }],
-    ['drone', .05, { warmth: 0, haze: .5, grid: .08 }],
-    ['vision', 0, { warmth: .08, haze: .7, rim: 1.6 }],
-    ['lock', .5, { rim: 0.22 }],
-    ['lock', .7, { warmth: .08, haze: .8 }],
-    // keep the light cone out of the morph's flight path, bring the haze back once the car has formed
-    ['lock', .84, { haze: .8 }],
-    ['lock', .9, { haze: .12 }],
-    ['garage', .08, { warmth: 1, haze: .12, grid: .035 }],
-    ['garage', .17, { haze: 1.15 }],
+    // grade: the warm garage first, then the cool drone room after the launch
+    ['hero', 0, { warmth: 1, haze: .9, grid: .035, rim: .22 }],
     ['garage', .92, { warmth: 1, haze: 1.0 }],
     ['launch', .5, { warmth: .65, haze: .65 }],
-    ['hero', 0, { cam: [0.04, 1.24, 1.42], look: [-0.36, 1.11, 0], fov: 34, drone: [0, 1.1, 0], light: 55, lightDist: 1.5, grid: 0.6, veil: 0 }],
-    ['drone', 0, { cam: [0.35, 1.32, 0.92], look: [0, 1.12, 0], fov: 36 }],
-    ['drone', 0.1, { cam: [0.62, 1.45, 0.95], look: [0, 1.13, 0], explode: 0, light: 60 }],
-    ['drone', 0.36, { cam: [1.05, 1.95, 1.5], look: [0, 1.22, 0], fov: 41, explode: 1, lightDist: 2.3, light: 95, lightAngle: 0.55 }],
-    ['drone', 0.5, { cam: [-0.35, 1.8, 1.75], look: [0, 1.2, 0], explode: 1 }],
-    ['drone', 0.64, { cam: [-0.85, 1.32, 1.0], look: [0, 1.12, 0], explode: 0, fov: 36, lightDist: 1.6, light: 60, lightAngle: 0.4, spin: 0 }],
-    ['drone', 0.74, { spin: 1, drone: [0, 1.1, 0], cam: [-0.72, 0.8, 1.12], look: [0, 1.22, 0], fov: 38 }],
-    ['drone', 0.9, { drone: [0, 2.35, 0], cam: [-0.5, 2.0, 1.45], look: [0, 2.3, -0.2], fov: 40, grid: 0.6 }],
-    ['vision', 0, { drone: [0, 2.6, -1], cam: [0.5, 3.0, 1.0], look: [0, 2.5, -3], fov: 44, droneYaw: 0, dronePitch: -0.08, light: 70, lightDist: 2.0, lightLift: 0.6, grid: 0.35 }],
-    ['vision', 0.08, { drone: [0, 2.6, -2.2], cam: [0.55, 2.98, -0.7], look: [0, 2.2, -7], person: 0 }],
-    ['vision', 0.28, { drone: [0, 2.6, -5.4], cam: [0.6, 2.95, -3.8], look: [0, 1.8, -9.5], person: 1, dronePitch: -0.12 }],
-    ['vision', 0.44, { drone: [0, 2.6, -6.6], cam: [0.75, 2.9, -4.9], look: [0, 1.8, -9.5], dronePitch: 0.22 }],
-    ['vision', 0.58, { drone: [2.2, 2.6, -8.6], cam: [1.9, 3.0, -6.8], look: [1.2, 1.9, -11], dronePitch: -0.1, droneRoll: -0.3 }],
-    ['vision', 0.7, { drone: [2.2, 2.6, -11.6], cam: [2.5, 2.95, -9.9], look: [1.0, 1.9, -15], droneRoll: 0, person: 1 }],
-    ['vision', 0.82, { drone: [0.2, 2.0, -17.6], cam: [0.9, 2.9, -15.6], look: [0, 0.8, -19], fov: 42, dronePitch: -0.06, droneYaw: 0 }],
-    ['vision', 0.93, { drone: [0, 1.2, -19], cam: [0.7, 2.6, -16.9], look: [0, 0.6, -19], droneYaw: 1.6, dronePitch: 0, person: 0 }],
-    // cut into the drone's own thermal camera for the detect-and-avoid beat, then back out for the landing
-    ['vision', 0.04, { thermal: 0 }],
-    ['vision', 0.13, { thermal: 1 }],
-    ['vision', 0.7, { thermal: 1 }],
-    ['vision', 0.79, { thermal: 0 }],
-    ['vision', 0.18, { personX: -1.8 }],
-    ['vision', 0.5, { personX: 0.3 }],
-    ['lock', 0, { drone: [0, 1.45, -19], cam: [0.5, 0.4, -16.0], look: [0, 1.45, -19], fov: 40, veil: 0.45, droneYaw: 2.4, grid: 0.5 }],
-    ['lock', 0.8, { morph: 0, drone: [0.3, 1.75, -19.4], dronePitch: 0, droneYaw: 3.6, cam: [0.8, 0.65, -16.3], look: [0.3, 1.75, -19.4], veil: 0, kick: 0, grid: 0, parallax: 0, fog: 0.025 }],
-    ['lock', 0.88, { morph: 0.2, cam: [-0.5, 2.5, -17.5], look: [-1.2, 3, -22], fov: 48, bloom: 0.45, roll: -0.06, aberration: -0.00055 }],
-    ['lock', 0.96, { morph: 0.43, cam: [M(-8), 6.2, -25], look: [M(-12), 5.6, -34], fov: 52, roll: -0.1 }],
-    ['garage', 0.04, { morph: 0.68, cam: [M(-23), 6, -41], look: [M(-28), 4, -49], fov: 48, roll: 0.05, strip: 0, stripX: HERO_X, heroYaw: 0.6, heroZ: 0, carExplode: 0, turntable: 0 }],
-    ['garage', 0.095, { morph: 0.87, cam: [HERO_X + 5.8, 2.6, GZ + 3.7], look: [HERO_X, 0.7, GZ], fov: 40, roll: 0, strip: 0.35, turntable: 1 }],
-    ['garage', 0.14, { morph: 1, cam: [HERO_X + 5.6, 1.8, GZ + 2.8], look: [HERO_X, 0.7, GZ], strip: 1, light: 35, lightDist: 3.0, lightLift: 1.8, lightAngle: 0.34, fog: 0.05, env: 0.26, bloom: 0.35 }],
-    ['garage', 0.21, { cam: [HERO_X + 5.6, 1.8, GZ + 2.8], look: [HERO_X, 0.7, GZ], stripX: HERO_X, parallax: 1, aberration: 0, roll: 0 }],
+    ['drone', 0, { warmth: 0, haze: .5, grid: .6, rim: 1.6 }],
+    ['vision', 0, { warmth: .08, haze: .7, rim: 1.6 }],
+    ['lock', .7, { warmth: .08, haze: .8, rim: .22 }],
+    // Hero: the MP4/5 on its turntable, low and close, beside the headline
+    ['hero', 0, { cam: [HERO_X + 3.9, 0.62, GZ + 3.4], look: [HERO_X - 0.95, 0.55, GZ + 1.1], fov: 37, parallax: 1, strip: 1, stripX: HERO_X, turntable: 1, heroYaw: 0.6, carExplode: 0, light: 35, lightDist: 3.0, lightLift: 1.8, lightAngle: 0.34, fog: 0.05, env: 0.26, bloom: 0.35, kick: 0, veil: 0, fade: 0 }],
+    ['hero', 0.9, { cam: [HERO_X + 5.0, 1.3, GZ + 3.6], look: [HERO_X - 0.5, 0.65, GZ + 0.7], fov: 36 }],
+    ['garage', 0.14, { cam: [HERO_X + 5.6, 1.8, GZ + 2.8], look: [HERO_X, 0.7, GZ] }],
+    ['garage', 0.21, { cam: [HERO_X + 5.6, 1.8, GZ + 2.8], look: [HERO_X, 0.7, GZ], stripX: HERO_X, aberration: 0, roll: 0 }],
   ];
   CARS.forEach((_, i) => {
     const p = TOUR_AT + i * TOUR_CAR, C = L(i);
@@ -103,6 +68,34 @@ function keys() {
     ['launch', 1, { heroZ: -48, fade: 1, speed: 1.4, fov: 66 }],
     ['work', 0, { fade: 1, speed: 0, road: 0, heroZ: 0, shake: 0, roll: 0, aberration: 0, fov: 38 }],
     // hold the garage still through the launch and the calm sections, so nothing drifts off-screen
+    // After the launch fades out, the drone room opens from black.
+    ['drone', 0, { fade: 1, speed: 0, road: 0, heroZ: 0, shake: 0, roll: 0, aberration: 0, strip: 0, turntable: 0, carExplode: 0, heroYaw: 3 * Math.PI, stripX: HERO_X,
+      cam: [0.35, 1.32, 0.92], look: [0, 1.12, 0], fov: 36, drone: [0, 1.1, 0], light: 55, lightDist: 1.5, lightLift: 0, lightAngle: 0.4, fog: 0.075, env: 0.32, bloom: 0.35, kick: 1.2, parallax: 1, veil: 0 }],
+    ['drone', 0.05, { fade: 0 }],
+    ['drone', 0.1, { cam: [0.62, 1.45, 0.95], look: [0, 1.13, 0], explode: 0, light: 60 }],
+    ['drone', 0.36, { cam: [1.05, 1.95, 1.5], look: [0, 1.22, 0], fov: 41, explode: 1, lightDist: 2.3, light: 95, lightAngle: 0.55 }],
+    ['drone', 0.5, { cam: [-0.35, 1.8, 1.75], look: [0, 1.2, 0], explode: 1 }],
+    ['drone', 0.64, { cam: [-0.85, 1.32, 1.0], look: [0, 1.12, 0], explode: 0, fov: 36, lightDist: 1.6, light: 60, lightAngle: 0.4, spin: 0 }],
+    ['drone', 0.74, { spin: 1, drone: [0, 1.1, 0], cam: [-0.72, 0.8, 1.12], look: [0, 1.22, 0], fov: 38 }],
+    ['drone', 0.9, { drone: [0, 2.35, 0], cam: [-0.5, 2.0, 1.45], look: [0, 2.3, -0.2], fov: 40, grid: 0.6 }],
+    ['vision', 0, { drone: [0, 2.6, -1], cam: [0.5, 3.0, 1.0], look: [0, 2.5, -3], fov: 44, droneYaw: 0, dronePitch: -0.08, light: 70, lightDist: 2.0, lightLift: 0.6, grid: 0.35 }],
+    ['vision', 0.08, { drone: [0, 2.6, -2.2], cam: [0.55, 2.98, -0.7], look: [0, 2.2, -7], person: 0 }],
+    ['vision', 0.28, { drone: [0, 2.6, -5.4], cam: [0.6, 2.95, -3.8], look: [0, 1.8, -9.5], person: 1, dronePitch: -0.12 }],
+    ['vision', 0.44, { drone: [0, 2.6, -6.6], cam: [0.75, 2.9, -4.9], look: [0, 1.8, -9.5], dronePitch: 0.22 }],
+    ['vision', 0.58, { drone: [2.2, 2.6, -8.6], cam: [1.9, 3.0, -6.8], look: [1.2, 1.9, -11], dronePitch: -0.1, droneRoll: -0.3 }],
+    ['vision', 0.7, { drone: [2.2, 2.6, -11.6], cam: [2.5, 2.95, -9.9], look: [1.0, 1.9, -15], droneRoll: 0, person: 1 }],
+    ['vision', 0.82, { drone: [0.2, 2.0, -17.6], cam: [0.9, 2.9, -15.6], look: [0, 0.8, -19], fov: 42, dronePitch: -0.06, droneYaw: 0 }],
+    ['vision', 0.93, { drone: [0, 1.2, -19], cam: [0.7, 2.6, -16.9], look: [0, 0.6, -19], droneYaw: 1.6, dronePitch: 0, person: 0 }],
+    // cut into the drone's own thermal camera for the detect-and-avoid beat, then back out for the landing
+    ['vision', 0.04, { thermal: 0 }],
+    ['vision', 0.13, { thermal: 1 }],
+    ['vision', 0.7, { thermal: 1 }],
+    ['vision', 0.79, { thermal: 0 }],
+    ['vision', 0.18, { personX: -1.8 }],
+    ['vision', 0.5, { personX: 0.3 }],
+    ['lock', 0, { drone: [0, 1.45, -19], cam: [0.5, 0.4, -16.0], look: [0, 1.45, -19], fov: 40, veil: 0.45, droneYaw: 2.4, grid: 0.5 }],
+    ['lock', 0.8, { drone: [0.3, 1.75, -19.4], dronePitch: 0, droneYaw: 3.6, cam: [0.8, 0.65, -16.3], look: [0.3, 1.75, -19.4], veil: 0, kick: 0, grid: 0, parallax: 0, fog: 0.025, fade: 0 }],
+    ['lock', 1, { fade: 1 }],
     ['launch', 1, { heroYaw: 3 * Math.PI, turntable: 0, strip: 0, stripX: HERO_X, carExplode: 0 }],
     ['about', 0.8, { heroYaw: 3 * Math.PI, turntable: 0, strip: 0, stripX: HERO_X, carExplode: 0 }],
     ['about', 0.85, { fade: 1, cam: [HERO_X + 4.0, 1.25, GZ + 5.2], look: [HERO_X + 0.4, 0.95, GZ], drone: [HERO_X + 1.3, 1.5, GZ + 0.9], explode: 0, spin: 0.7, heroYaw: 5.4, turntable: 1, strip: 1, stripX: HERO_X, veil: 0.4, fog: 0.05, light: 45, lightDist: 2.8, lightLift: 0.8 }],
@@ -114,7 +107,6 @@ function keys() {
 
 const PINNED_TIMING = new Set(['drone', 'vision']);
 // Chapter handoffs printed as a risograph wipe: [section, centre, half-width]
-// (the lock-to-garage handoff is covered by the particle morph instead)
 const RISO = [['drone', 0.03, 0.05], ['vision', 0, 0.045], ['lock', 0.02, 0.05], ['launch', 0.04, 0.06]];
 const smoother = (t) => t * t * t * (t * (t * 6 - 15) + 10);
 const clamp01 = (t) => (t < 0 ? 0 : t > 1 ? 1 : t);
@@ -195,10 +187,11 @@ export class Director {
     const st = this.sample(s);
     this.sNow = s;
 
-    // On portrait screens the hero centres the drone instead of framing it beside the headline.
+    // On portrait screens the opening centres the car instead of framing it beside the headline.
     if (window.innerWidth < window.innerHeight) {
       const k = clamp01(1 - (s - 1.0) / 0.3);
-      st.look[0] += (0 - st.look[0]) * k;
+      st.look[0] += (HERO_X - st.look[0]) * k;
+      st.look[2] += (GZ - st.look[2]) * k;
       // and in the closing shot the whole frame rises, so the car sits below the contact buttons.
       // (world.js pulls the camera back about 1.5/aspect times, so the lift scales the same way)
       const lift = clamp01((s - this.s('about', 0.85)) * 6) * Math.min(3.2, 1.5 * window.innerHeight / window.innerWidth) * 0.95;
@@ -207,22 +200,22 @@ export class Director {
     }
 
     // Layered motion that keyframes can't express
-    const heroIdle = 1 - clamp01((s - this.sp('drone', 0.6)) * 4);
+    const heroIdle = s < this.s('drone', 0) ? 0 : 1 - clamp01((s - this.sp('drone', 0.6)) * 4);
     st.drone[1] += Math.sin(time * 1.3) * 0.012 * heroIdle;
     st.droneYaw += time * 0.12 * heroIdle * (1 - st.explode);
     if (s > this.sp('vision', 0.85) && s < this.s('lock', 1)) {
       st.drone[0] += Math.sin(time * 0.9) * 0.15;
       st.drone[1] += Math.sin(time * 1.4) * 0.06;
     }
-    if (s >= this.sp('drone', 0.72) && s < this.s('garage', 0.1)) st.spin = Math.max(st.spin, 0.85);
+    if (s >= this.sp('drone', 0.72) && s < this.s('work', 0)) st.spin = Math.max(st.spin, 0.85);
     if (s > this.s('about', 0.8)) {
       st.spin = 0.85;
       st.drone[1] += Math.sin(time * 1.2) * 0.05;
     }
-    st.garage = s > this.s('lock', 0.5) && s < this.s('work', 0.05) || s > this.s('about', 0.8);
+    st.garage = s < this.s('drone', 0) || s > this.s('about', 0.8);
     st.lineup = !(s > this.s('launch', 0.1) && s < this.s('about', 0.8));
-    st.droneVisible = s < this.s('garage', 0.15) || s > this.s('about', 0.8);
-    st.marker = s > this.sp('vision', 0.4) && s < this.s('garage', 0.15);
+    st.droneVisible = (s > this.s('drone', 0) && s < this.s('work', 0)) || s > this.s('about', 0.8);
+    st.marker = s > this.sp('vision', 0.4) && s < this.s('work', 0);
     // Inside the drone: the camera rides on its nose, a hard cut hidden by the feed's static.
     if (st.thermal > 0.5) {
       const d = st.drone, yaw = st.droneYaw;
