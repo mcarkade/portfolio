@@ -20,7 +20,7 @@ const DEFAULTS = {
   grid: 0.6, person: 0, personX: 0,
   heroYaw: 0.6, heroZ: 0, turntable: 0, carExplode: 0, strip: 0, stripX: 0,
   speed: 0, road: 0, veil: 0, morph: 0, thermal: 0,
-  warmth: 0, haze: 1, heroType: 0, transition: 0, sweep: 0,
+  warmth: 0, haze: 1, heroType: 0, transition: 0, sweep: 0, riso: 0,
   roadPos: [HERO_X, 0, GZ],
 };
 
@@ -108,17 +108,13 @@ function keys() {
     ['contact', 0.15, { fade: 0 }],
     ['contact', 1, { cam: [HERO_X + 4.8, 1.7, GZ + 6.0], look: [HERO_X + 0.4, 1.0, GZ], heroYaw: 6.2, droneYaw: 0.8 }],
   );
-  // Narrow, reversible light sweeps cover camera handoffs without blank frames.
-  // (the lock-to-garage handoff is covered by the particle morph instead)
-  for (const [id, p, width] of [['vision', 0, .055], ['launch', .03, .07]]) {
-    k.push([id, p - width, { transition: 0, sweep: 0 }],
-      [id, p, { transition: 1, sweep: .5 }],
-      [id, p + width, { transition: 0, sweep: 1 }]);
-  }
   return k;
 }
 
 const PINNED_TIMING = new Set(['drone', 'vision']);
+// Chapter handoffs printed as a risograph wipe: [section, centre, half-width]
+// (the lock-to-garage handoff is covered by the particle morph instead)
+const RISO = [['drone', 0.03, 0.05], ['vision', 0, 0.045], ['lock', 0.02, 0.05], ['launch', 0.04, 0.06]];
 const smoother = (t) => t * t * t * (t * (t * 6 - 15) + 10);
 const clamp01 = (t) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
@@ -246,6 +242,11 @@ export class Director {
       st.aberration = 0; st.parallax = 0; st.veil = 0;
       st.fog = 0.018; st.bloom = 0.14; st.light = 0; st.kick = 0;
       st.garage = false; st.droneVisible = false; st.marker = false; st.person = 0;
+    }
+    st.riso = 0;
+    for (const [id, c, w] of RISO) {
+      const s0 = this.sp(id, c - w), s1 = this.sp(id, c + w);
+      if (s > s0 && s < s1) st.riso = (s - s0) / (s1 - s0);
     }
     st.stripOnHero = false;
     st.chapter = Math.min(ORDER.length - 1, Math.floor(s));

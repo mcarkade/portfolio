@@ -49,7 +49,7 @@ button { font: inherit; color: inherit; }
 /* ---------- Layers ---------- */
 #gl { position: fixed; inset: 0; width: 100vw; height: 100lvh; display: block; z-index: 0; }
 .veil {
-  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background: radial-gradient(120% 90% at 50% 50%, rgba(0,0,0,.55), rgba(0,0,0,.92));
   opacity: var(--veil);
 }
@@ -62,7 +62,9 @@ button { font: inherit; color: inherit; }
   0% { transform: translate(0, 0); } 20% { transform: translate(-7%, 4%); } 40% { transform: translate(5%, -9%); }
   60% { transform: translate(-3%, 7%); } 80% { transform: translate(8%, 2%); } 100% { transform: translate(0, 0); }
 }
-main { position: relative; z-index: 2; }
+/* no z-index: the pinned type below has to blend with the canvas itself, not with main's own layer */
+main { position: relative; }
+.drone .sticky, .vision .sticky, .lock .sticky, .launch .sticky { mix-blend-mode: difference; }
 
 /* ---------- Loader ---------- */
 @property --loader-p { syntax: '<number>'; inherits: true; initial-value: 0; }

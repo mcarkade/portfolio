@@ -10,7 +10,6 @@ import { Drone } from './drone.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { Garage, GARAGE_Z, HERO_X } from './garage.js';
 import { Morph } from './morph.js';
-import { Fluid } from './fluid.js';
 import { LaunchFX, GATE_GAP } from './launch.js';
 import { Turret } from './turret.js';
 import { Atmosphere, atmosphereNoise, atmosphereColor, atmosphereVolume } from './atmosphere.js';
@@ -21,8 +20,9 @@ const FinalShader = {
   defines: { VOLUME_STEPS: 8 },
   uniforms: {
     tDiffuse: { value: null },
-    tFlow: { value: null },
-    uFlowStrength: { value: 0 },
+    uTrail: { value: Array.from({ length: 20 }, () => new THREE.Vector2(-1, -1)) },
+    uTrailOn: { value: 0 },
+    uRiso: { value: 0 },
     uTime: { value: 0 },
     uAberration: { value: 0.0015 },
     uSpeed: { value: 0 },
@@ -40,7 +40,8 @@ const FinalShader = {
   vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse; uniform float uTime, uAberration, uSpeed, uVignette, uFade, uFlash;
-    uniform sampler2D tFlow; uniform float uFlowStrength;
+    #define TRAIL 20
+    uniform vec2 uTrail[TRAIL]; uniform float uTrailOn, uRiso;
     uniform float uThermal, uStatic;
     varying vec2 vUv;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -54,12 +55,25 @@ const FinalShader = {
     ${atmosphereNoise}
     ${atmosphereVolume}
     float grain(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+    float luma(vec3 c){ return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+    // one ink of a risograph print: a rotated dot screen, dots sized by how much ink the tone needs
+    float screen(vec2 px, float ang, float cell, float ink){
+      vec2 p = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * px / cell;
+      float d = length(fract(p) - 0.5);
+      float r = sqrt(clamp(ink, 0.0, 1.0)) * 0.62;
+      float aa = 0.9 / cell;
+      return smoothstep(r + aa, r - aa, d);
+    }
+    // Sobel edge strength of the frame around uv
+    float edges(vec2 uv, vec2 px){
+      float tl = luma(texture2D(tDiffuse, uv + px * vec2(-1., 1.)).rgb), t = luma(texture2D(tDiffuse, uv + px * vec2(0., 1.)).rgb), tr = luma(texture2D(tDiffuse, uv + px * vec2(1., 1.)).rgb);
+      float l = luma(texture2D(tDiffuse, uv + px * vec2(-1., 0.)).rgb), r = luma(texture2D(tDiffuse, uv + px * vec2(1., 0.)).rgb);
+      float bl = luma(texture2D(tDiffuse, uv + px * vec2(-1., -1.)).rgb), b = luma(texture2D(tDiffuse, uv + px * vec2(0., -1.)).rgb), br = luma(texture2D(tDiffuse, uv + px * vec2(1., -1.)).rgb);
+      float gx = tr + 2. * r + br - tl - 2. * l - bl, gy = tl + 2. * t + tr - bl - 2. * b - br;
+      return length(vec2(gx, gy));
+    }
     void main(){
-      vec3 flow = vec3(0.0);
-      if (uFlowStrength > 0.0) flow = texture2D(tFlow, vUv).rgb * uFlowStrength;
-      vec2 smear = flow.rg * 0.06;
-      vec2 split = flow.rg * 0.0018;
-      vec2 uv = clamp(vUv - smear, 0.001, 0.999);
+      vec2 uv = vUv;
       // the feed tears sideways while the camera switches
       float tear = (hash(vec2(floor(vUv.y * 48.0), floor(uTime * 24.0))) - 0.5) * 0.12 * uStatic;
       uv.x = clamp(uv.x + tear, 0.001, 0.999);
@@ -80,18 +94,55 @@ const FinalShader = {
           float t = float(i) / 7.0;
           float w = 1.0 - t * 0.6;
           vec2 o = c * (1.0 - t * uSpeed * 0.09 * smoothstep(0.08, 0.6, r));
-          acc.r += texture2D(tDiffuse, clamp(0.5 + o - smear + dir * ab + split, 0.001, 0.999)).r * w;
-          acc.g += texture2D(tDiffuse, clamp(0.5 + o - smear, 0.001, 0.999)).g * w;
-          acc.b += texture2D(tDiffuse, clamp(0.5 + o - smear - dir * ab - split, 0.001, 0.999)).b * w;
+          acc.r += texture2D(tDiffuse, clamp(0.5 + o + dir * ab, 0.001, 0.999)).r * w;
+          acc.g += texture2D(tDiffuse, clamp(0.5 + o, 0.001, 0.999)).g * w;
+          acc.b += texture2D(tDiffuse, clamp(0.5 + o - dir * ab, 0.001, 0.999)).b * w;
           tot += w;
         }
         col = acc / tot;
       } else {
-        col.r = texture2D(tDiffuse, clamp(uv + dir * ab + split, 0.001, 0.999)).r;
+        col.r = texture2D(tDiffuse, clamp(uv + dir * ab, 0.001, 0.999)).r;
         col.g = texture2D(tDiffuse, uv).g;
-        col.b = texture2D(tDiffuse, clamp(uv - dir * ab - split, 0.001, 0.999)).b;
+        col.b = texture2D(tDiffuse, clamp(uv - dir * ab, 0.001, 0.999)).b;
       }
-      col = col * (1.0 + flow.b * 0.12) + vec3(0.0006, 0.0008, 0.001) * flow.b;
+      // Chapter handoff: a ragged diagonal band sweeps the frame, and inside it the scene is reprinted
+      // as a two-ink risograph: red and blue dot screens on paper, a few pixels out of register,
+      // with the outlines in blue.
+      if (uRiso > 0.0 && uRiso < 1.0) {
+        float field = vUv.x * 0.72 + (1.0 - vUv.y) * 0.28 + (noise(vec3(vUv * vec2(3.2, 2.4), 7.0)) - 0.5) * 0.3;
+        float head = mix(-0.25, 1.75, uRiso), tail = head - 0.62;
+        float band = smoothstep(head + 0.012, head - 0.012, field) * smoothstep(tail - 0.012, tail + 0.012, field);
+        if (band > 0.0) {
+          vec2 fc = gl_FragCoord.xy;
+          vec2 px = 1.0 / uResolution;
+          // printed as a negative: the lit subject takes the blue ink, the dark room only a light red screen
+          vec2 mis = vec2(3.0, -2.0);
+          float lit = clamp(pow(luma(texture2D(tDiffuse, uv + mis * px).rgb) * 4.0, 0.7), 0.0, 1.0);
+          float red = screen(fc, 0.26, 6.0, 0.16 + 0.3 * (1.0 - clamp(pow(luma(col) * 4.0, 0.7), 0.0, 1.0)));
+          float blue = max(screen(fc + mis, 1.31, 6.0, lit * 0.95), smoothstep(0.05, 0.22, edges(uv + mis * px, px * 1.5)));
+          vec3 paper = vec3(1.55, 1.48, 1.36);
+          vec3 riso = paper * mix(vec3(1.0), vec3(1.0, 0.12, 0.14), red) * mix(vec3(1.0), vec3(0.08, 0.2, 0.72), blue);
+          col = mix(col, riso, band);
+        }
+        // the leading edge is a hot red line
+        col += vec3(2.4, 0.18, 0.2) * exp(-pow((field - head) * 260.0, 2.0)) * step(0.0, head);
+      }
+      // the cursor's light trail: a hot core with a soft red glow, thinning toward its tail
+      if (uTrailOn > 0.001) {
+        vec2 asp = vec2(uResolution.x / uResolution.y, 1.0);
+        float core = 0.0, glow = 0.0;
+        for (int i = 0; i < TRAIL - 1; i++) {
+          vec2 a = uTrail[i] * asp, b = uTrail[i + 1] * asp, p = vUv * asp;
+          vec2 pa = p - a, ba = b - a;
+          float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);
+          float d = length(pa - ba * h) * uResolution.y;
+          float t = (float(i) + h) / float(TRAIL - 1);
+          float wdt = mix(1.3, 0.15, t);
+          core = max(core, exp(-d * d / (wdt * wdt)) * (1.0 - t));
+          glow = max(glow, exp(-d * d / (wdt * wdt * 40.0)) * (1.0 - t));
+        }
+        col += (vec3(2.2, 1.9, 1.7) * core + vec3(0.5, 0.04, 0.05) * glow) * uTrailOn;
+      }
       if (uThermal > 0.0) {
         float l = dot(col, vec3(0.3, 0.59, 0.11));
         float heat = clamp(pow(l * 1.9, 0.7) * 0.92 + 0.04 + (hash(vUv * 900.0 + uTime) - 0.5) * 0.05, 0.0, 1.0);
@@ -199,7 +250,6 @@ export class World {
       tDepth: { value: null }, uCamera: { value: this.camera.position },
       uCameraWorld: { value: this.camera.matrixWorld }, uProjectionInverse: { value: this.camera.projectionMatrixInverse },
     });
-    this.fluid = new Fluid(renderer, { quality, uniforms: this.final.uniforms });
     composer.addPass(this.final);
     composer.addPass(new OutputPass());
     this.composer = composer;
@@ -538,7 +588,24 @@ export class World {
     this.gallery?.resize();
   }
 
-  setMouse(x, y) { this.mouse.set(x, y); }
+  setMouse(x, y) { this.mouse.set(x, y); this._pointerSeen = true; }
+
+  // A chain of points, each easing toward the one ahead of it, so the trail swings behind the cursor
+  // with follow-through. It shows only while the pointer moves, and never on touch screens.
+  _trail(dt) {
+    const pts = this.final.uniforms.uTrail.value;
+    const u = this.final.uniforms.uTrailOn;
+    if (this.quality !== 'high' || !this._pointerSeen || this.motion.matches) { u.value = 0; return; }
+    const head = this._head || (this._head = new THREE.Vector2(this.mouse.x * 0.5 + 0.5, this.mouse.y * 0.5 + 0.5));
+    if (!this._trailInit) { pts.forEach((p) => p.copy(head)); this._trailInit = true; }
+    head.set(this.mouse.x * 0.5 + 0.5, this.mouse.y * 0.5 + 0.5);
+    const k = 1 - Math.exp(-dt * 38);
+    pts[0].lerp(head, 1 - Math.exp(-dt * 60));
+    for (let i = 1; i < pts.length; i++) pts[i].lerp(pts[i - 1], k);
+    // brightness follows how far the tail lags behind the head
+    const lag = pts[0].distanceTo(pts[pts.length - 1]);
+    u.value += (Math.min(1, lag * 9) - u.value) * (1 - Math.exp(-dt * 10));
+  }
 
   // Project a world point to CSS pixels. Returns null when behind the camera.
   project(v, out = { x: 0, y: 0, z: 0 }) {
@@ -660,7 +727,8 @@ export class World {
 
     // Post
     const u = this.final.uniforms;
-    this.fluid.update(dt, this.mouse.x, this.mouse.y);
+    this._trail(dt);
+    u.uRiso.value = this.motion.matches ? 0 : state.riso;
     u.uTime.value = t;
     u.uSpeed.value = this.quality === 'high' ? speed : 0; // radial blur is desktop-only
     u.uAberration.value = 0.0001 + state.aberration * .35;
