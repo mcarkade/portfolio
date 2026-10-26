@@ -661,6 +661,7 @@ export class World {
     this.heroType.update(state, cam, m, t);
     this.kick.position.set(f.x + 1.4, f.y - 0.6, f.z + 1.0);
     this.kick.intensity = state.kick;
+    this.rim.intensity = state.rim;
 
     // Easter egg: lights on
     this.lightsOn += (this.lightsTarget - this.lightsOn) * k;

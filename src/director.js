@@ -19,7 +19,7 @@ const DEFAULTS = {
   drone: [0, 1.1, 0], droneYaw: 0, dronePitch: 0, droneRoll: 0, explode: 0, spin: 0,
   grid: 0.6, person: 0, personX: 0,
   heroYaw: 0.6, heroZ: 0, turntable: 0, carExplode: 0, strip: 0, stripX: 0,
-  speed: 0, road: 0, veil: 0, morph: 0, thermal: 0,
+  speed: 0, road: 0, veil: 0, morph: 0, thermal: 0, rim: 0.22,
   warmth: 0, haze: 1, heroType: 0, transition: 0, sweep: 0, riso: 0,
   roadPos: [HERO_X, 0, GZ],
 };
@@ -30,11 +30,12 @@ function keys() {
   // the morph's flight path was framed for the McLaren at x = -36.5; scale it to wherever it stands
   const M = (x) => x * HERO_X / -36.5;
   const k = [
-    ['hero', 0, { warmth: 0, haze: .85, heroType: 1 }],
+    ['hero', 0, { warmth: 0, haze: .42, heroType: 1, rim: 1.6 }],
     ['hero', .3, { heroType: .65 }],
     ['hero', .65, { heroType: 0 }],
-    ['drone', .05, { warmth: 0, haze: 1.0, grid: .08 }],
-    ['vision', 0, { warmth: .08, haze: .9 }],
+    ['drone', .05, { warmth: 0, haze: .5, grid: .08 }],
+    ['vision', 0, { warmth: .08, haze: .7, rim: 1.6 }],
+    ['lock', .5, { rim: 0.22 }],
     ['lock', .7, { warmth: .08, haze: .8 }],
     // keep the light cone out of the morph's flight path, bring the haze back once the car has formed
     ['lock', .84, { haze: .8 }],
@@ -49,8 +50,8 @@ function keys() {
     ['drone', 0.36, { cam: [1.05, 1.95, 1.5], look: [0, 1.22, 0], fov: 41, explode: 1, lightDist: 2.3, light: 95, lightAngle: 0.55 }],
     ['drone', 0.5, { cam: [-0.35, 1.8, 1.75], look: [0, 1.2, 0], explode: 1 }],
     ['drone', 0.64, { cam: [-0.85, 1.32, 1.0], look: [0, 1.12, 0], explode: 0, fov: 36, lightDist: 1.6, light: 60, lightAngle: 0.4, spin: 0 }],
-    ['drone', 0.74, { spin: 1, drone: [0, 1.1, 0], cam: [-0.95, 0.72, 1.6], look: [0, 1.28, 0], fov: 38 }],
-    ['drone', 0.9, { drone: [0, 2.35, 0], cam: [-0.6, 1.7, 2.35], look: [0, 2.3, -0.5], fov: 42, grid: 0.6 }],
+    ['drone', 0.74, { spin: 1, drone: [0, 1.1, 0], cam: [-0.72, 0.8, 1.12], look: [0, 1.22, 0], fov: 38 }],
+    ['drone', 0.9, { drone: [0, 2.35, 0], cam: [-0.5, 2.0, 1.45], look: [0, 2.3, -0.2], fov: 40, grid: 0.6 }],
     ['vision', 0, { drone: [0, 2.6, -1], cam: [0.5, 3.0, 1.0], look: [0, 2.5, -3], fov: 44, droneYaw: 0, dronePitch: -0.08, light: 70, lightDist: 2.0, lightLift: 0.6, grid: 0.35 }],
     ['vision', 0.08, { drone: [0, 2.6, -2.2], cam: [0.55, 2.98, -0.7], look: [0, 2.2, -7], person: 0 }],
     ['vision', 0.28, { drone: [0, 2.6, -5.4], cam: [0.6, 2.95, -3.8], look: [0, 1.8, -9.5], person: 1, dronePitch: -0.12 }],
