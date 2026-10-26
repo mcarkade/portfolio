@@ -9,6 +9,7 @@ import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUnifo
 import { Drone } from './drone.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { Garage, GARAGE_Z, HERO_X } from './garage.js';
+import { Morph } from './morph.js';
 import { Fluid } from './fluid.js';
 
 const FinalShader = {
@@ -107,12 +108,13 @@ export class World {
     this._road();
     this._vision();
 
-    this.drone = new Drone();
+    this.drone = new Drone({ quality });
     this.drone.group.position.set(0, 1.1, 0);
     scene.add(this.drone.group);
 
     this.garage = new Garage(this);
     scene.add(this.garage.group);
+    this.morph = new Morph(this);
     if (quality === 'high') this._showroomFloor();
 
     // Post-processing
@@ -515,6 +517,7 @@ export class World {
 
     // Garage + launch
     this.garage.update(dt, state);
+    this.morph.update(state.morph, t, state);
     if (this.reflector) {
       const r = state.garage && state.road < 0.5 ? 0.32 * (1 - state.road * 2) : 0;
       this.reflector.visible = r > 0.001;

@@ -239,6 +239,9 @@ main { position: relative; z-index: 2; }
 .garage__car { margin: 0; font-size: clamp(1.6rem, 3vw, 3rem); font-weight: 700; font-stretch: 118%; letter-spacing: -.03em; line-height: 1; }
 .garage__year { margin: .4rem 0 0; font-family: var(--mono); font-size: .8rem; color: var(--red); letter-spacing: .08em; }
 .garage__cta { position: absolute; left: 0; bottom: 14vh; }
+.garage__plate, .garage__cta { transition: opacity .6s var(--ease); }
+.garage:not(.is-formed) .garage__plate, .garage:not(.is-formed) .garage__cta { opacity: 0; visibility: hidden; }
+.no-webgl .garage .garage__plate, .no-webgl .garage .garage__cta { opacity: 1; visibility: visible; }
 
 .launch { height: 300vh; }
 .launch__speed { position: absolute; right: 0; top: 16vh; margin: 0; font-family: var(--mono); font-weight: 500; font-size: clamp(3rem, 9vw, 8rem); line-height: 1; letter-spacing: -.04em; display: flex; align-items: baseline; gap: .6rem; font-variant-numeric: tabular-nums; }

@@ -258,6 +258,7 @@ const speedEl = $('#speed');
 const portrait = $('.about__portrait img');
 const veil = $('.veil');
 const heroEl = $('#hero');
+const garageEl = $('#garage');
 let maxScroll = 1;
 function measureDom() {
   maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
@@ -328,6 +329,9 @@ function domFrame(st, y, dt) {
       setText(visionBox.firstElementChild, tag);
     }
   }
+
+  // the plate and the play button wait until the swarm has become the car
+  garageEl.classList.toggle('is-formed', st.morph > 0.95);
 
   // garage name plate
   if (st.chapter === 4 || st.chapter === 5) {

@@ -2,8 +2,8 @@
 // so the whole film plays forwards and backwards exactly.
 import { lineupX, HERO_X, GARAGE_Z, CARS, HERO } from './world/garage.js';
 
-// Lineup stops share the garage chapter from 0.08 to 0.405, however many cars there are.
-const STEP = 0.325 / Math.max(1, CARS.length - 1);
+// Leave the garage entrance for the drone-to-McLaren morph, then tour the lineup.
+const STEP = 0.105 / Math.max(1, CARS.length - 1);
 
 const ORDER = ['hero', 'drone', 'vision', 'lock', 'garage', 'launch', 'work', 'about', 'contact'];
 const GZ = GARAGE_Z;
@@ -16,13 +16,15 @@ const DEFAULTS = {
   drone: [0, 1.1, 0], droneYaw: 0, dronePitch: 0, droneRoll: 0, explode: 0, spin: 0,
   grid: 0.6, person: 0, personX: 0,
   heroYaw: 0.6, heroZ: 0, turntable: 0, carExplode: 0, strip: 0, stripX: 0,
-  speed: 0, road: 0, veil: 0,
+  speed: 0, road: 0, veil: 0, morph: 0,
   roadPos: [HERO_X, 0, GZ],
 };
 
 // [section, progress, values]
 function keys() {
   const L = (i) => lineupX(i);
+  // the morph's flight path was framed for the McLaren at x = -36.5; scale it to wherever it stands
+  const M = (x) => x * HERO_X / -36.5;
   const k = [
     ['hero', 0, { cam: [0.04, 1.24, 1.42], look: [-0.36, 1.11, 0], fov: 34, drone: [0, 1.1, 0], light: 55, lightDist: 1.5, grid: 0.6, veil: 0 }],
     ['drone', 0, { cam: [0.35, 1.32, 0.92], look: [0, 1.12, 0], fov: 36 }],
@@ -43,18 +45,17 @@ function keys() {
     ['vision', 0.18, { personX: -1.8 }],
     ['vision', 0.5, { personX: 0.3 }],
     ['lock', 0, { drone: [0, 1.45, -19], cam: [0.5, 0.4, -16.0], look: [0, 1.45, -19], fov: 40, veil: 0.45, droneYaw: 2.4, grid: 0.5 }],
-    ['lock', 0.95, { kick: 1.2, drone: [0.3, 1.75, -19.4], dronePitch: 0, droneYaw: 3.6 }],
-    // the drone leads the camera out of the dark and into the garage, then sweeps up over the first car
-    ['garage', 0, { drone: [0.5, 2.15, -26.6], dronePitch: -0.28, droneYaw: 3.14 }],
-    ['garage', 0.025, { drone: [0.5, 2.4, -41] }],
-    ['garage', 0.06, { drone: [0.8, 4.6, -60], dronePitch: -0.32 }],
-    ['garage', 0.14, { drone: [9, 7, -75] }],
-    ['lock', 0.8, { drone: [0.3, 1.7, -19.2], cam: [0.8, 0.35, -16.3], look: [0.2, 1.6, -19], veil: 0.55, droneYaw: 3.4 }],
-    ['garage', 0, { cam: [1.6, 2.4, -24], look: [0.6, 1.9, -34], veil: 0, kick: 0, fov: 40, light: 70, lightDist: 2.2, lightLift: 0.8, fog: 0.075, strip: 0, stripX: L(0), grid: 0.5 }],
-    ['garage', 0.07, { cam: [L(0) + 3.6, 1.45, GZ + 5.9], look: [L(0), 0.6, GZ], fov: 34, strip: 1, stripX: L(0), light: 26, lightDist: 3.0, lightLift: 1.8, lightAngle: 0.34, fog: 0.05, grid: 0.2, env: 0.26, kick: 0 }],
+    ['lock', 0.8, { morph: 0, drone: [0.3, 1.75, -19.4], dronePitch: 0, droneYaw: 3.6, cam: [0.8, 0.65, -16.3], look: [0.3, 1.75, -19.4], veil: 0, kick: 0, grid: 0, parallax: 0, fog: 0.025 }],
+    ['lock', 0.88, { morph: 0.2, cam: [-0.5, 2.5, -17.5], look: [-1.2, 3, -22], fov: 48, bloom: 0.45, roll: -0.06, aberration: -0.00055 }],
+    ['lock', 0.96, { morph: 0.43, cam: [M(-8), 6.2, -25], look: [M(-12), 5.6, -34], fov: 52, roll: -0.1 }],
+    ['garage', 0.04, { morph: 0.68, cam: [M(-23), 6, -41], look: [M(-28), 4, -49], fov: 48, roll: 0.05, strip: 0, stripX: HERO_X, heroYaw: 0.6, heroZ: 0, carExplode: 0, turntable: 0 }],
+    ['garage', 0.095, { morph: 0.87, cam: [HERO_X + 5.8, 2.6, GZ + 3.7], look: [HERO_X, 0.7, GZ], fov: 40, roll: 0, strip: 0.35, turntable: 1 }],
+    ['garage', 0.14, { morph: 1, cam: [HERO_X + 5.6, 1.8, GZ + 2.8], look: [HERO_X, 0.7, GZ], strip: 1, light: 35, lightDist: 3.0, lightLift: 1.8, lightAngle: 0.34, fog: 0.05, env: 0.26, bloom: 0.35 }],
+    ['garage', 0.21, { cam: [HERO_X + 5.6, 1.8, GZ + 2.8], look: [HERO_X, 0.7, GZ], stripX: HERO_X, parallax: 1, aberration: 0 }],
+    ['garage', 0.3, { cam: [L(0) + 3.6, 1.45, GZ + 5.9], look: [L(0), 0.6, GZ], fov: 34, stripX: L(0), grid: 0.2, turntable: 0 }],
   ];
   CARS.forEach((_, i) => {
-    const p = 0.08 + i * STEP;
+    const p = 0.3 + i * STEP;
     k.push(['garage', p, { cam: [L(i) + 3.6, 1.45, GZ + 5.9], look: [L(i), 0.6, GZ], stripX: L(i) }]);
   });
   k.push(
@@ -191,8 +192,8 @@ export class Director {
   // which car the name plate should show in the garage
   carAt(y) {
     const p = (this.sAt(y) - ORDER.indexOf('garage'));
-    if (p >= 0.475) return HERO;
-    const i = Math.max(0, Math.min(CARS.length - 1, Math.round((p - 0.08) / STEP)));
+    if (p < 0.25 || p >= 0.475) return HERO;
+    const i = Math.max(0, Math.min(CARS.length - 1, Math.round((p - 0.3) / STEP)));
     return CARS[i];
   }
 }
