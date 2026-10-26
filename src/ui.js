@@ -1,4 +1,4 @@
-// DOM-side behaviour: text reveals, cursor, magnetic buttons, the lock-on game, previews.
+// DOM-side behaviour: text reveals, cursor, magnetic buttons, the lock-on game.
 export const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 export const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -143,51 +143,6 @@ export function magnetic() {
       setTimeout(() => { el.style.transition = ''; }, 700);
     });
   });
-}
-
-// Hover a project name and its picture follows the cursor.
-export class Preview {
-  constructor() {
-    if (!finePointer) return;
-    this.el = document.createElement('div');
-    this.el.className = 'preview';
-    this.el.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(this.el);
-    this.cache = new Map();
-    this.x = 0; this.y = 0; this.px = 0; this.py = 0;
-    addEventListener('pointermove', (e) => { this.x = e.clientX; this.y = e.clientY; }, { passive: true });
-    document.querySelectorAll('.work__item').forEach((li) => {
-      li.addEventListener('pointerenter', () => this.show(li.dataset.preview));
-      li.addEventListener('pointerleave', () => this.el.classList.remove('is-on'));
-    });
-  }
-
-  show(src) {
-    if (!src) return;
-    let img = this.cache.get(src);
-    if (!img) {
-      img = new Image();
-      img.src = src;
-      img.alt = '';
-      this.cache.set(src, img);
-    }
-    this.el.replaceChildren(img);
-    this.el.classList.add('is-on');
-  }
-
-  update(dt) {
-    if (!this.el) return;
-    const k = 1 - Math.exp(-dt * 9);
-    const vx = this.x - this.px;
-    this.px += (this.x - this.px) * k;
-    this.py += (this.y - this.py) * k;
-    const rot = Math.max(-8, Math.min(8, vx * 0.05));
-    // sit right of the cursor, flipping left near the edge, and stay inside the viewport vertically
-    const w = this.w || (this.w = this.el.offsetWidth), h = this.h || (this.h = this.el.offsetHeight);
-    const x = this.px + 24 + w > innerWidth - 8 ? this.px - 24 - w : this.px + 24;
-    const y = Math.max(8, Math.min(innerHeight - h - 8, this.py - 140));
-    this.el.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg) scale(${this.el.classList.contains('is-on') ? 1 : 0.85})`;
-  }
 }
 
 // The counter-drone turret, played with your cursor as the drone.

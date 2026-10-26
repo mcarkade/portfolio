@@ -1,5 +1,6 @@
 // Scroll → scene state. Everything here is a pure function of the scroll position,
 // so the whole film plays forwards and backwards exactly.
+import { galleryCamera, galleryPortrait } from './world/gallery-path.js';
 import { lineupX, HERO_X, GARAGE_Z, CARS, HERO } from './world/garage.js';
 
 // Leave the garage entrance for the drone-to-McLaren morph, then tour the lineup.
@@ -124,7 +125,8 @@ export class Director {
   measure() {
     const y = window.scrollY;
     this.vh = window.innerHeight;
-    this.tops = this.els.map((el) => el.getBoundingClientRect().top + y);
+    // Browser scroll positions use whole pixels; fractional section tops can miss a boundary.
+    this.tops = this.els.map((el) => Math.round(el.getBoundingClientRect().top + y));
     this.heights = this.els.map((el) => el.offsetHeight);
     this._buildTracks();
   }
@@ -219,6 +221,17 @@ export class Director {
       st.fov = 64;
       st.parallax = 0.4;
       st.droneVisible = false;
+    }
+    st.gallery = s >= 6 && s < 7;
+    st.galleryProgress = Math.max(0, Math.min(1, s - 6));
+    if (st.gallery) {
+      const p = st.galleryProgress;
+      Object.assign(st, galleryCamera(p, galleryPortrait(window.innerWidth, window.innerHeight)));
+      st.fade = clamp01((p - 0.94) / 0.055);
+      st.speed = 0; st.road = 0; st.shake = 0; st.roll = 0;
+      st.aberration = 0; st.parallax = 0; st.veil = 0;
+      st.fog = 0.018; st.bloom = 0.14; st.light = 0; st.kick = 0;
+      st.garage = false; st.droneVisible = false; st.marker = false; st.person = 0;
     }
     st.stripOnHero = false;
     st.chapter = Math.min(ORDER.length - 1, Math.floor(s));
