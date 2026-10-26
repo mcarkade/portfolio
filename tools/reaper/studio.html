@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Reaper studio</title>
+<style>html,body{margin:0;overflow:hidden;background:#08090b}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+try {
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(devicePixelRatio);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
+  document.body.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color('#08090b');
+  const loader = new GLTFLoader();
+  loader.setMeshoptDecoder(MeshoptDecoder);
+  const params = new URLSearchParams(location.search);
+  const { scene: model } = await loader.loadAsync(params.has('raw') ? '/__reaper-raw.glb' : '/public/models/reaper.glb');
+  scene.add(model);
+  const nodes = [];
+  let triangles = 0, vertices = 0;
+  model.traverse((o) => {
+    if (o.name) nodes.push(o.name);
+    if (!o.isMesh) return;
+    o.castShadow = o.receiveShadow = true;
+    triangles += (o.geometry.index?.count || o.geometry.attributes.position.count) / 3;
+    vertices += o.geometry.attributes.position.count;
+    const normal = o.geometry.attributes.normal;
+    if (!normal) throw new Error(`Missing smooth normals: ${o.name}`);
+    for (let i = 0; i < normal.count; i++) {
+      const length = Math.hypot(normal.getX(i), normal.getY(i), normal.getZ(i));
+      if (!Number.isFinite(length) || length < .95 || length > 1.05) throw new Error(`Invalid normal: ${o.name}`);
+    }
+  });
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model, true);
+  const size = box.getSize(new THREE.Vector3());
+  const centre = box.getCenter(new THREE.Vector3());
+  const fitPoints = [];
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    o.geometry.computeBoundingBox();
+    const b = o.geometry.boundingBox;
+    for (const x of [b.min.x,b.max.x]) for (const y of [b.min.y,b.max.y]) for (const z of [b.min.z,b.max.z]) {
+      fitPoints.push(new THREE.Vector3(x,y,z).applyMatrix4(o.matrixWorld));
+    }
+  });
+  const top = new URLSearchParams(location.search).get('view') === 'top';
+  const camera = top ? new THREE.OrthographicCamera(-1,1,1,-1,.01,30) : new THREE.PerspectiveCamera(32,innerWidth/innerHeight,.01,30);
+  if (top) {
+    const halfHeight = Math.max(size.z / 2, size.x / 2 / (innerWidth/innerHeight)) / .86;
+    Object.assign(camera, { left: -halfHeight * innerWidth/innerHeight, right: halfHeight * innerWidth/innerHeight, top: halfHeight, bottom: -halfHeight });
+    camera.position.set(0, 5, 0);
+    camera.up.set(0, 0, -1);
+  } else camera.position.set(1.65, 2.7, -3.7);
+  camera.lookAt(centre);
+  camera.updateProjectionMatrix();
+  if (!top) {
+    for (let attempt = 0; attempt < 30; attempt++) {
+      camera.updateMatrixWorld(true);
+      let extent = 0;
+      for (const point of fitPoints) {
+        const p = point.clone().project(camera);
+        extent = Math.max(extent,Math.abs(p.x),Math.abs(p.y));
+      }
+      if (Math.abs(extent - .9) < .002) break;
+      camera.position.sub(centre).multiplyScalar(extent/.9).add(centre);
+      camera.lookAt(centre);
+    }
+  }
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0x020304,roughness:.85,metalness:0}));
+  floor.rotation.x = -Math.PI/2;
+  floor.position.y = box.min.y-.055;
+  floor.receiveShadow = true;
+  scene.add(floor);
+  const key = new THREE.SpotLight(0xffedd9, 90, 20, .62, .75, 2);
+  key.position.set(-1.7,3.2,-2.4);
+  key.target.position.copy(centre);
+  key.castShadow = params.get('shadows') !== '0';
+  key.shadow.mapSize.set(1024,1024);
+  key.shadow.camera.near = .1;
+  key.shadow.camera.far = 12;
+  key.shadow.bias = -.0001;
+  key.shadow.normalBias = .004;
+  key.shadow.radius = 4;
+  scene.add(key,key.target);
+  const rim = new THREE.DirectionalLight(0xb9cddd, .65);
+  rim.position.set(1,1.3,2.5);
+  scene.add(rim);
+  scene.add(new THREE.HemisphereLight(0xc0c9d0,0x15120e,.23));
+  await renderer.compileAsync(scene,camera);
+  for(let i=0;i<4;i++) { renderer.render(scene,camera); await new Promise(requestAnimationFrame); }
+  const gl = renderer.getContext();
+  const debug = gl.getExtension('WEBGL_debug_renderer_info');
+  window.reaperReport = {
+    triangles,vertices,nodes,
+    bounds: {min:box.min.toArray(),max:box.max.toArray(),size:size.toArray(),centre:centre.toArray()},
+    renderer:debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
+    calls:renderer.info.render.calls,
+    camera:camera.position.toArray(),
+    viewport:[innerWidth,innerHeight,devicePixelRatio],
+  };
+  window.reaperReady = true;
+} catch(error) { window.reaperError=String(error.stack || error); console.error(error); }
+</script>
+</html>

@@ -1,0 +1,55 @@
+{
+  "decoded": {
+    "intro.mp3": {
+      "seconds": 6.5,
+      "frames": 312000,
+      "rate": 48000
+    },
+    "loop.mp3": {
+      "seconds": 44,
+      "frames": 2112000,
+      "rate": 48000,
+      "seamJump": 0.0018450573552399874,
+      "interiorStepP99": 0.016115017235279083
+    },
+    "loop.ogg": {
+      "seconds": 44,
+      "frames": 2112000,
+      "rate": 48000,
+      "seamJump": 0.008742862148210406,
+      "interiorStepP99": 0.016132723540067673
+    },
+    "tick.mp3": {
+      "seconds": 0.04497916666666667,
+      "frames": 2159,
+      "rate": 48000
+    },
+    "whoosh.mp3": {
+      "seconds": 0.36,
+      "frames": 17280,
+      "rate": 48000
+    },
+    "lock.mp3": {
+      "seconds": 0.19,
+      "frames": 9120,
+      "rate": 48000
+    }
+  },
+  "suppressedDuringIntro": true,
+  "clockAdvances": true,
+  "introReleased": true,
+  "loopSingleton": true,
+  "hoverDebounced": true,
+  "mutedUiSuppressed": true,
+  "live": {
+    "engine": 0.08979427814483643,
+    "prop": 0.041680242866277695
+  },
+  "mute": {
+    "master": 0.049327459186315536,
+    "engine": 0,
+    "prop": 0
+  },
+  "credit": "/audio/CREDITS.md",
+  "errors": []
+}

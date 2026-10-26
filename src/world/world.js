@@ -9,10 +9,13 @@ import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUnifo
 import { Drone } from './drone.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { Garage, GARAGE_Z, HERO_X } from './garage.js';
+import { Fluid } from './fluid.js';
 
 const FinalShader = {
   uniforms: {
     tDiffuse: { value: null },
+    tFlow: { value: null },
+    uFlowStrength: { value: 0 },
     uTime: { value: 0 },
     uAberration: { value: 0.0015 },
     uSpeed: { value: 0 },
@@ -23,8 +26,14 @@ const FinalShader = {
   vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse; uniform float uTime, uAberration, uSpeed, uVignette, uFade, uFlash;
+    uniform sampler2D tFlow; uniform float uFlowStrength;
     varying vec2 vUv;
     void main(){
+      vec3 flow = vec3(0.0);
+      if (uFlowStrength > 0.0) flow = texture2D(tFlow, vUv).rgb * uFlowStrength;
+      vec2 smear = flow.rg * 0.06;
+      vec2 split = flow.rg * 0.0018;
+      vec2 uv = clamp(vUv - smear, 0.001, 0.999);
       vec2 c = vUv - 0.5;
       float r = length(c);
       vec2 dir = normalize(c + 1e-5);
@@ -38,17 +47,18 @@ const FinalShader = {
           float t = float(i) / 7.0;
           float w = 1.0 - t * 0.6;
           vec2 o = c * (1.0 - t * uSpeed * 0.09 * smoothstep(0.08, 0.6, r));
-          acc.r += texture2D(tDiffuse, 0.5 + o + dir * ab).r * w;
-          acc.g += texture2D(tDiffuse, 0.5 + o).g * w;
-          acc.b += texture2D(tDiffuse, 0.5 + o - dir * ab).b * w;
+          acc.r += texture2D(tDiffuse, clamp(0.5 + o - smear + dir * ab + split, 0.001, 0.999)).r * w;
+          acc.g += texture2D(tDiffuse, clamp(0.5 + o - smear, 0.001, 0.999)).g * w;
+          acc.b += texture2D(tDiffuse, clamp(0.5 + o - smear - dir * ab - split, 0.001, 0.999)).b * w;
           tot += w;
         }
         col = acc / tot;
       } else {
-        col.r = texture2D(tDiffuse, vUv + dir * ab).r;
-        col.g = texture2D(tDiffuse, vUv).g;
-        col.b = texture2D(tDiffuse, vUv - dir * ab).b;
+        col.r = texture2D(tDiffuse, clamp(uv + dir * ab + split, 0.001, 0.999)).r;
+        col.g = texture2D(tDiffuse, uv).g;
+        col.b = texture2D(tDiffuse, clamp(uv - dir * ab - split, 0.001, 0.999)).b;
       }
+      col = col * (1.0 + flow.b * 0.12) + vec3(0.0006, 0.0008, 0.001) * flow.b;
       float vig = 1.0 - smoothstep(0.18, 0.95, r * uVignette);
       col *= mix(0.35, 1.0, vig);
       col += uFlash;
@@ -113,6 +123,7 @@ export class World {
       composer.addPass(this.bloom);
     }
     this.final = new ShaderPass(FinalShader);
+    this.fluid = new Fluid(renderer, { quality, uniforms: this.final.uniforms });
     composer.addPass(this.final);
     composer.addPass(new OutputPass());
     this.composer = composer;
@@ -533,6 +544,7 @@ export class World {
 
     // Post
     const u = this.final.uniforms;
+    this.fluid.update(dt, this.mouse.x, this.mouse.y);
     u.uTime.value = t;
     u.uSpeed.value = this.quality === 'high' ? speed : 0; // radial blur is desktop-only
     u.uAberration.value = 0.0006 + state.aberration;

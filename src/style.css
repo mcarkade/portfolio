@@ -156,12 +156,17 @@ main { position: relative; z-index: 2; }
 .readout--progress span { position: absolute; inset: 0; background: var(--red); transform-origin: left; transform: scaleX(0); }
 
 /* ---------- Cursor ---------- */
-#cursor { position: fixed; left: 0; top: 0; z-index: 90; pointer-events: none; mix-blend-mode: difference; }
-.cursor__ring, .cursor__dot { position: absolute; left: 0; top: 0; border-radius: 50%; transform: translate(-50%, -50%); }
-.cursor__ring { width: 2.4rem; height: 2.4rem; border: 1px solid #fff; transition: width .45s var(--ease), height .45s var(--ease), background .3s; }
-.cursor__dot { width: 4px; height: 4px; background: #fff; }
-.cursor__label { position: absolute; left: 1.6rem; top: .9rem; font-family: var(--mono); font-size: .68rem; color: #fff; white-space: nowrap; letter-spacing: .06em; }
-#cursor.is-hover .cursor__ring { width: 4.2rem; height: 4.2rem; background: rgba(255,255,255,.1); }
+#cursor { position: fixed; left: 0; top: 0; z-index: 90; pointer-events: none; color: #f1ede4; transition: opacity .18s; }
+.cursor__ring, .cursor__dot { position: absolute; left: 0; top: 0; border-radius: 50%; transform: translate(-50%, -50%); will-change: transform; }
+.cursor__ring { width: 28px; height: 28px; border-radius: 999px; border: 1px solid rgba(241,237,228,.55); background: transparent; transition: background .2s, border-color .2s, opacity .2s; }
+.cursor__dot { width: 3px; height: 3px; background: currentColor; box-shadow: 0 0 2px #000; transition: opacity .15s; }
+.cursor__label { position: absolute; left: 0; top: 0; max-width: 190px; overflow: hidden; text-overflow: ellipsis; font-family: var(--mono); font-size: 10px; font-weight: 500; line-height: 1; color: #151313; white-space: nowrap; letter-spacing: .05em; opacity: 0; transition: opacity .15s; will-change: transform; }
+#cursor.is-hover .cursor__ring { border-color: #f1ede4; }
+#cursor.is-hover.is-label .cursor__ring { background: #f1ede4; }
+#cursor.is-hover.is-label .cursor__label { opacity: 1; }
+#cursor.is-hover.is-label .cursor__dot { opacity: 0; }
+#cursor.is-pressed .cursor__ring { background: #e3262f; border-color: #e3262f; }
+#cursor.is-pressed .cursor__label { color: #fff; }
 #cursor.is-hidden { opacity: 0; }
 @media (hover: none), (pointer: coarse) { #cursor { display: none; } }
 

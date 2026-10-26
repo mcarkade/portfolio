@@ -34,6 +34,8 @@ The car models are third-party works, used under Creative Commons licences for t
 - Ferrari F40 (title-sequence still only): Ddiaz Design, CC BY 4.0
 - Porsche 911 GT3 (992.2): Ddiaz Design, CC BY-NC-SA 4.0
 
-Source URLs are listed in `public/media/manifest.json`. Fonts: Archivo and Geist Mono (SIL OFL). Everything else, including the drone model, the music and the code, is original.
+Music: "Cylinder Seven" by Chris Zabriskie, CC BY 4.0, edited for this site (details in `public/audio/CREDITS.md`).
+
+Source URLs are listed in `public/media/manifest.json`. Fonts: Archivo and Geist Mono (SIL OFL). Everything else, including the drone model and the code, is original.
 
 © 2026 Abhinav Pullela

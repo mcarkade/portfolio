@@ -1,0 +1,177 @@
+{
+  "sample_rate": 44100,
+  "files": {
+    "intro.mp3": {
+      "seconds": 6.5,
+      "bytes": 104950,
+      "sha256": "c72eab5e8bc46077161244fd53df2f176d511bbd660ceb86e6aa21f276d959f8",
+      "integrated_lufs": -14.06,
+      "true_peak_dbtp": -1.44,
+      "loudness_range_lu": 2.8,
+      "dc": [
+        4.0923088349598675e-05,
+        3.665852004218872e-05
+      ],
+      "clipped_samples": 0,
+      "energy_above_8k_percent": 0.00033383491122279
+    },
+    "loop.mp3": {
+      "seconds": 44.0,
+      "bytes": 705140,
+      "sha256": "651420737685781362ea2fe3170cf6f7a3ec0f763b3b375c6a48f8c8cf3d8006",
+      "integrated_lufs": -16.05,
+      "true_peak_dbtp": -3.48,
+      "loudness_range_lu": 5.4,
+      "dc": [
+        -1.5454367777939555e-06,
+        3.240125898445335e-07
+      ],
+      "clipped_samples": 0,
+      "energy_above_8k_percent": 8.730782782611789e-06,
+      "seam": {
+        "sample_jump": 0.001815389608964324,
+        "jump_dbfs": -54.82060308970028,
+        "interior_step_p99": 0.023733664751052867,
+        "flux_at_join": 0.0010637283827733982,
+        "flux_interior_p95": 0.0019674068761790847,
+        "flux_join_percentile": 64.93506493506493
+      },
+      "stereo_correlation": 0.8624673812459585,
+      "mono_fold_loss_db": -0.3224794487779672
+    },
+    "loop.ogg": {
+      "seconds": 44.0,
+      "bytes": 466660,
+      "sha256": "253b5379c41dda1b81237b06494986404e1950f58260c089be4e1a1dc8bc8ec7",
+      "integrated_lufs": -16.03,
+      "true_peak_dbtp": -3.42,
+      "loudness_range_lu": 5.4,
+      "dc": [
+        1.1506172876625165e-05,
+        -7.121105471098568e-05
+      ],
+      "clipped_samples": 0,
+      "energy_above_8k_percent": 8.69963520406975e-06,
+      "seam": {
+        "sample_jump": 0.009576140437275171,
+        "jump_dbfs": -40.37618986873986,
+        "interior_step_p99": 0.023695769608020785,
+        "flux_at_join": 0.0010485424817613328,
+        "flux_interior_p95": 0.00195098320298519,
+        "flux_join_percentile": 63.344818446859264
+      },
+      "stereo_correlation": 0.8592270157363983,
+      "mono_fold_loss_db": -0.33040019807389376
+    },
+    "tick.mp3": {
+      "seconds": 0.044989,
+      "bytes": 1714,
+      "sha256": "7ec06b842d0a15a12822af4ae14e2b57b724f0ea654f17baa4d21ba8999032a7",
+      "integrated_lufs": null,
+      "true_peak_dbtp": -23.41,
+      "loudness_range_lu": 0.0,
+      "dc": [
+        -1.2919332141053137e-05,
+        -1.2919332141053137e-05
+      ],
+      "clipped_samples": 0,
+      "energy_above_8k_percent": 0.21361675970222618
+    },
+    "whoosh.mp3": {
+      "seconds": 0.36,
+      "bytes": 6730,
+      "sha256": "4a63c543ffe37f8eeb99e8fcc19cee1f9739958a696d2310cfb0a165003ac313",
+      "integrated_lufs": null,
+      "true_peak_dbtp": -19.41,
+      "loudness_range_lu": 0.0,
+      "dc": [
+        1.3917766958374238e-06,
+        1.269824852187029e-06
+      ],
+      "clipped_samples": 0,
+      "energy_above_8k_percent": 0.32940346799121184
+    },
+    "lock.mp3": {
+      "seconds": 0.19,
+      "bytes": 4222,
+      "sha256": "2dd1c16339fa9ccc7b69867f59f1a0f5bf7f93331c38d0ed715696b4c53c05c7",
+      "integrated_lufs": null,
+      "true_peak_dbtp": -19.19,
+      "loudness_range_lu": 0.0,
+      "dc": [
+        -2.0438538481516616e-05,
+        -1.819456856312264e-05
+      ],
+      "clipped_samples": 0,
+      "energy_above_8k_percent": 9.881371895740873e-05
+    }
+  },
+  "loop_rotation_seconds": 6.063265,
+  "intro_onsets_seconds": [
+    0.0522,
+    0.1451,
+    0.2264,
+    0.3454,
+    0.4151,
+    0.4847,
+    0.566,
+    0.6647,
+    0.7779,
+    0.8678,
+    0.9665,
+    1.042,
+    1.1175,
+    1.2132,
+    1.2916,
+    1.3671,
+    1.4309,
+    1.5006,
+    1.5906,
+    1.6544,
+    1.727,
+    1.8402,
+    1.9563,
+    2.0666,
+    2.1507,
+    2.2291,
+    2.2959,
+    2.3742,
+    2.4468,
+    2.5223,
+    2.6355,
+    2.7283,
+    2.8619,
+    2.9576,
+    3.0331,
+    3.1492,
+    3.2653,
+    3.3785,
+    3.4946,
+    3.6136,
+    3.7297,
+    3.8197,
+    3.9445,
+    4.0403,
+    4.1361,
+    4.2144,
+    4.3102,
+    4.3944,
+    4.4727,
+    4.5627,
+    4.6643,
+    4.7427,
+    4.8239,
+    4.94,
+    5.0213,
+    5.1374,
+    5.2187,
+    5.2883,
+    5.4044,
+    5.477,
+    5.6163,
+    5.7324,
+    5.8485
+  ],
+  "measured_hit_leading_edge_seconds": 4.398,
+  "cue_error_ms": 0.0
+}

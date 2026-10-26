@@ -1,0 +1,221 @@
+{
+  "model": {
+    "bytes": 932740,
+    "sha256": "6b3a956a44213f3a0b58a2924c075b865cd265d9ba68430211d9ebc1f9929db3",
+    "triangles": 175942,
+    "vertices": 126681,
+    "bounds": {
+      "min": [
+        -1.000000016096827,
+        -0.13239739115320265,
+        -0.5201507025616582
+      ],
+      "max": [
+        1.0000000162762372,
+        0.1323924469901117,
+        0.5201507059829842
+      ],
+      "size": [
+        2.0000000323730642,
+        0.26478983814331436,
+        1.0403014085446425
+      ],
+      "centre": [
+        8.970513221129295e-11,
+        -0.0000024720815454681855,
+        1.7106630001428869e-9
+      ]
+    },
+    "nodes": [
+      "Reaper",
+      "Reaper_R5G",
+      "fuselage",
+      "A04_rear_body_former",
+      "A13_front_horizontal_frame",
+      "A16_middle_body_former",
+      "A18_tail_bulkhead",
+      "A25_front_gear_crossmember",
+      "A34_front_body_former",
+      "A43_aft_horizontal_frame",
+      "A47_gear_crossplate",
+      "A48_aft_gear_crossmember",
+      "A54_centre_body_former",
+      "A62_F_front_keel",
+      "A62_A_aft_keel",
+      "A62_DL_keel_lap_L",
+      "A62_DR_keel_lap_R",
+      "A06_centre_fairing",
+      "A08_forward_upper_cover",
+      "A12_tail_carrier",
+      "A15_aft_upper_cover",
+      "A17_lower_body_wrap",
+      "A20_tail_underside",
+      "A42_aft_lower_body",
+      "A56_forward_lower_body",
+      "A59_nose_upper_cover",
+      "motor_mount",
+      "A26_motor_firewall",
+      "wing_R",
+      "A01_R_rear_rod_rib_R",
+      "A05_R_front_wing_spar_R",
+      "A10_R_aileron_outer_endplate_R",
+      "A24_R_middle_wing_rib_R",
+      "A35_R_inner_wing_rib_R",
+      "A44_R_reinforced_outer_rib_R",
+      "A53_R_aileron_inner_endplate_R",
+      "A07_R_I_rear_spar_inboard_R",
+      "A07_R_O_rear_spar_outboard_R",
+      "A07_R_D1_rear_spar_lap_1_R",
+      "A07_R_D2_rear_spar_lap_2_R",
+      "A21_aileron_R",
+      "A36_hinge_rail_R",
+      "A38_outer_wing_skin_R",
+      "A45_wing_root_R",
+      "A49_inner_wing_skin_R",
+      "HWR_aileron_horn_R",
+      "wing_L",
+      "A01_L_rear_rod_rib_L",
+      "A05_L_front_wing_spar_L",
+      "A10_L_aileron_outer_endplate_L",
+      "A24_L_middle_wing_rib_L",
+      "A35_L_inner_wing_rib_L",
+      "A44_L_reinforced_outer_rib_L",
+      "A53_L_aileron_inner_endplate_L",
+      "A07_L_I_rear_spar_inboard_L",
+      "A07_L_O_rear_spar_outboard_L",
+      "A07_L_D1_rear_spar_lap_1_L",
+      "A07_L_D2_rear_spar_lap_2_L",
+      "A11_aileron_L",
+      "A23_hinge_rail_L",
+      "A27_outer_wing_skin_L",
+      "A52_inner_wing_skin_L",
+      "A55_wing_root_L",
+      "HWL_aileron_horn_L",
+      "tail_L",
+      "A22_fixed_V_tail_L",
+      "A60_ruddervator_L",
+      "HTL_tail_horn_L",
+      "HTLB_tail_horn_backing_L",
+      "tail_R",
+      "A41_ruddervator_R",
+      "A57_fixed_V_tail_R",
+      "HTR_tail_horn_R",
+      "HTRB_tail_horn_backing_R",
+      "carbon_spars",
+      "CF_FRONT_front_carbon_rod",
+      "CF_REAR_rear_carbon_rod"
+    ]
+  },
+  "source": {
+    "source": "https://github.com/mcarkade/Reaper/blob/febf878892c55c2b860df741a00ce0af51c1f41d/CAD/Reaper_R5_Assembly.step",
+    "source_sha256": "713c51ac84d766d1d2bd014de94ef0960325acb630762ea1df6b938b0305e2a6",
+    "units": "metres",
+    "up": "+Y",
+    "nose": "-Z",
+    "source_transform": "target=(-source.X, source.Z, source.Y)/1000; bbox-centred",
+    "side_names": "L/R retain the original CAD side identities",
+    "chord_tolerance_mm": 0.08,
+    "angular_tolerance_radians": 0.08,
+    "parts_dropped": [],
+    "source_absences": [
+      "N1 printed nose reference",
+      "motor",
+      "propeller",
+      "landing gear",
+      "electronics"
+    ],
+    "face_parameter_repairs": [
+      "A07_R_I"
+    ],
+    "trim_curve_remeshes": [
+      {
+        "part": "A07_R_I",
+        "cad_area_mm2": 444.00612160428625,
+        "mesh_area_mm2": 444.0061182959149,
+        "relative_area_error": 7.451184054352188e-9,
+        "max_chord_error_mm": 1.5888218580782548e-14
+      }
+    ]
+  },
+  "simplification": {
+    "before": 1039848,
+    "after": 175942,
+    "ratio": 0.15,
+    "relativeError": 0.0005,
+    "lockBorder": true
+  },
+  "validation": {
+    "numErrors": 0,
+    "numWarnings": 0,
+    "numInfos": 2,
+    "numHints": 0,
+    "messages": [
+      {
+        "code": "UNSUPPORTED_EXTENSION",
+        "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+        "severity": 2,
+        "pointer": "/extensionsUsed/0"
+      },
+      {
+        "code": "UNUSED_OBJECT",
+        "message": "This object may be unused.",
+        "severity": 2,
+        "pointer": "/buffers/0"
+      }
+    ],
+    "truncated": false
+  },
+  "runtime": {
+    "browser": "155.0.8059.85",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop GPU (0x000028A1) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "errors": []
+  },
+  "views": {
+    "hero": {
+      "camera": [
+        0.8614972451890519,
+        1.4097215834252044,
+        -1.9318423064800103
+      ],
+      "viewport": [
+        1600,
+        1000,
+        2
+      ],
+      "calls": 137
+    },
+    "top": {
+      "camera": [
+        0,
+        5,
+        0
+      ],
+      "viewport": [
+        1600,
+        1200,
+        2
+      ],
+      "calls": 137
+    }
+  },
+  "files": {
+    "reaper.webp": {
+      "bytes": 30686,
+      "width": 1600,
+      "height": 1000,
+      "sha256": "afdbc78c46107e86e921d80a22e65e8beb1bfc21d27bd83df507862b76eeaac5"
+    },
+    "reaper-sm.webp": {
+      "bytes": 8600,
+      "width": 640,
+      "height": 400,
+      "sha256": "4bbf488ae56952a20aebbcaffbf26b6064c34ad98d20f92264d6516219fa1b06"
+    },
+    "reaper-top.webp": {
+      "bytes": 27144,
+      "width": 1600,
+      "height": 1200,
+      "sha256": "c0ab1c604dc21dfa69876a4c9f55856265302fc32914020c836ee87d1618f7c4"
+    }
+  }
+}

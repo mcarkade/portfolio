@@ -41,37 +41,90 @@ export class Cursor {
     this.dot = this.el.querySelector('.cursor__dot');
     this.x = innerWidth / 2; this.y = innerHeight / 2;
     this.rx = this.x; this.ry = this.y;
+    this.px = this.x; this.py = this.y;
+    this.vx = 0; this.vy = 0;
+    this.width = 28; this.height = 28;
+    this.angle = 0;
+    this.motion = matchMedia('(prefers-reduced-motion: reduce)');
+    this.el.classList.add('is-hidden');
     this.audio = audio;
     if (!finePointer) return;
-    addEventListener('pointermove', (e) => { this.x = e.clientX; this.y = e.clientY; this.el.classList.remove('is-hidden'); }, { passive: true });
-    document.addEventListener('pointerleave', () => this.el.classList.add('is-hidden'));
-    document.addEventListener('pointerover', (e) => {
-      const t = e.target.closest('a, button, summary, [data-cursor]');
+    const hide = () => { this.el.classList.add('is-hidden'); this.el.classList.remove('is-pressed', 'is-hover'); this.target = this._last = null; this.vx = this.vy = 0; this.seen = false; };
+    addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') { hide(); return; }
+      this.x = e.clientX; this.y = e.clientY;
+      hover(e.target);
+      if (!this.seen) { this.rx = this.px = this.x; this.ry = this.py = this.y; this.seen = true; }
+      this.el.classList.remove('is-hidden');
+    }, { passive: true });
+    document.addEventListener('pointerleave', hide);
+    addEventListener('blur', hide);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) hide(); });
+    addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') this.el.classList.add('is-pressed'); });
+    addEventListener('pointerup', () => this.el.classList.remove('is-pressed'));
+    addEventListener('pointercancel', hide);
+    const hover = (node) => {
+      const candidate = node instanceof Element ? node.closest('a, button, summary, [data-cursor]') : null;
+      const t = candidate?.matches(':disabled, [aria-disabled="true"]') ? null : candidate;
+      this.target = t;
+      if (t === this._last) return;
       this.el.classList.toggle('is-hover', !!t);
       this.label.textContent = t?.dataset.cursor || '';
+      this.el.classList.toggle('is-label', !!this.label.textContent);
+      this.labelWidth = this.label.textContent ? Math.min(220, Math.max(64, this.label.textContent.length * 7 + 28)) : 46;
       if (t && t !== this._last) audio?.play('tick', 0.5);
       this._last = t;
-    });
+    };
+    document.addEventListener('pointerover', (e) => hover(e.target));
+    document.addEventListener('pointerout', (e) => hover(e.relatedTarget));
+    addEventListener('scroll', () => { if (this.seen) hover(document.elementFromPoint(this.x, this.y)); }, { passive: true });
   }
 
   // Hide the system cursor only once the replacement is actually being drawn.
   enable() {
     if (!finePointer || this.enabled) return;
     this.enabled = true;
-    document.body.style.cursor = 'none';
     const style = document.createElement('style');
-    style.textContent = 'a, button, summary { cursor: none; }';
+    style.textContent = '@media (hover: hover) and (pointer: fine) { body, a, button, summary, [data-cursor] { cursor: none; } }';
     document.head.appendChild(style);
   }
 
   update(dt) {
-    if (!finePointer) return;
-    const k = 1 - Math.exp(-dt * 18);
-    this.rx += (this.x - this.rx) * k;
-    this.ry += (this.y - this.ry) * k;
-    this.dot.style.transform = `translate(${this.x}px, ${this.y}px) translate(-50%, -50%)`;
-    this.ring.style.transform = `translate(${this.rx}px, ${this.ry}px) translate(-50%, -50%)`;
-    this.label.style.transform = `translate(${this.rx}px, ${this.ry}px)`;
+    if (!finePointer || !this.seen) return;
+    dt = Math.max(1 / 240, Math.min(dt, 0.05));
+    const reduce = this.motion.matches;
+    const k = reduce ? 1 : 1 - Math.exp(-dt * 22);
+    this.vx += ((this.x - this.px) / dt - this.vx) * k;
+    this.vy += ((this.y - this.py) / dt - this.vy) * k;
+    this.px = this.x; this.py = this.y;
+    const stretch = reduce || this.target ? 0 : Math.min(0.75, Math.hypot(this.vx, this.vy) / 2400);
+    if (stretch > 0.01) {
+      const a = Math.atan2(this.vy, this.vx);
+      this.angle += Math.atan2(Math.sin(a - this.angle), Math.cos(a - this.angle)) * k;
+    }
+    let tx = this.x, ty = this.y;
+    if (this.target?.isConnected && !reduce) {
+      const r = this.target.getBoundingClientRect();
+      if (r.width < 260 && r.height < 90) {
+        tx += (r.left + r.width / 2 - tx) * 0.32;
+        ty += (r.top + r.height / 2 - ty) * 0.32;
+      }
+    }
+    if (this.target) {
+      tx = Math.max(this.labelWidth / 2 + 6, Math.min(innerWidth - this.labelWidth / 2 - 6, tx));
+      ty = Math.max(23, Math.min(innerHeight - 23, ty));
+    }
+    this.rx += (tx - this.rx) * k;
+    this.ry += (ty - this.ry) * k;
+    this.width += ((this.target ? this.labelWidth : 28) - this.width) * k;
+    this.height += ((this.target ? (this.label.textContent ? 34 : 46) : 28) - this.height) * k;
+    const pressed = this.el.classList.contains('is-pressed') ? 0.86 : 1;
+    const angle = this.target ? 0 : this.angle;
+    this.ring.style.width = `${this.width}px`;
+    this.ring.style.height = `${this.height}px`;
+    this.dot.style.transform = `translate3d(${this.x}px, ${this.y}px, 0) translate(-50%, -50%) scale(${pressed})`;
+    this.ring.style.transform = `translate3d(${this.rx}px, ${this.ry}px, 0) translate(-50%, -50%) rotate(${angle}rad) scale(${(1 + stretch) * pressed}, ${pressed / (1 + stretch * 0.45)})`;
+    this.label.style.transform = `translate3d(${this.rx}px, ${this.ry}px, 0) translate(-50%, -50%) scale(${pressed})`;
   }
 }
 
