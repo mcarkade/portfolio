@@ -16,7 +16,7 @@ const DEFAULTS = {
   drone: [0, 1.1, 0], droneYaw: 0, dronePitch: 0, droneRoll: 0, explode: 0, spin: 0,
   grid: 0.6, person: 0, personX: 0,
   heroYaw: 0.6, heroZ: 0, turntable: 0, carExplode: 0, strip: 0, stripX: 0,
-  speed: 0, road: 0, veil: 0, morph: 0,
+  speed: 0, road: 0, veil: 0, morph: 0, thermal: 0,
   roadPos: [HERO_X, 0, GZ],
 };
 
@@ -42,6 +42,11 @@ function keys() {
     ['vision', 0.7, { drone: [2.2, 2.6, -11.6], cam: [2.5, 2.95, -9.9], look: [1.0, 1.9, -15], droneRoll: 0, person: 1 }],
     ['vision', 0.82, { drone: [0.2, 2.0, -17.6], cam: [0.9, 2.9, -15.6], look: [0, 0.8, -19], fov: 42, dronePitch: -0.06, droneYaw: 0 }],
     ['vision', 0.93, { drone: [0, 1.2, -19], cam: [0.7, 2.6, -16.9], look: [0, 0.6, -19], droneYaw: 1.6, dronePitch: 0, person: 0 }],
+    // cut into the drone's own thermal camera for the detect-and-avoid beat, then back out for the landing
+    ['vision', 0.04, { thermal: 0 }],
+    ['vision', 0.13, { thermal: 1 }],
+    ['vision', 0.7, { thermal: 1 }],
+    ['vision', 0.79, { thermal: 0 }],
     ['vision', 0.18, { personX: -1.8 }],
     ['vision', 0.5, { personX: 0.3 }],
     ['lock', 0, { drone: [0, 1.45, -19], cam: [0.5, 0.4, -16.0], look: [0, 1.45, -19], fov: 40, veil: 0.45, droneYaw: 2.4, grid: 0.5 }],
@@ -184,6 +189,16 @@ export class Director {
     st.lineup = !(s > this.s('launch', 0.1) && s < this.s('about', 0.8));
     st.droneVisible = s < this.s('garage', 0.15) || s > this.s('about', 0.8);
     st.marker = s > this.sp('vision', 0.4) && s < this.s('garage', 0.15);
+    // Inside the drone: the camera rides on its nose, a hard cut hidden by the feed's static.
+    if (st.thermal > 0.5) {
+      const d = st.drone, yaw = st.droneYaw;
+      const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+      st.cam = [d[0] + fx * 0.2, d[1] - 0.04, d[2] + fz * 0.2];
+      st.look = [d[0] + fx * 6 + st.droneRoll * -4, d[1] - 1.35 + st.dronePitch * -6, d[2] + fz * 6];
+      st.fov = 64;
+      st.parallax = 0.4;
+      st.droneVisible = false;
+    }
     st.stripOnHero = false;
     st.chapter = Math.min(ORDER.length - 1, Math.floor(s));
     return st;

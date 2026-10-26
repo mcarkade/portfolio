@@ -24,18 +24,30 @@ const FinalShader = {
     uVignette: { value: 0.9 },
     uFade: { value: 0 },
     uFlash: { value: 0 },
+    uThermal: { value: 0 },
+    uStatic: { value: 0 },
   },
   vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse; uniform float uTime, uAberration, uSpeed, uVignette, uFade, uFlash;
     uniform sampler2D tFlow; uniform float uFlowStrength;
+    uniform float uThermal, uStatic;
     varying vec2 vUv;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    // ironbow false colour, as on a FLIR feed
+    vec3 ironbow(float t){
+      vec3 a = vec3(0.0), b = vec3(0.2, 0.0, 0.42), c = vec3(0.8, 0.05, 0.32), d = vec3(1.0, 0.52, 0.02), e = vec3(1.0, 0.97, 0.78);
+      return t < 0.25 ? mix(a, b, t * 4.0) : t < 0.5 ? mix(b, c, t * 4.0 - 1.0) : t < 0.75 ? mix(c, d, t * 4.0 - 2.0) : mix(d, e, t * 4.0 - 3.0);
+    }
     void main(){
       vec3 flow = vec3(0.0);
       if (uFlowStrength > 0.0) flow = texture2D(tFlow, vUv).rgb * uFlowStrength;
       vec2 smear = flow.rg * 0.06;
       vec2 split = flow.rg * 0.0018;
       vec2 uv = clamp(vUv - smear, 0.001, 0.999);
+      // the feed tears sideways while the camera switches
+      float tear = (hash(vec2(floor(vUv.y * 48.0), floor(uTime * 24.0))) - 0.5) * 0.12 * uStatic;
+      uv.x = clamp(uv.x + tear, 0.001, 0.999);
       vec2 c = vUv - 0.5;
       float r = length(c);
       vec2 dir = normalize(c + 1e-5);
@@ -61,6 +73,13 @@ const FinalShader = {
         col.b = texture2D(tDiffuse, clamp(uv - dir * ab - split, 0.001, 0.999)).b;
       }
       col = col * (1.0 + flow.b * 0.12) + vec3(0.0006, 0.0008, 0.001) * flow.b;
+      if (uThermal > 0.0) {
+        float l = dot(col, vec3(0.3, 0.59, 0.11));
+        float heat = clamp(pow(l * 1.9, 0.7) * 0.92 + 0.04 + (hash(vUv * 900.0 + uTime) - 0.5) * 0.05, 0.0, 1.0);
+        vec3 th = ironbow(heat) * (0.94 + 0.06 * sin(vUv.y * 900.0)) * 1.25;
+        col = mix(col, th, uThermal);
+      }
+      col = mix(col, vec3(hash(vUv * 700.0 + fract(uTime * 7.0))), uStatic * 0.8);
       float vig = 1.0 - smoothstep(0.18, 0.95, r * uVignette);
       col *= mix(0.35, 1.0, vig);
       col += uFlash;
@@ -564,6 +583,10 @@ export class World {
     u.uAberration.value = 0.0006 + state.aberration;
     u.uFade.value = state.fade;
     u.uFlash.value = state.flash;
+    u.uThermal.value = state.thermal > 0.5 ? 1 : 0;
+    u.uStatic.value = Math.max(0, 1 - Math.abs(state.thermal - 0.5) * 5);
+    // the person is the warmest thing in the drone's view
+    this.person.children[0].material.emissive.setScalar(state.thermal > 0.5 ? 0.38 : 0);
     if (this.bloom) this.bloom.strength = state.bloom;
     this.renderer.toneMappingExposure = state.exposure;
 

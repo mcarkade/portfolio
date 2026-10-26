@@ -278,7 +278,8 @@ main { position: relative; z-index: 2; }
 .hudframe__box.is-on { opacity: 1; }
 .hudframe__box span { position: absolute; left: -1.5px; top: -1.6rem; background: var(--red); padding: .15rem .4rem; color: var(--bone); white-space: nowrap; }
 .hudframe__meta { position: absolute; right: 1rem; bottom: 1rem; display: flex; gap: 1.5rem; color: var(--ash); }
-.vision__title { position: absolute; left: 0; bottom: 10vh; max-width: 14ch; }
+.vision__title { position: absolute; left: 0; bottom: 10vh; max-width: 14ch; transition: opacity .5s var(--ease); }
+.vision.is-pov .vision__title { opacity: 0; }
 
 .lock { height: 230vh; }
 .lock__copy { position: absolute; left: 0; bottom: 12vh; max-width: 34rem; }

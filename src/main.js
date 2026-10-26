@@ -317,6 +317,7 @@ function domFrame(st, y, dt) {
   const pv = director.pinned('vision', y);
   const inVision = st.chapter === 2;
   visionSection.classList.toggle('is-active', inVision && pv > 0.02 && pv < 0.99);
+  visionSection.classList.toggle('is-pov', st.thermal > 0.5);
   if (inVision) {
     let label = VISION_STATES[0][1];
     for (const [p, l] of VISION_STATES) if (pv >= p) label = l;
