@@ -64,7 +64,7 @@ button { font: inherit; color: inherit; }
 }
 /* no z-index: the pinned type below has to blend with the canvas itself, not with main's own layer */
 main { position: relative; }
-.drone .sticky, .vision .sticky, .lock .sticky, .launch .sticky { mix-blend-mode: difference; }
+.drone .sticky, .vision .sticky, .lock .sticky { mix-blend-mode: difference; }
 
 /* ---------- Loader ---------- */
 @property --loader-p { syntax: '<number>'; inherits: true; initial-value: 0; }
