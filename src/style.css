@@ -186,7 +186,7 @@ main { position: relative; z-index: 2; }
 .hero__copy { position: absolute; left: var(--pad); top: 0; height: 100vh; height: 100svh; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 15vh; max-width: min(64rem, 92vw); }
 .hero__name { margin: 0 0 1.2rem; font-family: var(--mono); font-size: .8rem; color: var(--ash); letter-spacing: .06em; }
 .hero__title {
-  margin: 0; font-size: clamp(3.2rem, min(10.4vw, 15.5vh), 12rem); font-weight: 800; font-stretch: 72%; line-height: .86; letter-spacing: -.02em;
+  margin: 0; font-size: clamp(3.2rem, min(10.4vw, 15.5vh), 12rem); font-weight: 800; font-stretch: 72%; line-height: .86; letter-spacing: -.02em; max-width: 6.6em; /* always breaks after "machines", clear of the drone */
 }
 .hero__sub { max-width: 30rem; margin: 1.6rem 0 0; color: var(--ash); }
 .hero__cue { position: absolute; right: var(--pad); top: calc(100svh - 15vh - 3rem); margin: 0; display: flex; align-items: center; gap: .8rem; font-size: .85rem; color: var(--ash); }
