@@ -2,40 +2,54 @@ import * as THREE from 'three';
 import { galleryRail, GALLERY_END, galleryPortrait } from './gallery-path.js';
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
-const vertex = `varying vec2 vUv; varying vec3 vView;
-void main(){vUv=uv;vec4 p=modelViewMatrix*vec4(position,1.);vView=-p.xyz;gl_Position=projectionMatrix*p;}`;
+const vertex = `uniform float uVelocity; varying vec2 vUv; varying vec3 vView;
+void main(){
+ vUv=uv;
+ vec3 bent=position;
+ bent.z+=uVelocity*(position.y*position.y*4.-.3)*.7;
+ bent.x+=uVelocity*position.y*.045;
+ vec4 p=modelViewMatrix*vec4(bent,1.);
+ vView=-p.xyz;gl_Position=projectionMatrix*p;
+}`;
 const fragment = `
 uniform sampler2D uMap,uAlt,uLabel;
 uniform vec2 uSize,uImage,uAltImage,uCursor;
-uniform float uHover,uTime,uAlternate,uVideo,uOpacity,uFocus;
+uniform float uHover,uSweep,uVelocity,uAlternate,uVideo,uOpacity,uFocus;
 varying vec2 vUv; varying vec3 vView;
 vec2 cover(vec2 uv,vec2 image){float a=uSize.x/uSize.y;float b=image.x/image.y;return (uv-.5)*vec2(min(1.,a/b),min(1.,b/a))+.5;}
 float rounded(vec2 p,vec2 b,float r){vec2 q=abs(p)-b+r;return min(max(q.x,q.y),0.)+length(max(q,0.))-r;}
+vec3 image(sampler2D map,vec2 size,vec2 point){
+ vec2 uv=cover(point,size);
+ vec2 split=vec2(uVelocity*.0015,0.);
+ return vec3(texture2D(map,uv+split).r,texture2D(map,uv).g,texture2D(map,uv-split).b);
+}
 void main(){
  vec2 p=(vUv-.5)*uSize;
  float d=rounded(p,uSize*.5-.025,.19);
  float aa=max(fwidth(d),.001);
  if(d>aa) discard;
- vec2 bend=(vUv-.5)*.006+uCursor*.008*uHover;
- vec2 uv=cover(vUv+bend,uImage);
- vec3 col=texture2D(uMap,uv).rgb;
+ vec2 bend=uCursor*.014*uHover+vec2(uVelocity*.008,-uVelocity*.012);
+ vec2 point=(vUv-.5)*.95+.5;
+ vec3 col=image(uMap,uImage,point+bend);
  if(uVideo>.5) col=mix(col/12.92,pow((col+.055)/1.055,vec3(2.4)),step(vec3(.04045),col));
- vec3 alt=texture2D(uAlt,cover(vUv-bend,uAltImage)).rgb;
- float reveal=1.-smoothstep(uAlternate-.06,uAlternate+.06,vUv.x);
- col=mix(col,alt,reveal*step(.001,uAlternate));
+ if(uAlternate>.001){
+  vec3 alt=image(uAlt,uAltImage,point-bend);
+  float reveal=1.-smoothstep(uAlternate-.06,uAlternate+.06,vUv.x);
+  col=mix(col,alt,reveal);
+ }
  float edge=1.-smoothstep(.0,.055,-d);
  float inner=1.-smoothstep(.045,.11,-d);
- vec3 spectral=.5+.5*cos(vec3(0.,1.9,3.8)+vUv.x*4.+vUv.y*3.+uHover);
- float fresnel=pow(1.-abs(normalize(vView).z),2.);
+ vec3 normal=normalize(cross(dFdx(vView),dFdy(vView)));
+ float fresnel=pow(1.-abs(dot(normal,normalize(vView))),2.);
  col*=.88;
  col*=1.-.65*exp(-length((vUv-vec2(.9,.91))*vec2(1.,1.6))*12.);
- col+=spectral*(inner*.09+fresnel*.12);
+ col+=vec3(.75,.78,.82)*(inner*.045+fresnel*.11);
  float glint=pow(max(0.,sin(vUv.x*6.+vUv.y*3.+.6)),14.);
- col=mix(col,vec3(.38,.32,.29)+spectral*.22,edge*.75);
- col+=glint*inner*.45;
+ col=mix(col,vec3(.35,.33,.32),edge*.7);
+ col+=glint*inner*.18;
  col=mix(col,vec3(.85,.82,.77),inner*uFocus);
- float sweep=pow(max(0.,1.-abs(vUv.x+vUv.y*.28-mod(uTime*.27,1.7)+.35)*7.),4.)*uHover;
- col+=vec3(.22,.18,.15)*sweep;
+ float sweep=exp(-pow((vUv.x+vUv.y*.28-mix(-.35,1.65,uSweep))*8.,2.))*uHover;
+ col+=vec3(.15,.13,.11)*sweep;
  col*=1.-.78*(1.-smoothstep(.02,.47,vUv.y));
  vec4 label=texture2D(uLabel,vUv);
  col=mix(col,label.rgb,label.a);
@@ -57,7 +71,7 @@ export class Gallery {
     this.overlay.hidden = true;
     document.body.append(this.overlay);
     this.rayPoint = new THREE.Vector3();
-    this.panelGeometry = new THREE.PlaneGeometry(1, 1);
+    this.panelGeometry = new THREE.PlaneGeometry(1, 1, 32, 20);
     this.panels = this.links.map((link, i) => this.makePanel(link, i));
     this.makeSpace();
     this.velocity = 0;
@@ -74,6 +88,7 @@ export class Gallery {
       link.addEventListener('blur', () => { this.focusIndex = -1; });
     });
     document.addEventListener('visibilitychange', () => { if (document.hidden) this.pause(); });
+    reduce.addEventListener('change', () => { if (reduce.matches) this.pause(); });
   }
 
   makePanel(link, i) {
@@ -83,7 +98,7 @@ export class Gallery {
       uMap: { value: empty }, uAlt: { value: empty }, uLabel: { value: empty },
       uImage: { value: new THREE.Vector2(16, 9) }, uAltImage: { value: new THREE.Vector2(16, 9) },
       uSize: { value: new THREE.Vector2(9, 5.4) }, uCursor: { value: new THREE.Vector2() },
-      uFocus: { value: 0 }, uOpacity: { value: 1 }, uHover: { value: 0 }, uTime: { value: 0 }, uAlternate: { value: 0 }, uVideo: { value: 0 },
+      uFocus: { value: 0 }, uOpacity: { value: 1 }, uHover: { value: 0 }, uSweep: { value: 1 }, uVelocity: { value: 0 }, uAlternate: { value: 0 }, uVideo: { value: 0 },
     };
     const mesh = new THREE.Mesh(this.panelGeometry, new THREE.ShaderMaterial({
       uniforms, vertexShader: vertex, fragmentShader: fragment, transparent: true, side: THREE.DoubleSide,
@@ -95,9 +110,14 @@ export class Gallery {
     hit.setAttribute('aria-hidden', 'true');
     // The original link retains the site's hash navigation and keyboard behavior.
     hit.addEventListener('click', e => { e.preventDefault(); link.click(); });
-    const item = { link, mesh, hit, uniforms, hover: 0, loaded: false, images: [], video: null, videoTexture: null, playing: false, i };
+    const item = { link, mesh, hit, uniforms, hover: 0, engaged: false, pointer: new THREE.Vector2(), loaded: false, images: [], poster: null, video: null, videoTexture: null, playing: false, videoBlocked: false, playAttempt: 0, i };
     hit.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch' && matchMedia('(hover: hover)').matches) item.hover = 1; });
     hit.addEventListener('pointerleave', () => { item.hover = 0; });
+    hit.addEventListener('pointermove', e => {
+      if (!item.hover) return;
+      const box = hit.getBoundingClientRect();
+      item.pointer.set(THREE.MathUtils.clamp((e.clientX - box.left) / box.width * 2 - 1, -1, 1), THREE.MathUtils.clamp(1 - (e.clientY - box.top) / box.height * 2, -1, 1));
+    });
     this.overlay.append(hit);
     return item;
   }
@@ -121,9 +141,6 @@ export class Gallery {
     const g = c.getContext('2d');
     g.fillStyle = '#ede9e3';
     const pad = mobile ? 62 : 100;
-    g.font = `500 ${mobile ? 35 : 31}px "Geist Mono Variable", monospace`;
-    g.textAlign = 'right';
-    g.fillText(link.dataset.year, c.width - pad, pad + 35);
     g.textAlign = 'left';
     g.font = `650 ${mobile ? 97 : 140}px "Archivo Variable", sans-serif`;
     g.letterSpacing = '-4px';
@@ -153,6 +170,7 @@ export class Gallery {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.anisotropy = 4;
         item.images.push(texture);
+        if (key === 'uMap') item.poster = texture;
         if (key !== 'uMap' || !item.playing || item.video?.readyState < 2) {
           item.uniforms[key].value = texture;
           item.uniforms[sizeKey].value.set(texture.image.width, texture.image.height);
@@ -171,7 +189,7 @@ export class Gallery {
   loadVideo(item) {
     if (item.link.dataset.video && !item.video && !reduce.matches) {
       const v = document.createElement('video');
-      v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
+      v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'metadata';
       v.src = `/media/${item.link.dataset.video}`;
       item.video = v;
       item.videoTexture = new THREE.VideoTexture(v);
@@ -192,20 +210,37 @@ export class Gallery {
   }
 
   prepare(s) {
-    // Video decode starts one chapter early. Playback stays local.
+    // Posters are primed early; only the selected panel decodes and plays video.
     if (s > 5.4 && s < 7) {
-      const t = Math.max(0, (s - 6) / GALLERY_END * 5);
       this.panels.forEach(item => {
         this.load(item);
-        if (Math.abs(item.i - t) < 2.1) this.loadVideo(item);
       });
     }
     if (s < 6 || s >= 7 || document.hidden) this.pause();
     if ((s >= 7 || s < 6) && this.active) this.hide();
   }
 
-  pause() { this.panels.forEach(item => { item.video?.pause(); item.playing = false; }); }
+  stopVideo(item) {
+    item.playAttempt++;
+    item.playing = false;
+    item.video?.pause();
+    if (item.poster) {
+      item.uniforms.uMap.value = item.poster;
+      item.uniforms.uImage.value.set(item.poster.image.width, item.poster.image.height);
+    }
+    item.uniforms.uVideo.value = 0;
+  }
+
+  pause() { this.panels.forEach(item => { this.stopVideo(item); item.videoBlocked = false; }); }
   hide() {
+    this.pause();
+    this.velocity = 0;
+    this.panels.forEach(item => {
+      item.hover = 0; item.engaged = false;
+      item.uniforms.uHover.value = 0;
+      item.uniforms.uSweep.value = 1;
+      item.uniforms.uCursor.value.set(0, 0);
+    });
     this.active = false; this.group.visible = false; this.overlay.hidden = true;
     document.body.classList.remove('in-gallery');
   }
@@ -230,54 +265,59 @@ export class Gallery {
       fragmentShader: `varying vec3 vN,vV;void main(){vec3 n=normalize(vN);float f=pow(1.-abs(dot(n,normalize(vV))),2.);float light=pow(abs(dot(n,normalize(vec3(-.5,1.,1.)))),8.);vec3 c=mix(vec3(.055,.003,.006),vec3(.82,.025,.045),f);c+=vec3(.85,.8,.72)*light*.8;gl_FragColor=vec4(c*exp(-length(vV)*.023),smoothstep(2.,6.,length(vV))); #include <tonemapping_fragment>\n#include <colorspace_fragment>}`.replace(' #include', '\n#include'),
     }));
     this.group.add(this.ribbon);
-    const n = this.world.quality === 'high' ? 650 : 180;
-    const positions = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) {
-      const hash = x => { const v = Math.sin(x * 127.1) * 43758.5453; return v - Math.floor(v); };
-      positions.set([(hash(i+1)-.5)*23, 30+(hash(i+100)-.5)*13, 5-hash(i+200)*65], i*3);
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(positions,3));
-    this.dust = new THREE.Points(g, new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, uniforms: { uTime: { value: 0 }, uDpr: { value: 1 } },
-      vertexShader: `uniform float uTime,uDpr;varying float vA;void main(){vec3 p=position;p.x+=sin(uTime*.07+position.z)*.14;p.y+=cos(uTime*.09+position.x)*.12;vec4 v=modelViewMatrix*vec4(p,1.);vA=exp(-length(v.xyz)*.045)*.45;gl_PointSize=clamp(24./-v.z,1.,2.5)*uDpr;gl_Position=projectionMatrix*v;}`,
-      fragmentShader: `varying float vA;void main(){float a=1.-smoothstep(.05,.5,length(gl_PointCoord-.5));gl_FragColor=vec4(.72,.66,.59,a*vA);}`,
-    }));
-    this.group.add(this.dust);
   }
 
-  update(state, dt, time) {
+  update(state, dt) {
     const on = state.gallery;
     if (!on) { if (this.active) this.hide(); return; }
     this.active = true; this.group.visible = true; this.overlay.hidden = false;
     document.body.classList.add('in-gallery');
-    const t = state.galleryProgress / GALLERY_END * 5;
+    const t = THREE.MathUtils.clamp(state.galleryProgress / GALLERY_END * 5, 0, 5);
+    const focused = Math.round(t);
     const k = 1 - Math.exp(-dt * 7);
     const motion = !reduce.matches;
-    this.velocity += ((motion ? THREE.MathUtils.clamp(state.scrollVelocity || 0, -80, 80) * .002 : 0) - this.velocity) * k;
-    this.dust.material.uniforms.uTime.value = motion ? time : 0;
-    this.dust.material.uniforms.uDpr.value = this.world.renderer.getPixelRatio();
+    const velocity = motion ? THREE.MathUtils.clamp((state.scrollVelocity || 0) / 45, -1, 1) * (this.mobile ? .45 : 1) : 0;
+    this.velocity = motion ? THREE.MathUtils.lerp(this.velocity, velocity, k) : 0;
+    const suspended = document.hidden || document.body.matches('.is-intro, .is-loading, .viewer-open') || this.overlay.inert;
     this.panels.forEach(item => {
-      const near = Math.abs(item.i-t) < .58;
+      const near = item.i === focused;
       const visible = item.i - t > -.85 && item.i - t < 3.1;
       item.mesh.visible = visible;
-      const play = near && !document.hidden && motion;
-      if (item.video && play !== item.playing) {
-        item.playing = play;
-        if (play) item.video.play().catch(() => {}); else item.video.pause();
+      const play = near && !suspended && motion;
+      if (play) this.loadVideo(item);
+      if (!play) item.videoBlocked = false;
+      if (item.video && play && !item.playing && !item.videoBlocked) {
+        const attempt = ++item.playAttempt;
+        item.playing = true;
+        item.video.play().then(() => {
+          if (!item.playing) item.video.pause();
+        }).catch(() => {
+          if (attempt !== item.playAttempt) return;
+          this.stopVideo(item);
+          item.videoBlocked = true;
+        });
+      } else if (!play && item.playing) {
+        this.stopVideo(item);
       }
       const u = item.uniforms;
+      const engaged = !!(item.hover || this.focusIndex === item.i) && near && !suspended;
+      if (engaged && !item.engaged) u.uSweep.value = 0;
+      item.engaged = engaged;
       u.uFocus.value = this.focusIndex === item.i ? 1 : 0;
-      u.uHover.value += (((item.hover || this.focusIndex === item.i) && near ? 1 : 0) - u.uHover.value) * (motion ? k : 1);
+      u.uHover.value += ((engaged ? 1 : 0) - u.uHover.value) * (motion ? k : 1);
+      u.uSweep.value = motion ? Math.min(1, u.uSweep.value + dt * 1.1) : 1;
+      u.uVelocity.value = this.velocity;
       u.uAlternate.value = item.link.dataset.alternate ? u.uHover.value * 1.08 : 0;
-      u.uTime.value = motion ? time : 0;
-      u.uCursor.value.copy(this.world.mouseSmooth);
+      if (!motion) u.uCursor.value.set(0, 0);
+      else if (item.hover && near && !suspended) u.uCursor.value.lerp(item.pointer, k);
+      else u.uCursor.value.multiplyScalar(1 - k);
       const [x,y,z] = galleryRail(item.i, this.mobile);
       const passed = THREE.MathUtils.smoothstep(t - item.i, .3, .85);
       u.uOpacity.value = 1 - THREE.MathUtils.smoothstep(t - item.i, .6, .85);
       const scale = this.mobile ? Math.max(.2, 1 - Math.max(0, t - item.i) * 9 / 9.8) : 1;
       item.mesh.scale.set((this.mobile ? 3.65 : 8.4) * scale, (this.mobile ? 4.3 : 5.1) * scale, 1);
-      item.mesh.position.set(x + (item.i % 2 ? 1 : -1) * passed * (this.mobile ? 5 : 12), y + passed * .5, z + u.uHover.value*.3);
-      item.mesh.rotation.set(motion ? this.velocity*.5 - this.world.mouseSmooth.y*.025 : 0, motion ? (this.mobile ? 0 : (item.i%2 ? -.12 : .12)) + this.velocity + this.world.mouseSmooth.x*.045*u.uHover.value + passed*(item.i%2 ? -.7 : .7) : 0, motion && !this.mobile ? Math.sin(item.i*2.3)*.035 + this.velocity*.16 : 0);
+      item.mesh.position.set(x + (item.i % 2 ? 1 : -1) * passed * (this.mobile ? 5 : 12), y + passed * .5, z + (motion ? u.uHover.value*.3 : 0));
+      item.mesh.rotation.set(motion ? this.velocity*.045 - u.uCursor.value.y*.045*u.uHover.value : 0, motion ? (this.mobile ? 0 : (item.i%2 ? -.12 : .12)) + this.velocity*.055 + u.uCursor.value.x*.065*u.uHover.value + passed*(item.i%2 ? -.7 : .7) : 0, motion && !this.mobile ? Math.sin(item.i*2.3)*.035 + this.velocity*.02 : 0);
       item.mesh.updateMatrixWorld();
       this.placeHit(item, visible && near);
     });
@@ -288,7 +328,8 @@ export class Gallery {
     el.hidden = !visible;
     if (!visible) return;
     const points = [[-.5,.5],[.5,.5],[.5,-.5],[-.5,-.5]].map(([x,y]) => {
-      this.rayPoint.set(x,y,0).applyMatrix4(item.mesh.matrixWorld).project(this.world.camera);
+      const velocity = item.uniforms.uVelocity.value;
+      this.rayPoint.set(x + velocity*y*.045,y,velocity*(y*y*4-.3)*.7).applyMatrix4(item.mesh.matrixWorld).project(this.world.camera);
       return [(this.rayPoint.x*.5+.5)*innerWidth,(-this.rayPoint.y*.5+.5)*innerHeight];
     });
     const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);

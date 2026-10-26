@@ -20,7 +20,7 @@ const DEFAULTS = {
   grid: 0.6, person: 0, personX: 0,
   heroYaw: 0.6, heroZ: 0, turntable: 0, carExplode: 0, strip: 0, stripX: 0,
   speed: 0, road: 0, veil: 0, thermal: 0, rim: 0.22, analytic: 0,
-  warmth: 0, haze: 1, transition: 0, sweep: 0, riso: 0,
+  warmth: 0, haze: 1, transition: 0, sweep: 0, riso: 0, iris: 0,
   roadPos: [HERO_X, 0, GZ],
 };
 
@@ -69,7 +69,7 @@ function keys() {
     ['launch', 0.72, { speed: 1.15, cam: [HERO_X - 1.7, 1.05, GZ + 6.9], look: [HERO_X, 0.5, GZ - 3], roll: -0.03 }],
     ['launch', 0.84, { heroZ: 0, fade: 0, speed: 1.2 }],
     ['launch', 1, { heroZ: -48, fade: 1, speed: 1.4, fov: 66 }],
-    ['work', 0, { fade: 1, speed: 0, road: 0, heroZ: 0, shake: 0, roll: 0, aberration: 0, fov: 38 }],
+    ['work', 0, { fade: 0, speed: 0, road: 0, heroZ: 0, shake: 0, roll: 0, aberration: 0, fov: 24 }],
     // hold the garage still through the launch and the calm sections, so nothing drifts off-screen
     // After the launch fades out, the drone room opens from black.
     ['drone', 0, { fade: 1, speed: 0, road: 0, heroZ: 0, shake: 0, roll: 0, aberration: 0, strip: 0, turntable: 0, carExplode: 0, heroYaw: 3 * Math.PI, stripX: HERO_X,
@@ -90,8 +90,8 @@ function keys() {
     ['vision', 0.08, { drone: [0, 2.6, -2.2], cam: [0.55, 2.98, -0.7], look: [0, 2.2, -7], person: 0 }],
     ['vision', 0.28, { drone: [0, 2.6, -5.4], cam: [0.6, 2.95, -3.8], look: [0, 1.8, -9.5], person: 1, dronePitch: -0.12 }],
     ['vision', 0.44, { drone: [0, 2.6, -6.6], cam: [0.75, 2.9, -4.9], look: [0, 1.8, -9.5], dronePitch: 0.22 }],
-    ['vision', 0.58, { drone: [2.2, 2.6, -8.6], cam: [1.9, 3.0, -6.8], look: [1.2, 1.9, -11], dronePitch: -0.1, droneRoll: -0.3 }],
-    ['vision', 0.7, { drone: [2.2, 2.6, -11.6], cam: [2.5, 2.95, -9.9], look: [1.0, 1.9, -15], droneRoll: 0, person: 1 }],
+    ['vision', 0.58, { drone: [2.2, 2.6, -6.8], cam: [1.9, 3.0, -5.0], look: [1.2, 1.9, -11], dronePitch: -0.1, droneRoll: -0.3 }],
+    ['vision', 0.7, { drone: [2.2, 2.6, -8.4], cam: [2.5, 2.95, -6.7], look: [1.0, 1.9, -15], droneRoll: 0, person: 1 }],
     ['vision', 0.82, { drone: [0.2, 2.0, -17.6], cam: [0.9, 2.9, -15.6], look: [0, 0.8, -19], fov: 42, dronePitch: -0.06, droneYaw: 0 }],
     ['vision', 0.93, { drone: [0, 1.2, -19], cam: [0.7, 2.6, -16.9], look: [0, 0.6, -19], droneYaw: 1.6, dronePitch: 0, person: 0 }],
     // cut into the drone's own thermal camera for the detect-and-avoid beat, then back out for the landing
@@ -103,7 +103,8 @@ function keys() {
     ['vision', 0.5, { personX: 0.3 }],
     ['lock', 0, { drone: [0, 1.45, -19], cam: [0.5, 0.4, -16.0], look: [0, 1.45, -19], fov: 40, veil: 0.45, droneYaw: 2.4, grid: 0.5 }],
     ['lock', 0.8, { drone: [0.3, 1.75, -19.4], dronePitch: 0, droneYaw: 3.6, cam: [0.8, 0.65, -16.3], look: [0.3, 1.75, -19.4], veil: 0, kick: 0, grid: 0, parallax: 0, fog: 0.025, fade: 0 }],
-    ['lock', 1, { fade: 1 }],
+    ['lock', .88, { cam: [.3, 1.78, -18.2], look: [.3, 1.78, -19.32], droneYaw: Math.PI, fov: 32, parallax: 0 }],
+    ['lock', 1, { cam: [.3, 1.78, -19.24], look: [.3, 1.78, -19.34], drone: [.3, 1.75, -19.4], dronePitch: 0, droneRoll: 0, droneYaw: Math.PI, fov: 24, fade: 0, light: 80 }],
     ['launch', 1, { heroYaw: 3 * Math.PI, turntable: 0, strip: 0, stripX: HERO_X, carExplode: 0 }],
     ['about', 0.8, { heroYaw: 3 * Math.PI, turntable: 0, strip: 0, stripX: HERO_X, carExplode: 0 }],
     ['about', 0.85, { fade: 1, cam: [HERO_X + 4.0, 1.25, GZ + 5.2], look: [HERO_X + 0.4, 0.95, GZ], drone: [HERO_X + 1.3, 1.5, GZ + 0.9], explode: 0, spin: 0.7, heroYaw: 5.4, turntable: 1, strip: 1, stripX: HERO_X, veil: 0.4, fog: 0.05, light: 45, lightDist: 2.8, lightLift: 0.8 }],
@@ -211,9 +212,10 @@ export class Director {
     const heroIdle = s < this.s('drone', 0) ? 0 : 1 - clamp01((s - this.sp('drone', 0.6)) * 4);
     st.drone[1] += Math.sin(time * 1.3) * 0.012 * heroIdle;
     st.droneYaw += time * 0.12 * heroIdle * (1 - st.explode);
-    if (s > this.sp('vision', 0.85) && s < this.s('lock', 1)) {
-      st.drone[0] += Math.sin(time * 0.9) * 0.15;
-      st.drone[1] += Math.sin(time * 1.4) * 0.06;
+    if (s > this.sp('vision', 0.85) && s < this.s('lock', .8)) {
+      const settle = 1 - smoother(clamp01((s - 5.65) / .15));
+      st.drone[0] += Math.sin(time * 0.9) * 0.15 * settle;
+      st.drone[1] += Math.sin(time * 1.4) * 0.06 * settle;
     }
     if (s >= this.sp('drone', 0.72) && s < this.s('work', 0)) st.spin = Math.max(st.spin, 0.85);
     if (s > this.s('about', 0.8)) {
@@ -224,14 +226,19 @@ export class Director {
     st.lineup = !(s > this.s('launch', 0.1) && s < this.s('about', 0.8));
     st.droneVisible = (s > this.s('drone', 0) && s < this.s('work', 0)) || s > this.s('about', 0.8);
     st.marker = s > this.sp('vision', 0.4) && s < this.s('work', 0);
+    st.pilot = s >= 5 && s < 5.8;
+    st.iris = s >= 5.94 && s < 6 ? smoother(clamp01((s - 5.94) / .06)) : 0;
     // Inside the drone: the camera rides on its nose, a hard cut hidden by the feed's static.
     if (st.thermal > 0.5) {
       const d = st.drone, yaw = st.droneYaw;
       const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
       st.cam = [d[0] + fx * 0.2, d[1] - 0.04, d[2] + fz * 0.2];
-      st.look = [d[0] + fx * 6 + st.droneRoll * -4, d[1] - 1.35 + st.dronePitch * -6, d[2] + fz * 6];
-      st.fov = 64;
-      st.parallax = 0.4;
+      // Track the person's torso until the avoidance turn. Banking must not aim below the floor.
+      const detect = 1 - smoother(clamp01((this.pinned('vision', y) - .66) / .12));
+      const flightLook = [d[0] + fx * 6 + st.droneRoll * -4, d[1] - 1.1, d[2] + fz * 6];
+      st.look = flightLook.map((v, i) => v + ([st.personX, .95, -9.5][i] - v) * detect);
+      st.fov = 58;
+      st.parallax = 0;
       st.droneVisible = false;
     }
     st.gallery = s >= 6 && s < 7;
@@ -240,6 +247,7 @@ export class Director {
       const p = st.galleryProgress;
       Object.assign(st, galleryCamera(p, galleryPortrait(window.innerWidth, window.innerHeight)));
       st.fade = clamp01((p - 0.94) / 0.055);
+      st.iris = 1 - smoother(clamp01(p / .04));
       st.speed = 0; st.road = 0; st.shake = 0; st.roll = 0;
       st.aberration = 0; st.parallax = 0; st.veil = 0;
       st.fog = 0.018; st.bloom = 0.14; st.light = 0; st.kick = 0;

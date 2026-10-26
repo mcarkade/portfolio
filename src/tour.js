@@ -2,6 +2,7 @@ export function initTour({ getLenis }) {
   const root = document.querySelector('.tour');
   const play = root.querySelector('.tour__play');
   const speed = root.querySelector('.tour__speed');
+  const rateGlyph = speed.querySelector('span');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   let playing = false, rate = 1, frame = 0, last = 0;
   const blocked = () => reduce.matches || document.hidden || document.body.matches('.is-loading, .is-intro, .viewer-open') || document.querySelector('.nav.is-open');
@@ -40,8 +41,9 @@ export function initTour({ getLenis }) {
   });
   speed.addEventListener('click', () => {
     rate = rate === 1 ? 2 : 1;
-    speed.textContent = `${rate}x`;
-    speed.setAttribute('aria-label', `Tour speed ${rate}x`);
+    rateGlyph.textContent = `${rate}×`;
+    speed.setAttribute('aria-label', `Tour speed ${rate}x. Switch to ${rate === 1 ? 2 : 1}x`);
+    speed.setAttribute('aria-pressed', String(rate === 2));
   });
   for (const event of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
     addEventListener(event, e => {
@@ -50,6 +52,7 @@ export function initTour({ getLenis }) {
     }, { passive: true, capture: true });
   }
   document.addEventListener('visibilitychange', stop);
+  addEventListener('blur', stop);
   reduce.addEventListener('change', stop);
   return { stop };
 }
@@ -57,17 +60,18 @@ export function initTour({ getLenis }) {
 export function initChapterRail() {
   const rail = document.querySelector('.chapter-rail');
   const links = [...rail.querySelectorAll('a')];
+  const mobile = matchMedia('(max-width: 860px)');
   function measure() {
     const max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
-    const length = Math.max(220, rail.clientHeight);
+    const length = Math.max(1, mobile.matches ? rail.clientWidth : rail.clientHeight);
     const positions = links.map(link => {
       const section = document.querySelector(link.getAttribute('href'));
       return Math.min(1, section.offsetTop / max) * length;
     });
-    // Nearby chapters still need separate 44px targets.
-    for (let i = 1; i < positions.length; i++) positions[i] = Math.max(positions[i], positions[i - 1] + 44);
+    const gap = Math.min(44, length / Math.max(1, links.length - 1));
+    for (let i = 1; i < positions.length; i++) positions[i] = Math.max(positions[i], positions[i - 1] + gap);
     positions[positions.length - 1] = Math.min(length, positions.at(-1));
-    for (let i = positions.length - 2; i >= 0; i--) positions[i] = Math.min(positions[i], positions[i + 1] - 44);
+    for (let i = positions.length - 2; i >= 0; i--) positions[i] = Math.min(positions[i], positions[i + 1] - gap);
     links.forEach((link, i) => {
       link.style.setProperty('--at', `${positions[i] / length * 100}%`);
     });
@@ -86,6 +90,7 @@ export function initChapterRail() {
   }
   addEventListener('scroll', () => { if (!pending) pending = requestAnimationFrame(update); }, { passive: true });
   new ResizeObserver(measure).observe(document.querySelector('main'));
+  mobile.addEventListener('change', measure);
   addEventListener('resize', measure);
   measure();
   update();

@@ -37,12 +37,40 @@ if (new URLSearchParams(location.search).has('clean')) document.documentElement.
 const audio = new Audio();
 const loaderNum = $('#load-num');
 const loaderBar = $('#load-bar');
+const loaderRoot = $('#loader');
+const loaderCount = loaderRoot.querySelector('.loader__count');
+const loaderProgress = loaderRoot.querySelector('[role="progressbar"]');
 let progress = 0;
+let shownProgress = 0;
+let loaderFrame = 0;
+let loaderLast = performance.now();
 function setProgress(p) {
-  progress = Math.max(progress, p);
-  loaderNum.textContent = String(Math.round(progress * 100)).padStart(3, '0');
-  loaderBar.style.transform = `scaleX(${progress})`;
+  progress = Math.max(progress, Math.min(1, p));
+  if (!loaderFrame) loaderFrame = requestAnimationFrame(paintProgress);
 }
+function paintProgress(now) {
+  const dt = Math.min(.05, Math.max(0, (now - loaderLast) / 1000));
+  loaderLast = now;
+  shownProgress += Math.min(dt * .38, (progress - shownProgress) * (1 - Math.exp(-dt * 4)));
+  if (progress === 1 && 1 - shownProgress < .001) shownProgress = 1;
+  const n = Math.round(shownProgress * 100);
+  const label = String(n).padStart(3, '0');
+  if (loaderNum.textContent !== label) loaderNum.textContent = label;
+  loaderCount.dataset.n = n;
+  loaderProgress.setAttribute('aria-valuenow', n);
+  loaderBar.style.transform = `scaleX(${shownProgress})`;
+  loaderRoot.style.setProperty('--loader-p', shownProgress.toFixed(5));
+  loaderFrame = shownProgress < progress ? requestAnimationFrame(paintProgress) : 0;
+}
+async function finishProgress() {
+  setProgress(1);
+  const deadline = performance.now() + 5000;
+  while (shownProgress < .999 && performance.now() < deadline) await new Promise(r => setTimeout(r, 30));
+  shownProgress = 1;
+  paintProgress(performance.now());
+}
+const loaderFonts = document.fonts?.load("900 1em 'Archivo Variable'", 'MCARKADE Enter');
+Promise.race([loaderFonts, new Promise(r => setTimeout(r, 1500))]).then(() => loaderRoot.classList.add('is-set'), () => loaderRoot.classList.add('is-set'));
 
 splitWords();
 
@@ -51,12 +79,18 @@ let director = null;
 let lenis = null;
 
 const withTimeout = (p, ms) => Promise.race([Promise.resolve(p).catch(() => {}), new Promise((r) => setTimeout(r, ms))]);
+async function requireBeforeEnter(p, ms) {
+  let timer;
+  try { await Promise.race([p, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Car preparation timed out')), ms); })]); }
+  finally { clearTimeout(timer); }
+}
 
 async function boot() {
   setProgress(0.04);
   const tasks = [];
   let done = 0;
-  const track = (p) => { tasks.push(p); p.then(() => { done++; setProgress(0.04 + 0.9 * (done / tasks.length)); }); return p; };
+  // Fixed weights keep late registration from moving the target backwards or finishing early.
+  const track = (p) => { tasks.push(p); p.then(() => { done++; setProgress(0.04 + 0.87 * Math.min(1, done / 5)); }); return p; };
 
   track(withTimeout(document.fonts?.ready, 4000));
   const imagesP = track(loadImages(INTRO_IMAGES, 7000));
@@ -82,7 +116,10 @@ async function boot() {
       world.render(director.update(director.tops[6], 0));
       world.render(director.update(0, 0));
       // the film opens on the cars, so they load behind the loader on every device
-      loadCars(); track(withTimeout(carsP, 6000));
+      world.garage.loadHero(p => setProgress(.48 + p * .22));
+      await requireBeforeEnter(loadCars(p => setProgress(.70 + p * .20)), 45000);
+      if (world.garage.prepared.size !== 3) throw new Error('Car preparation incomplete');
+      track(Promise.resolve());
       window.__mc = { world, director };
     } catch (e) {
       console.warn('3D disabled', e);
@@ -91,11 +128,16 @@ async function boot() {
   }
   if (!world) body.classList.add('no-webgl');
 
-  // hard deadline: whatever has arrived by now is enough to enter
+  // Optional media has a deadline. The car preparation gate above must finish first.
   await withTimeout(Promise.all(tasks), 12000);
+  if (world && director) {
+    // Draw the actual car shots into the compositor before entry, including their textures.
+    for (const p of [.27, .45]) world.render(director.update(director.tops[1] + director.heights[1] * p, 0));
+    world.render(director.update(0, 0));
+  }
   const images = (await withTimeout(imagesP, 10)) || [];
   const cues = await cuesP;
-  setProgress(1);
+  await finishProgress();
   startLoop();
   showEnter(images, cues);
 }
@@ -217,8 +259,8 @@ function begin() {
 }
 
 let carsP = null;
-function loadCars() {
-  carsP ||= world.garage.loadAll();
+function loadCars(onProgress) {
+  if (world) return carsP ||= world.garage.loadAll(onProgress);
 }
 
 // ---------- Sound toggle ----------
@@ -288,7 +330,7 @@ addEventListener('pointermove', (e) => {
   world?.setMouse((e.clientX / innerWidth) * 2 - 1, -((e.clientY / innerHeight) * 2 - 1));
 }, { passive: true });
 const touchPilot = initTouchPilot({
-  isActive: () => !!world && !body.matches('.is-loading, .is-intro, .viewer-open') && director?.ids[director.state.chapter] === 'lock',
+  isActive: () => !!world && !body.matches('.is-loading, .is-intro, .viewer-open') && director?.state.pilot,
   setMouse: (x, y) => world?.setMouse(x, y),
 });
 
@@ -308,6 +350,7 @@ const launchTitle = $('.launch__title');
 const portrait = $('.about__portrait img');
 const veil = $('.veil');
 const heroEl = $('#hero');
+const lockCopy = $('.lock__copy');
 let maxScroll = 1;
 function measureDom() {
   maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
@@ -337,6 +380,7 @@ let lastTarget = null;
 function domFrame(st, y, dt) {
   const vh = innerHeight;
   veil.style.setProperty('--veil', st.veil.toFixed(3));
+  lockCopy.style.opacity = (1 - Math.min(1, Math.max(0, (director.sNow - 5.7) / .12))).toFixed(3);
   // hero copy fades out before it slides under the header
   if (y < vh) heroEl.style.opacity = (1 - Math.min(1, y / (vh * 0.5)) ** 1.5).toFixed(3);
 
@@ -403,16 +447,16 @@ function domFrame(st, y, dt) {
   }
 
   // The turret chases the drone's projected position.
-  if (at === 'lock' && st.droneVisible) {
+  if (st.pilot && st.droneVisible) {
     world.drone.group.getWorldPosition(tmpV);
     const p = world.project(tmpV, P);
     if (p) lock.setTarget(p.x, p.y);
   }
 
   cursor.update(dt);
-  lock.update(dt);
+  lock.update(dt, st.pilot);
   // the 3D turret aims along the reticle's line of sight, out to the drone's depth
-  const turretOn = at === 'lock' && st.droneVisible;
+  const turretOn = st.pilot && st.droneVisible;
   if (turretOn) world.drone.group.getWorldPosition(tmpV);
   world.turret.update(dt, turretOn, (lock.x / innerWidth) * 2 - 1, -(lock.y / innerHeight) * 2 + 1, turretOn ? world.camera.position.distanceTo(tmpV) : 0, lock.locked);
 }
@@ -423,17 +467,18 @@ function setText(el, v) { if (el.textContent !== v) el.textContent = v; }
 // The cursor or a horizontal touch drag flies the drone, with inertia and banking.
 const pilot = { w: 0, x: 0, y: 0 };
 function flyDrone(st, dt) {
-  const on = (finePointer || touchPilot.active) && !reducedMotion && !body.classList.contains('viewer-open') && director.ids[st.chapter] === 'lock';
+  const on = (finePointer || touchPilot.active) && !reducedMotion && !body.classList.contains('viewer-open') && st.pilot;
   pilot.w += ((on ? 1 : 0) - pilot.w) * (1 - Math.exp(-dt * 2.5));
-  if (pilot.w < 0.001) return;
+  if (!st.pilot || pilot.w < 0.001) return;
   const k = 1 - Math.exp(-dt * 2.4);
   const px = pilot.x;
   pilot.x += (world.mouse.x * 1.7 - pilot.x) * k;
   pilot.y += (world.mouse.y * 0.75 - pilot.y) * k;
-  st.drone[0] += pilot.x * pilot.w;
-  st.drone[1] += pilot.y * pilot.w;
+  const weight = pilot.w * (1 - THREE.MathUtils.smoothstep(director.sNow, 5.62, 5.8));
+  st.drone[0] += pilot.x * weight;
+  st.drone[1] += pilot.y * weight;
   // bank into the turn: a roll about world Z, expressed in the yawed body frame
-  const bank = Math.max(-0.5, Math.min(0.5, -(pilot.x - px) / Math.max(dt, 1e-3) * 0.12)) * pilot.w;
+  const bank = Math.max(-0.5, Math.min(0.5, -(pilot.x - px) / Math.max(dt, 1e-3) * 0.12)) * weight;
   st.dronePitch -= bank * Math.sin(st.droneYaw);
   st.droneRoll += bank * Math.cos(st.droneYaw);
 }

@@ -32,6 +32,7 @@ export class Garage {
     this.heroParts = [];
     this.loaded = 0;
     this.ready = new Set();
+    this.prepared = new Set();
     this.total = CARS.length + 1;
     this._turntable();
 
@@ -76,10 +77,23 @@ export class Garage {
   // Load the hero first, then the lineup in scroll order. Each car is fully prepared
   // (shaders compiled, textures uploaded a few per frame) long before it comes into view,
   // so arriving in the garage never stalls on first-use GPU work.
-  async loadAll() {
-    await this._load(HERO, this.heroSlot, true).then((m) => this._warm(m)).catch((e) => console.warn('hero car', e));
-    for (const s of this.slots) {
-      await this._load(s.car, s.slot, false).then((m) => { s.model = m; return this._warm(m); }).catch((e) => console.warn(s.car.id, e));
+  loadHero(onProgress) {
+    return this.heroPromise ||= this._load(HERO, this.heroSlot, true, onProgress).then(async m => { await this._warm(m); this.prepared.add(HERO.id); });
+  }
+
+  loadAll(onProgress) {
+    return this.allPromise ||= this._loadAll(onProgress);
+  }
+
+  async _loadAll(onProgress) {
+    await this.loadHero();
+    onProgress?.(1 / this.total);
+    for (const [i, s] of this.slots.entries()) {
+      const m = await this._load(s.car, s.slot, false, p => onProgress?.((1 + i + p) / this.total));
+      s.model = m;
+      await this._warm(m);
+      this.prepared.add(s.car.id);
+      onProgress?.((i + 2) / this.total);
     }
   }
 
@@ -101,7 +115,7 @@ export class Garage {
     }
   }
 
-  _load(car, slot, isHero) {
+  _load(car, slot, isHero, onProgress) {
     return new Promise((resolve, reject) => {
       this.loader.load(car.file, (gltf) => {
         const model = gltf.scene;
@@ -122,7 +136,7 @@ export class Garage {
         this.loaded++;
         this.ready.add(car.id);
         resolve(model);
-      }, undefined, reject);
+      }, e => { if (e.total > 0) onProgress?.(e.loaded / e.total); }, reject);
     });
   }
 

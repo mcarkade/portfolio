@@ -13,8 +13,8 @@ const PAD_X = 0.28, PAD_TOP = 0.18, PAD_BOTTOM = 0.14, SPACING = -0.005;
 const SWEEP_AT = 0.12, SWEEP_LEN = 1.15;
 const SETTLE = 1.4;
 const DOCK_AT = 1.55, DOCK_LEN = 0.8;
+const IMAGE_HOLD = 0.25, FACE_FADE = 0.28, PUSH_IN = 1.04;
 
-const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeInOutQuart = (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2);
 const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
@@ -42,6 +42,17 @@ export class Intro {
     this.octx = this.off.getContext('2d');
     this.images = images;
     this.hit = hit;
+    const grain = document.createElement('canvas');
+    grain.width = grain.height = 128;
+    const gctx = grain.getContext('2d');
+    const noise = gctx.createImageData(128, 128);
+    for (let i = 0; i < noise.data.length; i += 4) {
+      const value = Math.floor(Math.random() * 256);
+      noise.data[i] = noise.data[i + 1] = noise.data[i + 2] = value;
+      noise.data[i + 3] = 255;
+    }
+    gctx.putImageData(noise, 0, 0);
+    this.grain = this.ctx.createPattern(grain, 'repeat');
     // the sequence always runs through the dock, however short the audio is
     this.end = Math.max(duration, hit + DOCK_AT + DOCK_LEN);
     this.flips = this._flipSchedule();
@@ -54,7 +65,7 @@ export class Intro {
   _flipSchedule() {
     const times = [];
     let t = 0.15, gap = 0.34;
-    while (t < this.hit - 0.05) {
+    while (t < this.hit + IMAGE_HOLD) {
       times.push(t);
       t += gap;
       gap = Math.max(0.042, gap * 0.86);
@@ -122,7 +133,7 @@ export class Intro {
     while (n < this.flips.length && this.flips[n] <= t) n++;
     const idx = Math.max(0, n - 1);
     const since = n ? t - this.flips[idx] : 0;
-    const gap = (this.flips[idx + 1] ?? this.hit) - (this.flips[idx] ?? 0);
+    const gap = (this.flips[idx + 1] ?? this.hit + IMAGE_HOLD) - (this.flips[idx] ?? 0);
     // slow flips slide like turning pages; fast ones are hard cuts so each frame still reads
     const k = gap > 0.12 ? clamp01(since / (gap * 0.55)) : 1;
     return { cur: this.images[idx % this.images.length], prev: this.images[(idx + this.images.length - 1) % this.images.length], k, n: idx };
@@ -173,10 +184,24 @@ export class Intro {
     return { scale, rot, pan };
   }
 
+  _grain(ctx, t, amount) {
+    if (!this.grain || amount <= 0) return;
+    const frame = Math.floor(t * 24);
+    const x = (frame * 37) % 128, y = (frame * 53) % 128;
+    ctx.save();
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.translate(-x, -y);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = amount;
+    ctx.fillStyle = this.grain;
+    ctx.fillRect(x, y, this.w, this.h);
+    ctx.restore();
+  }
+
   // The finished logo, lit like a physical badge: a block with a soft bloom and a lit top edge,
   // letters with depth and a bevelled rim, and a specular glint that travels through the letters.
   // p: glint progress (0..1, outside = no glint), glow: bloom strength.
-  _logo(ctx, L, p, glow) {
+  _logo(ctx, L, p, glow, t = this.hit + IMAGE_HOLD + FACE_FADE) {
     const { octx, w, h, dpr } = this;
     const S = L.S;
     ctx.save();
@@ -223,12 +248,21 @@ export class Intro {
       octx.setTransform(dpr, 0, 0, dpr, 0, 0);
       octx.globalCompositeOperation = 'source-over';
       octx.clearRect(0, 0, w, h);
+      fill(octx);
       this._setFont(octx, S);
+      octx.globalCompositeOperation = 'destination-in';
       octx.fillStyle = '#fff';
       octx.fillText(WORD, L.tx, L.base);
-      octx.globalCompositeOperation = 'source-in';
-      fill(octx);
     };
+    const imageAlpha = 1 - easeInOutSine(clamp01((t - this.hit - IMAGE_HOLD) / FACE_FADE));
+    if (imageAlpha > 0 && this.images.length) {
+      mask((c) => this._drawFlip(c, Math.min(t, this.hit + IMAGE_HOLD), w, h, 1));
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = imageAlpha;
+      ctx.drawImage(this.off, 0, 0);
+      ctx.restore();
+    }
     // top rim: the face minus itself shifted down leaves a thin lit edge
     mask((c) => { c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); });
     octx.globalCompositeOperation = 'destination-out';
@@ -269,6 +303,24 @@ export class Intro {
       ctx.globalCompositeOperation = 'lighter';
       ctx.fillStyle = band(ctx, L.w * 0.3, [[0, 'rgba(255,120,110,0)'], [0.5, 'rgba(255,120,110,0.16)'], [1, 'rgba(255,120,110,0)']]);
       ctx.fillRect(L.x, L.y, L.w, L.h);
+      ctx.restore();
+
+      // A thin horizontal flare follows the glint at the letters' optical centre.
+      const fy = L.base - S * this.fa * 0.38;
+      const fx = pos - (fy - my) * dy / dx;
+      const strength = Math.pow(Math.sin(Math.PI * p), 2);
+      ctx.save();
+      ctx.translate(fx, fy);
+      ctx.scale(L.w * 0.4, Math.max(1.5 / dpr, S * 0.024));
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = strength * 0.7;
+      const flare = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+      flare.addColorStop(0, 'rgba(255,250,235,0.95)');
+      flare.addColorStop(0.08, 'rgba(255,230,205,0.65)');
+      flare.addColorStop(0.35, 'rgba(255,140,110,0.2)');
+      flare.addColorStop(1, 'rgba(255,100,90,0)');
+      ctx.fillStyle = flare;
+      ctx.fillRect(-1, -1, 2, 2);
       ctx.restore();
     }
   }
@@ -332,15 +384,16 @@ export class Intro {
       ctx.strokeStyle = `rgba(237,233,227,${0.25 + 0.4 * clamp01(t / this.hit)})`;
       ctx.strokeText(WORD, L.tx, L.base);
       ctx.restore();
+      this._grain(ctx, t, 0.024);
       return;
     }
 
-    // The logo: a red block with bone-white letters, a glint, a slow settle, then it docks into the nav mark.
+    // Images resolve to bone as the logo pushes in, then docks into the nav mark.
     const a = t - this.hit;
     if (!this._hit) { this._hit = true; this.root.classList.add('is-hit'); }
     const shake = Math.max(0, 1 - a / 0.35);
     const settled = a >= SETTLE;
-    let S = this.size * (1 - 0.035 * easeOutExpo(clamp01(a / SETTLE)));
+    let S = this.size * lerp(1, PUSH_IN, easeInOutSine(clamp01(a / SETTLE)));
     let cx = w / 2 + (Math.random() - 0.5) * 14 * shake;
     let cy = h / 2 + (Math.random() - 0.5) * 10 * shake;
     const du = clamp01((a - DOCK_AT) / DOCK_LEN);
@@ -348,7 +401,7 @@ export class Intro {
       this.dock ||= this._measureDock();
       if (this.dock) {
         const e = easeInOutQuart(du);
-        S = this.size * 0.965 * Math.pow(this.dock.S / (this.size * 0.965), e);
+        S = this.size * PUSH_IN * Math.pow(this.dock.S / (this.size * PUSH_IN), e);
         cx = lerp(w / 2, this.dock.cx, e);
         cy = lerp(h / 2, this.dock.cy, e);
       }
@@ -357,7 +410,7 @@ export class Intro {
     const L = this._lockup(S, cx, cy, settled && (du === 0 || du === 1));
     // the bloom swells on impact, then fades as the logo flies to the nav
     const glow = (0.55 + 0.45 * Math.max(0, 1 - a / 0.6)) * (1 - easeInOutQuart(du));
-    if (du < 1) this._logo(ctx, L, (a - SWEEP_AT) / SWEEP_LEN, glow);
+    if (du < 1) this._logo(ctx, L, (a - SWEEP_AT) / SWEEP_LEN, glow, t);
     else {
       // docked: exactly the flat DOM mark it hands over to
       ctx.fillStyle = RED;
@@ -366,6 +419,7 @@ export class Intro {
       ctx.fillStyle = BONE;
       ctx.fillText(WORD, L.tx, L.base);
     }
+    this._grain(ctx, t, 0.024 * (1 - easeInOutQuart(du)));
     // white flash on impact
     const flash = Math.max(0, 1 - a / 0.22);
     if (flash > 0) {
@@ -404,25 +458,4 @@ export class Intro {
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this._resize);
   }
-}
-
-// Loader progress for CSS. main.js writes the percentage into #load-num; mirror it to --loader-p
-// (fills the wordmark), the counter and the progressbar, and reveal the loader once its fonts are in.
-const loadNum = document.getElementById('load-num');
-const loader = document.getElementById('loader');
-if (loadNum && loader) {
-  const count = loader.querySelector('.loader__count');
-  const bar = loader.querySelector('[role="progressbar"]');
-  const sync = () => {
-    const n = Math.min(100, parseInt(loadNum.textContent, 10) || 0);
-    loader.style.setProperty('--loader-p', n / 100);
-    if (count) count.dataset.n = n;
-    if (bar) bar.setAttribute('aria-valuenow', n);
-  };
-  new MutationObserver(sync).observe(loadNum, { childList: true, characterData: true, subtree: true });
-  sync();
-  const show = () => loader.classList.add('is-set');
-  const fonts = document.fonts?.load("900 1em 'Archivo Variable'", 'MCARKADE Abhinav Pullela Enter');
-  if (fonts) Promise.race([fonts, new Promise((r) => setTimeout(r, 1500))]).then(show, show);
-  else show();
 }

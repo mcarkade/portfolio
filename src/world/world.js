@@ -21,6 +21,7 @@ const FinalShader = {
     uTrail: { value: Array.from({ length: 20 }, () => new THREE.Vector2(-1, -1)) },
     uTrailOn: { value: 0 },
     uRiso: { value: 0 },
+    uIris: { value: 0 },
     uAnalytic: { value: 0 },
     uTime: { value: 0 },
     uAberration: { value: 0.0015 },
@@ -40,7 +41,7 @@ const FinalShader = {
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse; uniform float uTime, uAberration, uSpeed, uVignette, uFade, uFlash;
     #define TRAIL 20
-    uniform vec2 uTrail[TRAIL]; uniform float uTrailOn, uRiso, uAnalytic;
+    uniform vec2 uTrail[TRAIL]; uniform float uTrailOn, uRiso, uAnalytic, uIris;
     uniform float uThermal, uStatic;
     varying vec2 vUv;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -172,6 +173,17 @@ const FinalShader = {
         float edge=field-uFade*1.25;
         col+=exp(-edge*edge*1800.)*vec3(.09,.035,.015)*sin(uFade*3.14159265);
         col*=smoothstep(-.12,.04,edge);
+      }
+      if (uIris > 0.0) {
+        vec2 p = (vUv - .5) * vec2(uResolution.x / uResolution.y, 1.0);
+        float angle = atan(p.y, p.x) + uIris * .38;
+        float sector = 1.04719755;
+        float hex = cos(floor(.5 + angle / sector) * sector - angle) * length(p);
+        float radius = (1.0 - uIris) * length(vec2(uResolution.x / uResolution.y, 1.0)) * .52 - .012 * uIris;
+        float edge = hex - radius;
+        float aa = 1.5 / uResolution.y;
+        col *= 1.0 - smoothstep(-aa, aa, edge);
+        col += vec3(.32, .012, .018) * exp(-abs(edge) * uResolution.y * .6) * sin(uIris * 3.14159265);
       }
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -381,7 +393,7 @@ export class World {
   // A field of motes that travels with the camera through the whole film: it drifts on a noise flow,
   // streams past the lens when the scroll is fast, and parts around the pointer's ray, lit by it.
   _dust() {
-    const N = this.quality === 'high' ? 24000 : 6000;
+    const N = this.quality === 'high' ? 3000 : 900;
     const SIZE = [14, 7, 14];
     const pos = new Float32Array(N * 3);
     const seed = new Float32Array(N);
@@ -398,14 +410,15 @@ export class World {
       blending: THREE.AdditiveBlending,
       uniforms: {
         uTime: { value: 0 }, uLight: { value: new THREE.Vector3() }, uPx: { value: 1 },
+        uLightDir: { value: new THREE.Vector3(0, -1, 0) }, uCone: { value: .9 },
         uCenter: { value: new THREE.Vector3() }, uOffset: { value: new THREE.Vector3() },
         uRayO: { value: new THREE.Vector3() }, uRayD: { value: new THREE.Vector3(0, 0, -1) }, uCursor: { value: 0 },
         uWarm: { value: 0 }, uAmount: { value: 1 },
       },
       vertexShader: /* glsl */ `
         attribute float aSeed;
-        uniform float uTime, uPx, uCursor, uWarm, uAmount;
-        uniform vec3 uLight, uCenter, uOffset, uRayO, uRayD;
+        uniform float uTime, uPx, uCursor, uWarm, uAmount, uCone;
+        uniform vec3 uLight, uLightDir, uCenter, uOffset, uRayO, uRayD;
         varying float vA; varying vec3 vC;
         const vec3 SIZE = vec3(${SIZE.map((v) => v.toFixed(1)).join(', ')});
         void main(){
@@ -426,10 +439,12 @@ export class World {
           float touch = exp(-d * d * 1.3) * step(0.0, along) * uCursor;
           p += perp / max(d, 1e-3) * touch * 0.45;
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
-          float lit = 1.0 - smoothstep(0.0, 4.0, distance(p, uLight));
+          vec3 fromLight = p - uLight;
+          float cone = smoothstep(uCone, min(1.0, uCone + .05), dot(normalize(fromLight), uLightDir));
+          float lit = cone * (1.0 - smoothstep(0.0, 5.0, length(fromLight)));
           // near motes open into soft out-of-focus discs, holding their total light as they grow
-          float size = clamp(uPx * (0.8 + aSeed * 1.6) * (8.0 / -mv.z), 1.0, 30.0);
-          vA = (0.07 + lit * 0.45 + touch * 1.4) * (0.35 + aSeed * 0.65) * wall * uAmount * smoothstep(0.2, 1.2, -mv.z) * min(1.0, 9.0 / (size * size));
+          float size = clamp(uPx * (0.6 + aSeed * .8) * (4.0 / -mv.z), .7, 2.0 * uPx);
+          vA = lit * .28 * (0.35 + aSeed * 0.65) * wall * uAmount * smoothstep(0.6, 1.5, -mv.z);
           vC = mix(mix(vec3(0.75, 0.88, 1.0), vec3(1.0, 0.72, 0.45), uWarm), vec3(1.0, 0.95, 0.9), touch);
           gl_PointSize = size;
           gl_Position = projectionMatrix * mv;
@@ -659,14 +674,17 @@ export class World {
     const m = this.mouseSmooth;
     cam.position.set(state.cam[0] + m.x * 0.06 * state.parallax, state.cam[1] + m.y * 0.04 * state.parallax, state.cam[2]);
     // Narrow screens see less sideways, so back the camera off along its line of sight.
-    const pull = !state.gallery && this.aspect < 1.25 ? Math.min(state.garage ? 3.2 : 2.1, (state.garage ? 1.5 : 1.25) / this.aspect) : 1;
+    const opening = state.chapter === 0;
+    const diving = state.chapter === 5 && !state.pilot;
+    const pull = state.thermal > .5 || diving ? 1 : !state.gallery && this.aspect < 1.25 ? Math.min(opening ? 1.75 : state.garage ? 3.2 : 2.1, (opening ? .8 : state.garage ? 1.5 : 1.25) / this.aspect) : 1;
     if (pull > 1) {
       this._tmp = this._tmp || new THREE.Vector3();
       this._tmp.set(...state.look);
       cam.position.sub(this._tmp).multiplyScalar(pull).add(this._tmp);
     }
-    if (state.gallery) cam.clearViewOffset();
-    else if (this.aspect < 1) cam.setViewOffset(innerWidth, innerHeight, 0, innerHeight * 0.14, innerWidth, innerHeight);
+    if (state.gallery || state.thermal > .5 || diving) cam.clearViewOffset();
+    else if (this.aspect < 1) cam.setViewOffset(innerWidth, innerHeight, 0, innerHeight * 0.10, innerWidth, innerHeight);
+    cam.updateProjectionMatrix();
     if (state.shake) {
       cam.position.x += (Math.sin(t * 37) + Math.sin(t * 23)) * 0.004 * state.shake;
       cam.position.y += (Math.sin(t * 41) + Math.cos(t * 29)) * 0.003 * state.shake;
@@ -712,7 +730,9 @@ export class World {
     this.grid.material.uniforms.uOpacity.value = state.grid * .12;
     const du = this.dust.material.uniforms;
     du.uTime.value = t;
-    du.uLight.value.copy(this.spot.position).lerp(f, 0.5);
+    du.uLight.value.copy(this.spot.position);
+    du.uLightDir.value.copy(f).sub(this.spot.position).normalize();
+    du.uCone.value = Math.cos(this.spot.angle);
     du.uCenter.value.copy(f);
     du.uWarm.value = state.warmth;
     // scrolling streams the field past the lens; the pointer's ray parts it
@@ -722,7 +742,7 @@ export class World {
     du.uRayO.value.copy(this._ray.ray.origin);
     du.uRayD.value.copy(this._ray.ray.direction);
     du.uCursor.value += ((this._pointerSeen && !this.motion.matches ? 1 : 0) - du.uCursor.value) * k;
-    du.uAmount.value = (1 - state.analytic * 0.7) * (1 + (state.beat || 0) * 0.9);
+    du.uAmount.value = state.thermal > .5 ? 0 : (1 - state.analytic) * Math.min(1, state.light / 35) * (1 + (state.beat || 0) * .2);
 
     // Vision props
     this.person.visible = state.person > 0.01;
@@ -768,6 +788,7 @@ export class World {
     const u = this.final.uniforms;
     this._trail(dt);
     u.uRiso.value = this.motion.matches ? 0 : state.riso;
+    u.uIris.value = this.motion.matches ? 0 : state.iris || 0;
     u.uAnalytic.value = state.analytic;
     u.uTime.value = t;
     u.uSpeed.value = this.quality === 'high' ? speed : 0; // radial blur is desktop-only

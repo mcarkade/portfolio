@@ -41,20 +41,21 @@ export class Cursor {
     this.dot = this.el.querySelector('.cursor__dot');
     this.x = innerWidth / 2; this.y = innerHeight / 2;
     this.rx = this.x; this.ry = this.y;
-    this.px = this.x; this.py = this.y;
     this.vx = 0; this.vy = 0;
+    this.morph = 0;
     this.width = 28; this.height = 28;
     this.angle = 0;
     this.motion = matchMedia('(prefers-reduced-motion: reduce)');
     this.el.classList.add('is-hidden');
     this.audio = audio;
     if (!finePointer) return;
-    const hide = () => { this.el.classList.add('is-hidden'); this.el.classList.remove('is-pressed', 'is-hover'); this.target = this._last = null; this.vx = this.vy = 0; this.seen = false; };
+    const hide = () => { this.el.classList.add('is-hidden'); this.el.classList.remove('is-pressed', 'is-hover', 'is-label'); this.target = this._last = null; this.vx = this.vy = 0; this.seen = false; };
     addEventListener('pointermove', (e) => {
       if (e.pointerType === 'touch') { hide(); return; }
       this.x = e.clientX; this.y = e.clientY;
+      this.dot.style.transform = `translate3d(${this.x}px, ${this.y}px, 0) translate(-50%, -50%)`;
       hover(e.target);
-      if (!this.seen) { this.rx = this.px = this.x; this.ry = this.py = this.y; this.seen = true; }
+      if (!this.seen) { this.rx = this.x; this.ry = this.y; this.morph = 0; this.width = this.height = 28; this.seen = true; }
       this.el.classList.remove('is-hidden');
     }, { passive: true });
     document.addEventListener('pointerleave', hide);
@@ -69,9 +70,9 @@ export class Cursor {
       this.target = t;
       if (t === this._last) return;
       this.el.classList.toggle('is-hover', !!t);
-      this.label.textContent = t?.dataset.cursor || '';
+      this.label.textContent = t?.dataset.cursor?.trim().split(/\s+/)[0] || '';
+      this.labelWidth = this.label.textContent ? this.label.offsetWidth : 0;
       this.el.classList.toggle('is-label', !!this.label.textContent);
-      this.labelWidth = this.label.textContent ? Math.min(220, Math.max(64, this.label.textContent.length * 7 + 28)) : 46;
       if (t && t !== this._last) audio?.play('tick', 0.5);
       this._last = t;
     };
@@ -93,38 +94,43 @@ export class Cursor {
     if (!finePointer || !this.seen) return;
     dt = Math.max(1 / 240, Math.min(dt, 0.05));
     const reduce = this.motion.matches;
-    const k = reduce ? 1 : 1 - Math.exp(-dt * 22);
-    this.vx += ((this.x - this.px) / dt - this.vx) * k;
-    this.vy += ((this.y - this.py) / dt - this.vy) * k;
-    this.px = this.x; this.py = this.y;
-    const stretch = reduce || this.target ? 0 : Math.min(0.75, Math.hypot(this.vx, this.vy) / 2400);
-    if (stretch > 0.01) {
-      const a = Math.atan2(this.vy, this.vx);
-      this.angle += Math.atan2(Math.sin(a - this.angle), Math.cos(a - this.angle)) * k;
-    }
+    const k = reduce ? 1 : 1 - Math.exp(-dt * 24);
     let tx = this.x, ty = this.y;
-    if (this.target?.isConnected && !reduce) {
-      const r = this.target.getBoundingClientRect();
-      if (r.width < 260 && r.height < 90) {
-        tx += (r.left + r.width / 2 - tx) * 0.32;
-        ty += (r.top + r.height / 2 - ty) * 0.32;
+    const box = this.target?.isConnected && !this.target.closest('[inert], [hidden]') ? this.target.getBoundingClientRect() : null;
+    const locked = box && box.width > 0 && box.height > 0;
+    if (locked) {
+      tx = box.left + box.width / 2;
+      ty = box.top + box.height / 2;
+    }
+    if (reduce) {
+      this.rx = tx; this.ry = ty; this.vx = this.vy = 0;
+    } else {
+      // Substeps keep the underdamped spring stable on slow frames.
+      const steps = Math.ceil(dt * 240), h = dt / steps;
+      for (let i = 0; i < steps; i++) {
+        this.vx += (420 * (tx - this.rx) - 27 * this.vx) * h;
+        this.vy += (420 * (ty - this.ry) - 27 * this.vy) * h;
+        this.rx += this.vx * h; this.ry += this.vy * h;
       }
     }
-    if (this.target) {
-      tx = Math.max(this.labelWidth / 2 + 6, Math.min(innerWidth - this.labelWidth / 2 - 6, tx));
-      ty = Math.max(23, Math.min(innerHeight - 23, ty));
-    }
-    this.rx += (tx - this.rx) * k;
-    this.ry += (ty - this.ry) * k;
-    this.width += ((this.target ? this.labelWidth : 28) - this.width) * k;
-    this.height += ((this.target ? (this.label.textContent ? 34 : 46) : 28) - this.height) * k;
+    this.morph += ((locked ? 1 : 0) - this.morph) * k;
+    this.width += ((locked ? box.width + 10 : 28) - this.width) * k;
+    this.height += ((locked ? box.height + 10 : 28) - this.height) * k;
+    const stretch = reduce ? 0 : Math.min(.65, Math.hypot(this.vx, this.vy) / 2200) * (1 - this.morph);
+    const a = locked || reduce ? 0 : Math.hypot(this.vx, this.vy) > 8 ? Math.atan2(this.vy, this.vx) : this.angle;
+    this.angle += Math.atan2(Math.sin(a - this.angle), Math.cos(a - this.angle)) * k;
     const pressed = this.el.classList.contains('is-pressed') ? 0.86 : 1;
-    const angle = this.target ? 0 : this.angle;
     this.ring.style.width = `${this.width}px`;
     this.ring.style.height = `${this.height}px`;
+    this.ring.style.setProperty('--corner', `${14 - this.morph * 6}px`);
+    this.ring.style.setProperty('--radius', `${14 * (1 - this.morph)}px`);
     this.dot.style.transform = `translate3d(${this.x}px, ${this.y}px, 0) translate(-50%, -50%) scale(${pressed})`;
-    this.ring.style.transform = `translate3d(${this.rx}px, ${this.ry}px, 0) translate(-50%, -50%) rotate(${angle}rad) scale(${(1 + stretch) * pressed}, ${pressed / (1 + stretch * 0.45)})`;
-    this.label.style.transform = `translate3d(${this.rx}px, ${this.ry}px, 0) translate(-50%, -50%) scale(${pressed})`;
+    this.ring.style.transform = `translate3d(${this.rx}px, ${this.ry}px, 0) translate(-50%, -50%) rotate(${this.angle * (1 - this.morph)}rad) scale(${(1 + stretch) * (locked ? 1 : pressed)}, ${(locked ? 1 : pressed) / (1 + stretch * .45)})`;
+    const halfLabel = (this.labelWidth || 0) / 2;
+    const lx = Math.max(halfLabel + 8, Math.min(innerWidth - halfLabel - 8, this.rx));
+    const below = this.ry + this.height / 2 + 16;
+    const ly = Math.max(12, Math.min(innerHeight - 12, below > innerHeight - 20 ? this.ry - this.height / 2 - 16 : below));
+    this.label.style.transform = `translate3d(${lx}px, ${ly}px, 0) translate(-50%, -50%)`;
   }
 }
 
@@ -167,10 +173,19 @@ export class LockGame {
 
   setTarget(x, y) { this.tx = x; this.ty = y; }
 
-  update(dt) {
-    const on = this.active;
+  update(dt, enabled = true) {
+    dt = Math.max(0, Math.min(dt, .05));
+    const on = enabled && this.active && !document.body.matches('.is-loading, .is-intro, .viewer-open') && !document.querySelector('.nav.is-open');
     this.reticle.classList.toggle('is-on', on);
-    if (!on) return;
+    if (!on) {
+      this.lockedFor = this.freeFor = 0;
+      this.locked = false;
+      this.vx = this.vy = 0;
+      this.reticle.classList.remove('is-locked');
+      this.timeEl.classList.remove('is-locked');
+      if (this.timeEl.textContent !== 'Escaped') this.timeEl.textContent = 'Escaped';
+      return;
+    }
     // PD controller with a little lag, like a real pan-tilt servo loop
     const kp = 26, kd = 7.5;
     const ax = kp * (this.tx - this.x) - kd * this.vx;
@@ -187,7 +202,8 @@ export class LockGame {
     if (nowLocked && !this.locked) this.audio?.play('lock', 0.7);
     this.locked = nowLocked;
     this.reticle.classList.toggle('is-locked', nowLocked);
-    this.timeEl.textContent = `${(nowLocked ? this.lockedFor : this.freeFor).toFixed(1)} s`;
+    const status = nowLocked ? 'Locked' : 'Escaped';
+    if (this.timeEl.textContent !== status) this.timeEl.textContent = status;
     this.timeEl.classList.toggle('is-locked', nowLocked);
   }
 }

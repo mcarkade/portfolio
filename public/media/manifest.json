@@ -1,7 +1,7 @@
 {
  "generated": "2026-10-26",
- "totalBytes": 31017957,
- "fileCount": 70,
+ "totalBytes": 31064607,
+ "fileCount": 72,
  "files": [
   {
    "path": "/media/cd-key-1-sm.webp",
@@ -520,6 +520,22 @@
    "path": "/models/w11.glb",
    "bytes": 2526736,
    "type": "model"
+  },
+  {
+   "path": "/media/reaper.webp",
+   "bytes": 26246,
+   "type": "image",
+   "width": 1600,
+   "height": 1600,
+   "source": "tools/gallery-art/build.py"
+  },
+  {
+   "path": "/media/nxp-track.webp",
+   "bytes": 20404,
+   "type": "image",
+   "width": 1600,
+   "height": 1600,
+   "source": "tools/gallery-art/build.py"
   }
  ],
  "models": {

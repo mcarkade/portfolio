@@ -85,11 +85,11 @@
   </nav>
 
   <div class="hud tour" role="group" aria-label="Film tour">
-    <button class="tour__play" type="button" aria-label="Start tour" aria-pressed="false"><span class="tour__icon" aria-hidden="true"></span>Tour</button>
-    <button class="tour__speed" type="button" aria-label="Tour speed 1x">1x</button>
+    <button class="tour__play" type="button" aria-label="Start tour" aria-pressed="false"><span class="tour__icon" aria-hidden="true"></span></button>
+    <button class="tour__speed" type="button" aria-label="Tour speed 1x. Switch to 2x" aria-pressed="false"><span aria-hidden="true">1×</span></button>
   </div>
 
-  <div id="cursor" aria-hidden="true"><span class="cursor__ring"></span><span class="cursor__dot"></span><span class="cursor__label"></span></div>
+  <div id="cursor" aria-hidden="true"><span class="cursor__ring"><i></i><i></i><i></i><i></i></span><span class="cursor__dot"></span><span class="cursor__label"></span></div>
 
   <main id="main">
     <span id="top"></span>
@@ -153,7 +153,7 @@
       <div class="sticky">
         <div class="lock__copy">
           <h2 class="title split">Try to escape.</h2>
-          <p class="lock__status" aria-live="polite"><span id="lock-time">0.0 s</span></p>
+          <p class="lock__status" role="status" aria-live="polite" aria-atomic="true"><span id="lock-time">Escaped</span></p>
         </div>
       </div>
       <div id="reticle" aria-hidden="true"><span></span></div>

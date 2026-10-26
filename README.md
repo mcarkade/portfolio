@@ -16,6 +16,8 @@ Abhinav Pullela's portfolio, built as one continuous scroll-driven film.
 
 Press `L` for the lights and `M` for sound.
 
+All three cars load, upload their textures, compile their shaders and draw behind the loading screen before Enter appears. The drone's camera dive opens into the project gallery through a scroll-controlled aperture. Reduced motion disables that aperture and the intro.
+
 ## Run it
 
 ```bash
@@ -23,6 +25,8 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build
 ```
+
+For browser checks, serve the build with `npm run preview -- --port 5192`, then run `node tools/verify.mjs http://localhost:5192/ <output-folder> desktop`. Repeat with `phone`, `reduced` or `fallback`. Captures and JSON reports go to the chosen folder. Gallery stills can be regenerated with `python tools/gallery-art/build.py`.
 
 ## Credits
 
