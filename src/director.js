@@ -81,6 +81,7 @@ function keys() {
   return k;
 }
 
+const PINNED_TIMING = new Set(['drone', 'vision']);
 const smoother = (t) => t * t * t * (t * (t * 6 - 15) + 10);
 const clamp01 = (t) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
@@ -103,6 +104,12 @@ export class Director {
 
   s(id, p) { return ORDER.indexOf(id) + p; }
 
+  // Drone and vision are timed against their pinned stretch, like the captions and HUD over them.
+  sp(id, p) {
+    const i = ORDER.indexOf(id);
+    return PINNED_TIMING.has(id) ? i + p * Math.max(1, this.heights[i] - this.vh) / Math.max(1, this.heights[i]) : i + p;
+  }
+
   // continuous scroll coordinate: section index + progress through it
   sAt(y) {
     for (let i = ORDER.length - 1; i >= 0; i--) {
@@ -121,7 +128,7 @@ export class Director {
   _buildTracks() {
     const tracks = {};
     for (const [id, p, vals] of keys()) {
-      const s = this.s(id, p);
+      const s = this.sp(id, p);
       for (const [name, v] of Object.entries(vals)) (tracks[name] ||= []).push([s, v]);
     }
     for (const t of Object.values(tracks)) t.sort((a, b) => a[0] - b[0]);
@@ -160,14 +167,14 @@ export class Director {
     }
 
     // Layered motion that keyframes can't express
-    const heroIdle = 1 - clamp01((s - this.s('drone', 0.6)) * 4);
+    const heroIdle = 1 - clamp01((s - this.sp('drone', 0.6)) * 4);
     st.drone[1] += Math.sin(time * 1.3) * 0.012 * heroIdle;
     st.droneYaw += time * 0.12 * heroIdle * (1 - st.explode);
-    if (s > this.s('vision', 0.85) && s < this.s('lock', 1)) {
+    if (s > this.sp('vision', 0.85) && s < this.s('lock', 1)) {
       st.drone[0] += Math.sin(time * 0.9) * 0.15;
       st.drone[1] += Math.sin(time * 1.4) * 0.06;
     }
-    if (s >= this.s('drone', 0.72) && s < this.s('garage', 0.1)) st.spin = Math.max(st.spin, 0.85);
+    if (s >= this.sp('drone', 0.72) && s < this.s('garage', 0.1)) st.spin = Math.max(st.spin, 0.85);
     if (s > this.s('about', 0.8)) {
       st.spin = 0.85;
       st.drone[1] += Math.sin(time * 1.2) * 0.05;
@@ -175,7 +182,7 @@ export class Director {
     st.garage = s > this.s('lock', 0.5) && s < this.s('work', 0.05) || s > this.s('about', 0.8);
     st.lineup = !(s > this.s('launch', 0.1) && s < this.s('about', 0.8));
     st.droneVisible = s < this.s('garage', 0.15) || s > this.s('about', 0.8);
-    st.marker = s > this.s('vision', 0.4) && s < this.s('garage', 0.15);
+    st.marker = s > this.sp('vision', 0.4) && s < this.s('garage', 0.15);
     st.stripOnHero = false;
     st.chapter = Math.min(ORDER.length - 1, Math.floor(s));
     return st;

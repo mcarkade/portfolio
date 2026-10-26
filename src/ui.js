@@ -129,7 +129,11 @@ export class Preview {
     this.px += (this.x - this.px) * k;
     this.py += (this.y - this.py) * k;
     const rot = Math.max(-8, Math.min(8, vx * 0.05));
-    this.el.style.transform = `translate(${this.px + 24}px, ${this.py - 140}px) rotate(${rot}deg) scale(${this.el.classList.contains('is-on') ? 1 : 0.85})`;
+    // sit right of the cursor, flipping left near the edge, and stay inside the viewport vertically
+    const w = this.w || (this.w = this.el.offsetWidth), h = this.h || (this.h = this.el.offsetHeight);
+    const x = this.px + 24 + w > innerWidth - 8 ? this.px - 24 - w : this.px + 24;
+    const y = Math.max(8, Math.min(innerHeight - h - 8, this.py - 140));
+    this.el.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg) scale(${this.el.classList.contains('is-on') ? 1 : 0.85})`;
   }
 }
 

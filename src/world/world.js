@@ -364,7 +364,7 @@ export class World {
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.magFilter = THREE.NearestFilter;
-    const marker = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }));
+    const marker = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, color: 0x9a9792 })); // grey paper keeps the white cells below the bloom threshold
     marker.rotation.x = -Math.PI / 2;
     marker.position.set(0, 0.006, -19);
     marker.receiveShadow = true;

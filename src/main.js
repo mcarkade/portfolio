@@ -15,7 +15,7 @@ const body = document.body;
 function webglOK() {
   try {
     const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+    return !!c.getContext('webgl2'); // three.js r186 renders with WebGL2 only
   } catch { return false; }
 }
 
@@ -63,17 +63,22 @@ async function boot() {
   const cuesP = withTimeout(fetch('/audio/intro_cues.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({})), 4000).then((c) => c || {});
 
   if (hasGL) {
-    const { World } = await import('./world/world.js');
-    world = new World($('#gl'), { quality });
-    director = new Director();
-    // warm up shaders behind the loader
-    world.render(director.update(0, 0));
-    await withTimeout(world.renderer.compileAsync(world.scene, world.camera), 2500);
-    world.garage.loadAll().then(() => withTimeout(world.renderer.compileAsync(world.scene, world.camera), 4000));
-    window.__mc = { world, director };
-  } else {
-    body.classList.add('no-webgl');
+    try {
+      const { World } = await import('./world/world.js');
+      world = new World($('#gl'), { quality });
+      director = new Director();
+      // warm up shaders behind the loader
+      world.render(director.update(0, 0));
+      await withTimeout(world.renderer.compileAsync(world.scene, world.camera), 2500);
+      // phones fetch the cars (about 15 MB) once the visitor heads past the drone
+      if (quality === 'high') loadCars();
+      window.__mc = { world, director };
+    } catch (e) {
+      console.warn('3D disabled', e);
+      world = null; director = null;
+    }
   }
+  if (!world) body.classList.add('no-webgl');
 
   // hard deadline: whatever has arrived by now is enough to enter
   await withTimeout(Promise.all(tasks), 12000);
@@ -148,6 +153,14 @@ function begin() {
     lenis.on('scroll', () => {});
   }
   observeReveals();
+  // Back and Forward move between sections visited through the menu
+  addEventListener('popstate', () => {
+    const el = location.hash ? document.getElementById(location.hash.slice(1)) : null;
+    const to = el || 0;
+    if (lenis) lenis.scrollTo(to, { duration: 1.6, easing: (t) => 1 - Math.pow(1 - t, 4) });
+    else window.scrollTo({ top: el ? el.offsetTop : 0 });
+    (el || $('#hero')).focus({ preventScroll: true });
+  });
   document.querySelectorAll('a[href^="#"]').forEach((a) => {
     a.addEventListener('click', (e) => {
       const id = a.getAttribute('href').slice(1);
@@ -156,13 +169,19 @@ function begin() {
       e.preventDefault();
       closeMenu();
       const arrive = () => {
-        history.replaceState(null, '', id === 'top' ? location.pathname : `#${id}`);
+        const url = id === 'top' ? location.pathname : `#${id}`;
+        if (url !== location.hash && !(id === 'top' && !location.hash)) history.pushState(null, '', url);
         (target === 0 ? $('#hero') : target).focus({ preventScroll: true });
       };
       if (lenis) lenis.scrollTo(target, { duration: 2.2, easing: (t) => 1 - Math.pow(1 - t, 4), onComplete: arrive });
       else { if (target === 0) window.scrollTo({ top: 0 }); else target.scrollIntoView(); arrive(); }
     });
   });
+}
+
+let carsP = null;
+function loadCars() {
+  carsP ||= world.garage.loadAll().then(() => withTimeout(world.renderer.compileAsync(world.scene, world.camera), 4000));
 }
 
 // ---------- Sound toggle ----------
@@ -301,11 +320,12 @@ function domFrame(st, y, dt) {
     document.querySelectorAll(`#${id} .sticky .split`).forEach((el) => el.classList.add('is-in'));
   }
   body.classList.toggle('is-scrolled', st.chapter >= 6);
+  if (st.chapter >= 1 && y > vh * 2) loadCars();
   progressEl.style.transform = `scaleX(${Math.min(1, y / maxScroll)})`;
 
   // drone steps
   const pd = director.pinned('drone', y);
-  const stepIdx = pd < 0.06 ? -1 : pd < 0.47 ? 0 : pd < 0.5 ? -1 : pd < 0.7 ? 1 : pd < 0.73 ? -1 : 2;
+  const stepIdx = pd < 0.06 ? -1 : pd < 0.56 ? 0 : pd < 0.65 ? -1 : pd < 0.81 ? 1 : pd < 0.84 ? -1 : 2;
   steps.forEach((s, i) => s.classList.toggle('is-on', i === stepIdx && pd < 0.995));
 
   // callouts on the exploded drone
