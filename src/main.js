@@ -473,6 +473,7 @@ function startLoop() {
         if (!world.blank) { world.renderer.setRenderTarget(null); world.renderer.clear(); world.blank = true; }
       }
       audio.drive(st, dt);
+      st.beat = audio.pulse(dt);
       domFrame(st, y, dt);
     } else {
       const y = window.scrollY;

@@ -25,6 +25,14 @@ export class Audio {
     this.music = ctx.createGain();
     this.music.gain.value = 0.85;
     this.music.connect(this.master);
+    // a side tap on the score, so the scene can move with its low end
+    this.analyser = ctx.createAnalyser();
+    this.analyser.fftSize = 512;
+    this.analyser.smoothingTimeConstant = 0.5;
+    this.music.connect(this.analyser);
+    this._bins = new Uint8Array(this.analyser.frequencyBinCount);
+    this._level = 0;
+    this._floor = 0;
     this.sfx = ctx.createGain();
     this.sfx.gain.value = 0.4;
     const lp = ctx.createBiquadFilter();
@@ -206,6 +214,23 @@ export class Audio {
     noise.start();
     whine.start();
     this.prop = { gain: pg, bp, whine };
+  }
+
+  // The kick drum as a 0..1 pulse: clear rises in low-end energy (roughly 40-260 Hz) count as hits,
+  // so a sustained bass line doesn't hold it up. Instant attack, quick release.
+  pulse(dt) {
+    if (!this.ctx || !this.enabled || !this.analyser || this.ctx.state !== 'running') { this._level *= Math.exp(-dt * 6); return this._level; }
+    this.analyser.getByteFrequencyData(this._bins);
+    let e = 0;
+    for (let i = 1; i <= 3; i++) e += this._bins[i];
+    e /= 3 * 255;
+    // onset: energy jumps clearly above its recent average, at most once per 250 ms
+    this._since = (this._since || 0) + dt;
+    const rise = e - this._floor;
+    this._floor += (e - this._floor) * (1 - Math.exp(-dt * 7));
+    if (rise > 0.05 && this._since > 0.25) { this._since = 0; this._level = Math.min(1, 0.55 + rise * 5); }
+    else this._level *= Math.exp(-dt * 6);
+    return this._level;
   }
 
   // Called every frame with the scene state.

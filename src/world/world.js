@@ -722,7 +722,7 @@ export class World {
     du.uRayO.value.copy(this._ray.ray.origin);
     du.uRayD.value.copy(this._ray.ray.direction);
     du.uCursor.value += ((this._pointerSeen && !this.motion.matches ? 1 : 0) - du.uCursor.value) * k;
-    du.uAmount.value = 1 - state.analytic * 0.7;
+    du.uAmount.value = (1 - state.analytic * 0.7) * (1 + (state.beat || 0) * 0.9);
 
     // Vision props
     this.person.visible = state.person > 0.01;
@@ -782,7 +782,7 @@ export class World {
     u.uTransition.value = this.motion.matches ? 0 : state.transition;
     u.uSweep.value = state.sweep;
     u.uReducedMotion.value = this.motion.matches ? 1 : 0;
-    if (this.bloom) this.bloom.strength = state.bloom;
+    if (this.bloom) this.bloom.strength = state.bloom * (1 + (state.beat || 0) * 0.35);
     this.renderer.toneMappingExposure = state.exposure;
 
     this.final.uniforms.tDepth.value = this.composer.readBuffer.depthTexture;
