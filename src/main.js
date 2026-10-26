@@ -6,6 +6,8 @@ import { Intro, loadImages } from './intro.js';
 import { Audio } from './audio.js';
 import { splitWords, observeReveals, Cursor, magnetic, LockGame, copyEmail, finePointer, reducedMotion } from './ui.js';
 
+import { initViewer } from './viewer.js';
+
 history.scrollRestoration = 'manual';
 window.scrollTo(0, 0);
 
@@ -254,8 +256,10 @@ addEventListener('keydown', (e) => { if (e.key === 'Escape' && menu.classList.co
 soundBtn.addEventListener('click', () => setSound(!audio.enabled));
 // a keyboard user tabbing into the header brings it back into view
 $('.hud--top').addEventListener('focusin', () => body.classList.remove('hud-away'));
+initViewer({ getLenis: () => lenis, onOpen: closeMenu });
 
 addEventListener('keydown', (e) => {
+  if (body.classList.contains('viewer-open')) return;
   if (e.target.closest('input, textarea')) return;
   if (e.key === 'l' || e.key === 'L') { if (world) world.lightsTarget = world.lightsTarget ? 0 : 1; }
   if (e.key === 'm' || e.key === 'M') setSound(!audio.enabled);
@@ -263,6 +267,7 @@ addEventListener('keydown', (e) => {
 
 // ---------- Pointer ----------
 addEventListener('pointermove', (e) => {
+  if (body.classList.contains('viewer-open')) return;
   world?.setMouse((e.clientX / innerWidth) * 2 - 1, -((e.clientY / innerHeight) * 2 - 1));
 }, { passive: true });
 
