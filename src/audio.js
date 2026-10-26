@@ -41,7 +41,7 @@ export class Audio {
       item.append('Music: ');
       const link = document.createElement('a');
       link.href = '/audio/CREDITS.md';
-      link.textContent = 'Cylinder Seven by Chris Zabriskie, CC BY 4.0. Edited for this site.';
+      link.textContent = 'Save Us Now by Shane Ivers and Cylinder Seven by Chris Zabriskie, CC BY 4.0. Edited for this site.';
       item.append(link);
       credits.append(item);
     }

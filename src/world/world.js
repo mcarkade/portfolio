@@ -378,14 +378,15 @@ export class World {
     this.reflector = refl;
   }
 
+  // A field of motes that travels with the camera through the whole film: it drifts on a noise flow,
+  // streams past the lens when the scroll is fast, and parts around the pointer's ray, lit by it.
   _dust() {
-    const N = this.quality === 'high' ? 1400 : 450;
+    const N = this.quality === 'high' ? 24000 : 6000;
+    const SIZE = [14, 7, 14];
     const pos = new Float32Array(N * 3);
     const seed = new Float32Array(N);
     for (let i = 0; i < N; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 24;
-      pos[i * 3 + 1] = Math.random() * 7;
-      pos[i * 3 + 2] = 6 - Math.random() * 80;
+      for (let k = 0; k < 3; k++) pos[i * 3 + k] = Math.random() * SIZE[k];
       seed[i] = Math.random();
     }
     const g = new THREE.BufferGeometry();
@@ -395,27 +396,52 @@ export class World {
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uTime: { value: 0 }, uLight: { value: new THREE.Vector3() }, uPx: { value: 1 }, uStretch: { value: 0 } },
-      vertexShader: `
-        attribute float aSeed; uniform float uTime, uPx; uniform vec3 uLight; varying float vA;
+      uniforms: {
+        uTime: { value: 0 }, uLight: { value: new THREE.Vector3() }, uPx: { value: 1 },
+        uCenter: { value: new THREE.Vector3() }, uOffset: { value: new THREE.Vector3() },
+        uRayO: { value: new THREE.Vector3() }, uRayD: { value: new THREE.Vector3(0, 0, -1) }, uCursor: { value: 0 },
+        uWarm: { value: 0 }, uAmount: { value: 1 },
+      },
+      vertexShader: /* glsl */ `
+        attribute float aSeed;
+        uniform float uTime, uPx, uCursor, uWarm, uAmount;
+        uniform vec3 uLight, uCenter, uOffset, uRayO, uRayD;
+        varying float vA; varying vec3 vC;
+        const vec3 SIZE = vec3(${SIZE.map((v) => v.toFixed(1)).join(', ')});
         void main(){
-          vec3 p = position;
-          p.x += sin(uTime * 0.15 + aSeed * 40.0) * 0.25;
-          p.y += mod(uTime * 0.04 * (0.3 + aSeed), 7.0);
-          p.y = mod(p.y, 7.0);
-          p.z += cos(uTime * 0.12 + aSeed * 30.0) * 0.25;
+          vec3 q = position * 0.35;
+          float t = uTime;
+          vec3 flow = vec3(sin(q.y * 1.7 + t * 0.21 + aSeed * 6.0), sin(q.z * 1.3 - t * 0.17 + aSeed * 4.0) * 0.6, sin(q.x * 1.5 + t * 0.19)) * 0.55;
+          vec3 p = position + uOffset + flow + vec3(0.0, t * 0.05 * (0.3 + aSeed), 0.0);
+          // wrap into a box around wherever the camera is looking
+          vec3 local = mod(p - uCenter + SIZE * 0.5, SIZE) - SIZE * 0.5;
+          vec3 edge = SIZE * 0.5 - abs(local);
+          float wall = smoothstep(0.0, 1.6, min(edge.x, min(edge.y, edge.z)));
+          p = uCenter + local;
+          // the pointer's ray parts the field and lights it
+          vec3 w = p - uRayO;
+          float along = dot(w, uRayD);
+          vec3 perp = w - uRayD * along;
+          float d = length(perp);
+          float touch = exp(-d * d * 1.3) * step(0.0, along) * uCursor;
+          p += perp / max(d, 1e-3) * touch * 0.45;
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
-          float lit = 1.0 - smoothstep(0.0, 3.5, distance(p, uLight));
-          vA = (0.018 + lit * 0.38) * (0.4 + aSeed * 0.6);
-          gl_PointSize = min(4.0, uPx * (0.55 + aSeed * 1.1) * (6.0 / -mv.z));
+          float lit = 1.0 - smoothstep(0.0, 4.0, distance(p, uLight));
+          // near motes open into soft out-of-focus discs, holding their total light as they grow
+          float size = clamp(uPx * (0.8 + aSeed * 1.6) * (8.0 / -mv.z), 1.0, 30.0);
+          vA = (0.07 + lit * 0.45 + touch * 1.4) * (0.35 + aSeed * 0.65) * wall * uAmount * smoothstep(0.2, 1.2, -mv.z) * min(1.0, 9.0 / (size * size));
+          vC = mix(mix(vec3(0.75, 0.88, 1.0), vec3(1.0, 0.72, 0.45), uWarm), vec3(1.0, 0.95, 0.9), touch);
+          gl_PointSize = size;
           gl_Position = projectionMatrix * mv;
         }`,
-      fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); float a = 1.0 - smoothstep(0.0, 0.5, d); gl_FragColor = vec4(vec3(1.0, 0.95, 0.9), a * vA); }`,
+      fragmentShader: `varying float vA; varying vec3 vC; void main(){ float d = length(gl_PointCoord - 0.5); float a = 1.0 - smoothstep(0.32, 0.5, d); a *= 0.75 + 0.25 * smoothstep(0.2, 0.45, d); gl_FragColor = vec4(vC, a * vA); }`,
     });
     const pts = new THREE.Points(g, m);
     pts.frustumCulled = false;
     this.scene.add(pts);
     this.dust = pts;
+    this._ray = new THREE.Raycaster();
+    this._fwd = new THREE.Vector3();
   }
 
   _road() {
@@ -684,8 +710,19 @@ export class World {
     // Grid, dust
     this.grid.material.uniforms.uCenter.value.copy(f);
     this.grid.material.uniforms.uOpacity.value = state.grid * .12;
-    this.dust.material.uniforms.uTime.value = t;
-    this.dust.material.uniforms.uLight.value.copy(this.spot.position).lerp(f, 0.5);
+    const du = this.dust.material.uniforms;
+    du.uTime.value = t;
+    du.uLight.value.copy(this.spot.position).lerp(f, 0.5);
+    du.uCenter.value.copy(f);
+    du.uWarm.value = state.warmth;
+    // scrolling streams the field past the lens; the pointer's ray parts it
+    cam.getWorldDirection(this._fwd);
+    du.uOffset.value.addScaledVector(this._fwd, -Math.max(-60, Math.min(60, state.scrollVelocity || 0)) * dt * 0.9);
+    this._ray.setFromCamera(this.mouse, cam);
+    du.uRayO.value.copy(this._ray.ray.origin);
+    du.uRayD.value.copy(this._ray.ray.direction);
+    du.uCursor.value += ((this._pointerSeen && !this.motion.matches ? 1 : 0) - du.uCursor.value) * k;
+    du.uAmount.value = 1 - state.analytic * 0.7;
 
     // Vision props
     this.person.visible = state.person > 0.01;

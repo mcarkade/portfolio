@@ -1,15 +1,22 @@
 # Audio credits
 
+## Background score
+
+"Save Us Now" by Shane Ivers, https://www.silvermansound.com/free-music/save-us-now
+Licensed under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
+
+Used in `loop.mp3` and `loop.ogg`. This is an adaptation: a 128-second loop of source time
+00:02 through 02:10 (64 bars at 120 BPM), with a 2-second equal-power crossfade at the seam
+and loudness normalisation to -16 LUFS. No endorsement by the composer is implied.
+
+## Title sequence
+
 "Cylinder Seven" by [Chris Zabriskie](https://chriszabriskie.com/), from the album
 [*Cylinders*](https://chriszabriskie.com/cylinders/), 2014.
 Copyright 2014 Chris Zabriskie.
 Licensed under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
 
-Used in `loop.mp3`, `loop.ogg` and `intro.mp3`. These are adaptations.
-The background uses a 44-second edit of source time 01:12 through 02:00, with a
-4-second overlapping transition, circular rotation to a quiet crossing,
-equalization, reduced stereo width, mono bass,
-an added slow sub pulse and loudness mastering. The title sting uses short
+Used in `intro.mp3`, an adaptation. The title sting uses short
 forward and reversed excerpts of the same recording, plus original percussion,
 an impact and a convolution tail. No endorsement by the composer is implied.
 

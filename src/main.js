@@ -410,6 +410,21 @@ function flyDrone(st, dt) {
   st.droneRoll += bank * Math.cos(st.droneYaw);
 }
 
+// The film follows the scroll through a critically damped spring, so trackpad jitter, touch flicks
+// and sudden reversals all arrive at the camera as smooth motion. Jumps of several screens
+// (the title replay, a resize) snap instead of sweeping through every chapter.
+const follow = { x: null, v: 0 };
+function smoothScroll(target, dt) {
+  if (follow.x === null || reducedMotion || Math.abs(target - follow.x) > innerHeight * 4) { follow.x = target; follow.v = 0; return target; }
+  const w = 10;
+  const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
+  for (let i = 0; i < n; i++) {
+    follow.v += (w * w * (target - follow.x) - 2 * w * follow.v) * h;
+    follow.x += follow.v * h;
+  }
+  return follow.x;
+}
+
 let last = performance.now();
 let running = false;
 function startLoop() {
@@ -420,7 +435,7 @@ function startLoop() {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     lenis?.raf(now);
-    const y = lenis ? lenis.animatedScroll : window.scrollY;
+    const y = smoothScroll(lenis ? lenis.animatedScroll : window.scrollY, dt);
     if (world && director) {
       const st = director.update(y, reducedMotion ? 0 : now / 1000);
       // fast scrolling smears the colour channels a little
