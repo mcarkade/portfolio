@@ -10,6 +10,7 @@ import { Drone } from './drone.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { Garage, GARAGE_Z, HERO_X } from './garage.js';
 import { Fluid } from './fluid.js';
+import { Gallery } from './gallery.js';
 
 const FinalShader = {
   uniforms: {
@@ -127,6 +128,7 @@ export class World {
     composer.addPass(this.final);
     composer.addPass(new OutputPass());
     this.composer = composer;
+    this.gallery = new Gallery(this);
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -434,6 +436,7 @@ export class World {
     this.camera.updateProjectionMatrix();
     this.dust.material.uniforms.uPx.value = dpr * (h / 900);
     this.aspect = w / h;
+    this.gallery?.resize();
   }
 
   setMouse(x, y) { this.mouse.set(x, y); }
@@ -461,12 +464,14 @@ export class World {
     const m = this.mouseSmooth;
     cam.position.set(state.cam[0] + m.x * 0.06 * state.parallax, state.cam[1] + m.y * 0.04 * state.parallax, state.cam[2]);
     // Narrow screens see less sideways, so back the camera off along its line of sight.
-    const pull = this.aspect < 1.25 ? Math.min(2.1, 1.25 / this.aspect) : 1;
+    const pull = !state.gallery && this.aspect < 1.25 ? Math.min(2.1, 1.25 / this.aspect) : 1;
     if (pull > 1) {
       this._tmp = this._tmp || new THREE.Vector3();
       this._tmp.set(...state.look);
       cam.position.sub(this._tmp).multiplyScalar(pull).add(this._tmp);
     }
+    if (state.gallery) cam.clearViewOffset();
+    else if (this.aspect < 1) cam.setViewOffset(innerWidth, innerHeight, 0, innerHeight * 0.14, innerWidth, innerHeight);
     if (state.shake) {
       cam.position.x += (Math.sin(t * 37) + Math.sin(t * 23)) * 0.004 * state.shake;
       cam.position.y += (Math.sin(t * 41) + Math.cos(t * 29)) * 0.003 * state.shake;
@@ -541,6 +546,11 @@ export class World {
       });
       this.streaks.instanceMatrix.needsUpdate = true;
     }
+
+    this.floor.visible = !state.gallery;
+    this.grid.visible = !state.gallery;
+    this.dust.visible = !state.gallery;
+    this.gallery.update(state, dt, t);
 
     // Post
     const u = this.final.uniforms;

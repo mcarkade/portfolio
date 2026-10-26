@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { Director } from './director.js';
 import { Intro, loadImages } from './intro.js';
 import { Audio } from './audio.js';
-import { splitWords, observeReveals, Cursor, magnetic, Preview, LockGame, copyEmail, finePointer, reducedMotion } from './ui.js';
+import { splitWords, observeReveals, Cursor, magnetic, LockGame, copyEmail, finePointer, reducedMotion } from './ui.js';
 
 history.scrollRestoration = 'manual';
 window.scrollTo(0, 0);
@@ -67,11 +67,18 @@ async function boot() {
       const { World } = await import('./world/world.js');
       world = new World($('#gl'), { quality });
       director = new Director();
+      world.director = director;
+      document.fonts.ready.then(() => world?.gallery.resize());
+      const galleryReady = track(withTimeout(world.gallery.prime(), 4000));
       // warm up shaders behind the loader
       world.render(director.update(0, 0));
       await withTimeout(world.warm(), 8000);
+      await galleryReady;
+      // Exercise the gallery's real vertex buffers and composer draw behind the loader.
+      world.render(director.update(director.tops[6], 0));
+      world.render(director.update(0, 0));
       // phones fetch the cars (about 15 MB) once the visitor heads past the drone
-      if (quality === 'high') loadCars();
+      if (quality === 'high') { loadCars(); track(withTimeout(carsP, 6000)); }
       window.__mc = { world, director };
     } catch (e) {
       console.warn('3D disabled', e);
@@ -235,12 +242,6 @@ addEventListener('pointermove', (e) => {
 
 // ---------- Per-frame DOM ----------
 const cursor = new Cursor(audio);
-// the Multiroads film only plays (and downloads) while it is on screen
-const featureVideo = $('.feature__video');
-new IntersectionObserver(([e]) => {
-  if (e.isIntersecting && !reducedMotion) { featureVideo.preload = 'auto'; featureVideo.play().catch(() => {}); } else featureVideo.pause();
-}, { threshold: 0.2 }).observe(featureVideo);
-const preview = new Preview();
 const lock = new LockGame(audio);
 magnetic();
 copyEmail();
@@ -303,7 +304,7 @@ function domFrame(st, y, dt) {
     document.querySelectorAll(`#${id} .sticky .split`).forEach((el) => el.classList.add('is-in'));
   }
   body.classList.toggle('is-scrolled', st.chapter >= 6);
-  if (st.chapter >= 1 && y > vh * 2) loadCars();
+  if ((st.chapter >= 1 && st.chapter <= 5 && y > vh * 2) || st.chapter >= 7) loadCars();
   progressEl.style.transform = `scaleX(${Math.min(1, y / maxScroll)})`;
 
   // vision HUD
@@ -359,7 +360,6 @@ function domFrame(st, y, dt) {
   }
 
   cursor.update(dt);
-  preview.update(dt);
   lock.update(dt);
 }
 
@@ -401,6 +401,8 @@ function startLoop() {
       if (asm > 0) { st.explode = Math.max(st.explode, asm); st.droneYaw += asm * 1.4; }
       // fast scrolling smears the colour channels a little
       if (lenis) st.aberration += Math.min(0.0035, Math.abs(lenis.velocity) * 0.00006);
+      st.scrollVelocity = lenis?.velocity || 0;
+      world.gallery.prepare(director.sNow);
       flyDrone(st, dt);
       if (reducedMotion) { st.shake = 0; st.aberration = 0; st.roll = 0; st.speed = 0; st.spin = Math.min(st.spin, 0.2); }
       if (st.fade < 0.999) { world.render(st); world.blank = false; if (!document.hidden) world.adapt(dt); }
