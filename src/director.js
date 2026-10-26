@@ -17,6 +17,7 @@ const DEFAULTS = {
   grid: 0.6, person: 0, personX: 0,
   heroYaw: 0.6, heroZ: 0, turntable: 0, carExplode: 0, strip: 0, stripX: 0,
   speed: 0, road: 0, veil: 0, morph: 0, thermal: 0,
+  warmth: 0, haze: 1, heroType: 0, transition: 0, sweep: 0,
   roadPos: [HERO_X, 0, GZ],
 };
 
@@ -26,6 +27,19 @@ function keys() {
   // the morph's flight path was framed for the McLaren at x = -36.5; scale it to wherever it stands
   const M = (x) => x * HERO_X / -36.5;
   const k = [
+    ['hero', 0, { warmth: 0, haze: .85, heroType: 1 }],
+    ['hero', .3, { heroType: .65 }],
+    ['hero', .65, { heroType: 0 }],
+    ['drone', .05, { warmth: 0, haze: 1.0, grid: .08 }],
+    ['vision', 0, { warmth: .08, haze: .9 }],
+    ['lock', .7, { warmth: .08, haze: .8 }],
+    // keep the light cone out of the morph's flight path, bring the haze back once the car has formed
+    ['lock', .84, { haze: .8 }],
+    ['lock', .9, { haze: .12 }],
+    ['garage', .08, { warmth: 1, haze: .12, grid: .035 }],
+    ['garage', .17, { haze: 1.15 }],
+    ['garage', .89, { warmth: 1, haze: 1.0 }],
+    ['launch', .5, { warmth: .65, haze: .65 }],
     ['hero', 0, { cam: [0.04, 1.24, 1.42], look: [-0.36, 1.11, 0], fov: 34, drone: [0, 1.1, 0], light: 55, lightDist: 1.5, grid: 0.6, veil: 0 }],
     ['drone', 0, { cam: [0.35, 1.32, 0.92], look: [0, 1.12, 0], fov: 36 }],
     ['drone', 0.1, { cam: [0.62, 1.45, 0.95], look: [0, 1.13, 0], explode: 0, light: 60 }],
@@ -84,6 +98,13 @@ function keys() {
     ['contact', 0.15, { fade: 0 }],
     ['contact', 1, { cam: [HERO_X + 4.8, 1.7, GZ + 6.0], look: [HERO_X + 0.4, 1.0, GZ], heroYaw: 6.2, droneYaw: 0.8 }],
   );
+  // Narrow, reversible light sweeps cover camera handoffs without blank frames.
+  // (the lock-to-garage handoff is covered by the particle morph instead)
+  for (const [id, p, width] of [['vision', 0, .055], ['launch', .03, .07]]) {
+    k.push([id, p - width, { transition: 0, sweep: 0 }],
+      [id, p, { transition: 1, sweep: .5 }],
+      [id, p + width, { transition: 0, sweep: 1 }]);
+  }
   return k;
 }
 
