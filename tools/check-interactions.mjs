@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const [url = 'http://127.0.0.1:5192/', out = '../portrait-checks'] = process.argv.slice(2);
+const manualRate = .90, manualBurst = .045;
 fs.mkdirSync(out, { recursive: true });
 const report = { url, checks: [], errors: [] };
 const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
@@ -46,17 +47,20 @@ try {
   check('Photograph has real transparency and intact face/drone', matte.corner[3] === 0 && matte.wall[3] === 0 && matte.face[3] === 255 && matte.drone[3] === 255, matte);
   await page.setViewportSize({ width:1440,height:900 }); await page.waitForTimeout(400);
   await page.evaluate(() => scrollTo(0,1000)); await page.waitForTimeout(1000);
-  const scroll = await page.evaluate(() => new Promise(resolve => {
-    const start = performance.now(), y0 = scrollY, samples = []; let previous = start, previousY = y0;
+  const scroll = await page.evaluate(() => new Promise(resolve => requestAnimationFrame(start => {
+    const y0 = scrollY, samples = []; let previous = start, previousY = y0, inputMs = 0;
     const inputs = setInterval(() => document.documentElement.dispatchEvent(new WheelEvent('wheel', { deltaY:10000, bubbles:true, cancelable:true })), 4);
-    setTimeout(() => clearInterval(inputs), 2000);
+    setTimeout(() => { clearInterval(inputs); inputMs = performance.now() - start; }, 2000);
     function frame(now) {
       samples.push({ dt: now-previous, dy: scrollY-previousY }); previous = now; previousY=scrollY;
       if (now-start < 3000) requestAnimationFrame(frame);
-      else resolve({ moved: scrollY-y0, vh:innerHeight, maxFrame:Math.max(...samples.map(x=>Math.abs(x.dy))), backwards:samples.some(x=>x.dy<0), speed: samples.filter(x=>x.dt>4).map(x=>Math.abs(x.dy)/x.dt*1000/innerHeight).sort((a,b)=>a-b).at(-1) });
+      else resolve({ moved: scrollY-y0, vh:innerHeight, inputMs, maxFrame:Math.max(...samples.map(x=>Math.abs(x.dy))), backwards:samples.some(x=>x.dy<0), speed: samples.filter(x=>x.dt>4).map(x=>Math.abs(x.dy)/x.dt*1000/innerHeight).sort((a,b)=>a-b).at(-1), samples });
     } requestAnimationFrame(frame);
-  }));
-  check('Rapid wheel bursts stay slow and smooth', scroll.moved > 100 && scroll.moved <= scroll.vh*1.02 && scroll.maxFrame < scroll.vh*.04 && !scroll.backwards, scroll);
+  })));
+  const inputSeconds = scroll.inputMs / 1000;
+  const smoothFrames = scroll.samples.every(x => Math.abs(x.dy) <= scroll.vh * manualRate * Math.min(x.dt / 1000, .05) + 2);
+  const { samples: scrollSamples, ...scrollEvidence } = scroll;
+  check('Rapid wheel bursts move at the new rate without jumps', inputSeconds > 0 && scroll.moved > scroll.vh * .55 * inputSeconds && scroll.moved <= scroll.vh * (manualRate * inputSeconds + manualBurst) + 2 && smoothFrames && !scroll.backwards, { ...scrollEvidence, frames: scrollSamples.length, smoothFrames, violations: scrollSamples.filter(x => Math.abs(x.dy) > scroll.vh * manualRate * Math.min(x.dt / 1000, .05) + 2).slice(0, 8), rateLimit: manualRate, burstLimit: manualBurst });
   await page.evaluate(() => document.documentElement.dispatchEvent(new WheelEvent('wheel', { deltaY:-10000, bubbles:true, cancelable:true })));
   const reverse = await page.evaluate(() => scrollY); await page.waitForTimeout(800);
   check('Reverse wheel responds without a long tail', await page.evaluate(() => scrollY) < reverse);
@@ -65,13 +69,14 @@ try {
   const phone = await browser.newPage({ viewport:{width:390,height:844}, isMobile:true, hasTouch:true, deviceScaleFactor:2 });
   await enter(phone);
   await phone.evaluate(() => scrollTo(0,1500)); await phone.waitForTimeout(1000);
-  const cdp = await phone.context().newCDPSession(phone), y0 = await phone.evaluate(() => scrollY);
+  const cdp = await phone.context().newCDPSession(phone), y0 = await phone.evaluate(() => scrollY), touchStarted = Date.now();
   await cdp.send('Input.dispatchTouchEvent',{ type:'touchStart', touchPoints:[{x:195,y:690}] });
   for (let i=1;i<=18;i++) { await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:195,y:690-i*28}]}); await phone.waitForTimeout(16); }
   await cdp.send('Input.dispatchTouchEvent',{ type:'touchEnd',touchPoints:[] });
-  const release = await phone.evaluate(() => scrollY); await phone.waitForTimeout(900);
+  const release = await phone.evaluate(() => scrollY), touchSeconds = (Date.now() - touchStarted) / 1000;
+  await phone.waitForTimeout(900);
   const end = await phone.evaluate(() => scrollY);
-  check('Vertical touch scroll is capped with a short release tail', release > y0 && release-y0 < 844*.5 && end-release < 844*.035, { y0,release,end });
+  check('Vertical touch scroll is capped with a short release tail', release > y0 && release-y0 <= 844 * (manualRate * touchSeconds + manualBurst) + 2 && end >= release && end-release <= 844 * manualBurst + 2, { y0,release,end,touchSeconds,rateLimit:manualRate,burstLimit:manualBurst });
   await phone.locator('.menu-btn').focus();
   await phone.locator('.menu-btn').click(); const lockedY=await phone.evaluate(()=>scrollY);
   await cdp.send('Input.dispatchTouchEvent',{ type:'touchStart', touchPoints:[{x:195,y:650}] });

@@ -13,6 +13,8 @@ import { LaunchFX, GATE_GAP } from './launch.js';
 import { Turret } from './turret.js';
 import { Atmosphere, atmosphereNoise, atmosphereColor, atmosphereVolume } from './atmosphere.js';
 import { Gallery } from './gallery.js';
+import { Maze } from './maze.js';
+import { Backdrop } from './backdrop.js';
 
 const FinalShader = {
   defines: { VOLUME_STEPS: 8 },
@@ -22,6 +24,7 @@ const FinalShader = {
     uTrailOn: { value: 0 },
     uRiso: { value: 0 },
     uIris: { value: 0 },
+    uPortal: { value: 0 },
     uAnalytic: { value: 0 },
     uTime: { value: 0 },
     uAberration: { value: 0.0015 },
@@ -29,8 +32,6 @@ const FinalShader = {
     uVignette: { value: 0.9 },
     uFade: { value: 0 },
     uFlash: { value: 0 },
-    uThermal: { value: 0 },
-    uStatic: { value: 0 },
     uWarmth: { value: 0 },
     uTransition: { value: 0 },
     uSweep: { value: 0 },
@@ -41,15 +42,9 @@ const FinalShader = {
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse; uniform float uTime, uAberration, uSpeed, uVignette, uFade, uFlash;
     #define TRAIL 20
-    uniform vec2 uTrail[TRAIL]; uniform float uTrailOn, uRiso, uAnalytic, uIris;
-    uniform float uThermal, uStatic;
+    uniform vec2 uTrail[TRAIL]; uniform float uTrailOn, uRiso, uAnalytic, uIris, uPortal;
     varying vec2 vUv;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-    // ironbow false colour, as on a FLIR feed
-    vec3 ironbow(float t){
-      vec3 a = vec3(0.0), b = vec3(0.2, 0.0, 0.42), c = vec3(0.8, 0.05, 0.32), d = vec3(1.0, 0.52, 0.02), e = vec3(1.0, 0.97, 0.78);
-      return t < 0.25 ? mix(a, b, t * 4.0) : t < 0.5 ? mix(b, c, t * 4.0 - 1.0) : t < 0.75 ? mix(c, d, t * 4.0 - 2.0) : mix(d, e, t * 4.0 - 3.0);
-    }
     uniform float uWarmth, uTransition, uSweep, uReducedMotion;
     uniform vec2 uResolution;
     ${atmosphereNoise}
@@ -89,9 +84,15 @@ const FinalShader = {
     }
     void main(){
       vec2 uv = vUv;
-      // the feed tears sideways while the camera switches
-      float tear = (hash(vec2(floor(vUv.y * 48.0), floor(uTime * 24.0))) - 0.5) * 0.12 * uStatic;
-      uv.x = clamp(uv.x + tear, 0.001, 0.999);
+      // Lens pull accelerates into the event horizon, then unwinds on emergence.
+      vec2 polar = (vUv - .5) * vec2(uResolution.x / uResolution.y, 1.0);
+      float pr = length(polar);
+      if (uPortal > 0.0) {
+        float pull = uPortal <= 1.0 ? uPortal : 2.0 - uPortal;
+        float a = atan(polar.y, polar.x) + pull * pull * .55 * exp(-pr * 2.0);
+        float radius = pr * (1.0 + pull * .35 * exp(-pr * 2.0));
+        uv = clamp(.5 + vec2(cos(a), sin(a)) * radius / vec2(uResolution.x / uResolution.y, 1.0), .001, .999);
+      }
       float clouds=sin(vUv.y*9.+sin(vUv.x*13.)*.6)*.035;
       float sweep=vUv.x*.78+vUv.y*.22+clouds-uSweep*1.35+.18;
       float beam=exp(-sweep*sweep*240.)*uTransition;
@@ -149,13 +150,6 @@ const FinalShader = {
         }
         col += (vec3(2.2, 1.9, 1.7) * core + vec3(0.5, 0.04, 0.05) * glow) * uTrailOn;
       }
-      if (uThermal > 0.0) {
-        float l = dot(col, vec3(0.3, 0.59, 0.11));
-        float heat = clamp(pow(l * 1.9, 0.7) * 0.92 + 0.04 + (hash(vUv * 900.0 + uTime) - 0.5) * 0.05, 0.0, 1.0);
-        vec3 th = ironbow(heat) * (0.94 + 0.06 * sin(vUv.y * 900.0)) * 1.25;
-        col = mix(col, th, uThermal);
-      }
-      col = mix(col, vec3(hash(vUv * 700.0 + fract(uTime * 7.0))), uStatic * 0.8);
       float vig = 1.0 - smoothstep(0.18, 0.95, r * uVignette);
       col *= mix(0.35, 1.0, vig);
       col+=lightVolume(uv);
@@ -184,6 +178,24 @@ const FinalShader = {
         float aa = 1.5 / uResolution.y;
         col *= 1.0 - smoothstep(-aa, aa, edge);
         col += vec3(.32, .012, .018) * exp(-abs(edge) * uResolution.y * .6) * sin(uIris * 3.14159265);
+      }
+      if (uPortal > 0.0) {
+        float extent = length(vec2(uResolution.x / uResolution.y, 1.0)) * .52;
+        float entering = 1.0 - step(1.00001, uPortal);
+        float phase = entering > .5 ? uPortal : uPortal - 1.0;
+        float radius = mix(-.015, extent, phase);
+        float edge = pr - radius;
+        float aa = 2.0 / uResolution.y;
+        float aperture = smoothstep(-aa, aa, edge);
+        col *= entering > .5 ? aperture : 1.0 - aperture;
+        float ring = exp(-abs(edge) * 170.0) * sin(phase * 3.14159265);
+        vec3 tint = entering > .5 ? vec3(.7,.16,.045) : vec3(.52,.65,.72);
+        col += tint * ring * .7;
+        if (entering < .5) {
+          float angle = atan(polar.y, polar.x);
+          float rays = pow(max(0.0, sin(angle * 29.0 + phase * 8.0)), 16.0);
+          col += vec3(.06,.08,.10) * rays * exp(-abs(edge)*18.0) * sin(phase*3.14159265);
+        }
       }
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -229,7 +241,8 @@ export class World {
     this._floor();
     this._dust();
     this._road();
-    this._vision();
+    this.maze = new Maze(this);
+    this.backdrop = new Backdrop(this);
 
     this.drone = new Drone({ quality });
     this.drone.group.position.set(0, 1.1, 0);
@@ -527,55 +540,6 @@ export class World {
     this.streaks = streaks;
   }
 
-  _vision() {
-    // Obstacle for the avoidance beat: an abstract person-sized pillar.
-    const person = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x3a3836, roughness: 0.75 });
-    const limb = (r, len, x, y, z, rz = 0, rx = 0) => {
-      const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 6, 12), mat);
-      m.position.set(x, y, z);
-      m.rotation.set(rx, 0, rz);
-      m.castShadow = true;
-      person.add(m);
-    };
-    limb(0.17, 0.42, 0, 1.22, 0);            // torso
-    limb(0.075, 0.72, -0.1, 0.46, 0.06, 0, -0.18); // legs, mid-stride
-    limb(0.075, 0.72, 0.1, 0.46, -0.06, 0, 0.22);
-    limb(0.06, 0.55, -0.27, 1.18, 0, 0.12, 0.25);  // arms
-    limb(0.06, 0.55, 0.27, 1.18, 0, -0.12, -0.25);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.115, 20, 14), mat);
-    head.position.y = 1.7;
-    head.castShadow = true;
-    person.add(head);
-    person.rotation.y = Math.PI / 2;
-    person.position.set(0, 0, -9.5);
-    this.scene.add(person);
-    this.person = person;
-
-    // ArUco-style landing marker (ID 23 pattern, 6×6 with border).
-    const bits = [
-      [1, 0, 1, 1, 0, 0], [0, 1, 0, 0, 1, 1], [1, 1, 0, 1, 0, 1],
-      [0, 0, 1, 1, 1, 0], [1, 0, 0, 1, 0, 1], [0, 1, 1, 0, 1, 0],
-    ];
-    const cv = document.createElement('canvas');
-    cv.width = cv.height = 512;
-    const g = cv.getContext('2d');
-    g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 512);
-    const cell = 512 / 10;
-    g.fillStyle = '#000'; g.fillRect(cell, cell, cell * 8, cell * 8);
-    g.fillStyle = '#fff';
-    bits.forEach((row, y) => row.forEach((b, x) => { if (b) g.fillRect(cell * (2 + x), cell * (2 + y), cell, cell); }));
-    const tex = new THREE.CanvasTexture(cv);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.magFilter = THREE.NearestFilter;
-    const marker = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, color: 0x9a9792 })); // grey paper keeps the white cells below the bloom threshold
-    marker.rotation.x = -Math.PI / 2;
-    marker.position.set(0, 0.006, -19);
-    marker.receiveShadow = true;
-    this.scene.add(marker);
-    this.marker = marker;
-  }
-
   // Compile every shader the film will need, ahead of time. Programs depend on the render
   // target (the composer draws offscreen, without tone mapping), so compile against the
   // composer's buffer, not the canvas. Hidden meshes are shown for the compile only;
@@ -675,15 +639,18 @@ export class World {
     cam.position.set(state.cam[0] + m.x * 0.06 * state.parallax, state.cam[1] + m.y * 0.04 * state.parallax, state.cam[2]);
     // Narrow screens see less sideways, so back the camera off along its line of sight.
     const opening = state.chapter === 0;
-    const diving = state.chapter === 5 && !state.pilot;
-    const pull = state.thermal > .5 || diving ? 1 : !state.gallery && this.aspect < 1.25 ? Math.min(opening ? 1.75 : state.garage ? 3.2 : 2.1, (opening ? .8 : state.garage ? 1.5 : 1.25) / this.aspect) : 1;
+    const framing = state.gallery ? 1 : state.framing || 0;
+    const normalPull = !state.gallery && this.aspect < 1.25 ? Math.min(opening ? 1.75 : state.garage ? 3.2 : 2.1, (opening ? .8 : state.garage ? 1.5 : 1.25) / this.aspect) : 1;
+    const pull = THREE.MathUtils.lerp(normalPull, 1, framing);
     if (pull > 1) {
       this._tmp = this._tmp || new THREE.Vector3();
       this._tmp.set(...state.look);
       cam.position.sub(this._tmp).multiplyScalar(pull).add(this._tmp);
     }
-    if (state.gallery || state.thermal > .5 || diving) cam.clearViewOffset();
-    else if (this.aspect < 1) cam.setViewOffset(innerWidth, innerHeight, 0, innerHeight * 0.10, innerWidth, innerHeight);
+    // The low turret angle must remain above the floor after portrait pullback.
+    if (state.chapter === 5) cam.position.y = Math.max(.18, cam.position.y);
+    if (framing >= 1 || this.aspect >= 1) cam.clearViewOffset();
+    else cam.setViewOffset(innerWidth, innerHeight, 0, innerHeight * 0.10 * (1 - framing), innerWidth, innerHeight);
     cam.updateProjectionMatrix();
     if (state.shake) {
       cam.position.x += (Math.sin(t * 37) + Math.sin(t * 23)) * 0.004 * state.shake;
@@ -742,12 +709,10 @@ export class World {
     du.uRayO.value.copy(this._ray.ray.origin);
     du.uRayD.value.copy(this._ray.ray.direction);
     du.uCursor.value += ((this._pointerSeen && !this.motion.matches ? 1 : 0) - du.uCursor.value) * k;
-    du.uAmount.value = state.thermal > .5 ? 0 : (1 - state.analytic) * Math.min(1, state.light / 35) * (1 + (state.beat || 0) * .2);
+    du.uAmount.value = state.mazeVisible ? 0 : (1 - state.analytic) * Math.min(1, state.light / 35) * (1 + (state.beat || 0) * .2);
 
-    // Vision props
-    this.person.visible = state.person > 0.01;
-    this.person.position.x = state.personX;
-    this.marker.visible = state.marker;
+    this.maze.update(state);
+    this.backdrop.update(state, t);
 
     // Garage + launch
     this.garage.update(dt, state);
@@ -760,7 +725,7 @@ export class World {
     this.road.visible = state.road > 0.001;
     this.road.material.uniforms.uOpacity.value = state.road;
     this.road.position.set(state.roadPos[0], 0.004, state.roadPos[2] - 260); // runs 40 m behind the car, past a pulled-back phone camera
-    this.road.material.uniforms.uOffset.value -= speed * dt * 90;
+    this.road.material.uniforms.uOffset.value += speed * dt * 90;
     this.launch.update(t, state);
     this.streaks.visible = speed > 0.02;
     if (this.streaks.visible) {
@@ -780,7 +745,7 @@ export class World {
     }
 
     this.floor.visible = !state.gallery;
-    this.grid.visible = !state.gallery;
+    this.grid.visible = !state.gallery && !state.mazeVisible;
     this.dust.visible = !state.gallery;
     this.gallery.update(state, dt, t);
 
@@ -789,16 +754,13 @@ export class World {
     this._trail(dt);
     u.uRiso.value = this.motion.matches ? 0 : state.riso;
     u.uIris.value = this.motion.matches ? 0 : state.iris || 0;
+    u.uPortal.value = this.motion.matches ? 0 : state.portal || 0;
     u.uAnalytic.value = state.analytic;
     u.uTime.value = t;
     u.uSpeed.value = this.quality === 'high' ? speed : 0; // radial blur is desktop-only
     u.uAberration.value = 0.0001 + state.aberration * .35;
     u.uFade.value = state.fade;
     u.uFlash.value = state.flash;
-    u.uThermal.value = state.thermal > 0.5 ? 1 : 0;
-    u.uStatic.value = Math.max(0, 1 - Math.abs(state.thermal - 0.5) * 5);
-    // the person is the warmest thing in the drone's view
-    this.person.children[0].material.emissive.setScalar(state.thermal > 0.5 ? 0.38 : 0);
     u.uWarmth.value = state.warmth;
     u.uTransition.value = this.motion.matches ? 0 : state.transition;
     u.uSweep.value = state.sweep;

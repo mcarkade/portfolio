@@ -8,7 +8,7 @@ import { lineupX, HERO_X, GARAGE_Z, CARS, HERO } from './world/garage.js';
 const TOUR_AT = 0.27, TOUR_SHOT = 0.06, TOUR_CAR = TOUR_SHOT * 3;
 const TOUR_END = TOUR_AT + TOUR_CAR * CARS.length;
 
-const ORDER = ['hero', 'garage', 'launch', 'drone', 'vision', 'lock', 'work', 'about', 'contact'];
+const ORDER = ['hero', 'garage', 'launch', 'drone', 'maze', 'lock', 'work', 'about', 'contact'];
 const GZ = GARAGE_Z;
 const TAU = Math.PI * 2;
 
@@ -17,10 +17,10 @@ const DEFAULTS = {
   light: 55, lightAngle: 0.4, lightDist: 1.5, lightLift: 0, lightYaw: 0, kick: 1.2,
   fog: 0.075, env: 0.32, exposure: 1, bloom: 0.35, aberration: 0, fade: 0, flash: 0,
   drone: [0, 1.1, 0], droneYaw: 0, dronePitch: 0, droneRoll: 0, explode: 0, spin: 0,
-  grid: 0.6, person: 0, personX: 0,
+  grid: 0.6,
   heroYaw: 0.6, heroZ: 0, turntable: 0, carExplode: 0, strip: 0, stripX: 0,
-  speed: 0, road: 0, veil: 0, thermal: 0, rim: 0.22, analytic: 0,
-  warmth: 0, haze: 1, transition: 0, sweep: 0, riso: 0, iris: 0,
+  speed: 0, road: 0, veil: 0, rim: 0.22, analytic: 0,
+  warmth: 0, haze: 1, transition: 0, sweep: 0, riso: 0, iris: 0, portal: 0, framing: 0,
   roadPos: [HERO_X, 0, GZ],
 };
 
@@ -32,11 +32,11 @@ function keys() {
     ['hero', 0, { warmth: 1, haze: .9, grid: .035, rim: .22 }],
     // tracks keyed first later in the film would otherwise hold their first value back to the start
     ['hero', 0, { shake: 0, roll: 0, aberration: 0, speed: 0, road: 0, heroZ: 0 }],
-    ['drone', 0, { droneYaw: 0, dronePitch: 0, droneRoll: 0, spin: 0, explode: 0, person: 0, personX: -1.8, thermal: 0, analytic: 0 }],
+    ['drone', 0, { droneYaw: 0, dronePitch: 0, droneRoll: 0, spin: 0, explode: 0, analytic: 0 }],
     ['garage', .92, { warmth: 1, haze: 1.0 }],
     ['launch', .5, { warmth: .65, haze: .65 }],
     ['drone', 0, { warmth: 0, haze: .5, grid: .6, rim: 1.6 }],
-    ['vision', 0, { warmth: .08, haze: .7, rim: 1.6 }],
+    ['maze', 0, { warmth: .08, haze: .7, rim: 1.6 }],
     ['lock', .7, { warmth: .08, haze: .8, rim: .22 }],
     // Hero: the MP4/5 on its turntable, low and close, beside the headline
     ['hero', 0, { cam: [HERO_X + 3.9, 0.62, GZ + 3.4], look: [HERO_X - 0.95, 0.55, GZ + 1.1], fov: 37, parallax: 1, strip: 1, stripX: HERO_X, turntable: 1, heroYaw: 0.6, carExplode: 0, light: 35, lightDist: 3.0, lightLift: 1.8, lightAngle: 0.34, fog: 0.05, env: 0.26, bloom: 0.35, kick: 0, veil: 0, fade: 0 }],
@@ -86,21 +86,7 @@ function keys() {
     ['drone', 0.64, { cam: [-0.85, 1.32, 1.0], look: [0, 1.12, 0], explode: 0, fov: 36, lightDist: 1.6, light: 60, lightAngle: 0.4, spin: 0 }],
     ['drone', 0.74, { spin: 1, drone: [0, 1.1, 0], cam: [-0.72, 0.8, 1.12], look: [0, 1.22, 0], fov: 38 }],
     ['drone', 0.9, { drone: [0, 2.35, 0], cam: [-0.5, 2.0, 1.45], look: [0, 2.3, -0.2], fov: 40, grid: 0.6 }],
-    ['vision', 0, { drone: [0, 2.6, -1], cam: [0.5, 3.0, 1.0], look: [0, 2.5, -3], fov: 44, droneYaw: 0, dronePitch: -0.08, light: 70, lightDist: 2.0, lightLift: 0.6, grid: 0.35 }],
-    ['vision', 0.08, { drone: [0, 2.6, -2.2], cam: [0.55, 2.98, -0.7], look: [0, 2.2, -7], person: 0 }],
-    ['vision', 0.28, { drone: [0, 2.6, -5.4], cam: [0.6, 2.95, -3.8], look: [0, 1.8, -9.5], person: 1, dronePitch: -0.12 }],
-    ['vision', 0.44, { drone: [0, 2.6, -6.6], cam: [0.75, 2.9, -4.9], look: [0, 1.8, -9.5], dronePitch: 0.22 }],
-    ['vision', 0.58, { drone: [2.2, 2.6, -6.8], cam: [1.9, 3.0, -5.0], look: [1.2, 1.9, -11], dronePitch: -0.1, droneRoll: -0.3 }],
-    ['vision', 0.7, { drone: [2.2, 2.6, -8.4], cam: [2.5, 2.95, -6.7], look: [1.0, 1.9, -15], droneRoll: 0, person: 1 }],
-    ['vision', 0.82, { drone: [0.2, 2.0, -17.6], cam: [0.9, 2.9, -15.6], look: [0, 0.8, -19], fov: 42, dronePitch: -0.06, droneYaw: 0 }],
-    ['vision', 0.93, { drone: [0, 1.2, -19], cam: [0.7, 2.6, -16.9], look: [0, 0.6, -19], droneYaw: 1.6, dronePitch: 0, person: 0 }],
-    // cut into the drone's own thermal camera for the detect-and-avoid beat, then back out for the landing
-    ['vision', 0.04, { thermal: 0 }],
-    ['vision', 0.13, { thermal: 1 }],
-    ['vision', 0.7, { thermal: 1 }],
-    ['vision', 0.79, { thermal: 0 }],
-    ['vision', 0.18, { personX: -1.8 }],
-    ['vision', 0.5, { personX: 0.3 }],
+    ['maze', 0, { drone: [0, 2.6, -2.2], cam: [0.35, 3.6, -0.25], look: [0, .01, -3.5], fov: 44, droneYaw: 0, dronePitch: -.08, light: 95, lightDist: 2, lightLift: 1.6, grid: 0, parallax: 0, fog: .018, env: .8, bloom: .10, veil: 0 }],
     ['lock', 0, { drone: [0, 1.45, -19], cam: [0.5, 0.4, -16.0], look: [0, 1.45, -19], fov: 40, veil: 0.45, droneYaw: 2.4, grid: 0.5 }],
     ['lock', 0.8, { drone: [0.3, 1.75, -19.4], dronePitch: 0, droneYaw: 3.6, cam: [0.8, 0.65, -16.3], look: [0.3, 1.75, -19.4], veil: 0, kick: 0, grid: 0, parallax: 0, fog: 0.025, fade: 0 }],
     ['lock', .88, { cam: [.3, 1.78, -18.2], look: [.3, 1.78, -19.32], droneYaw: Math.PI, fov: 32, parallax: 0 }],
@@ -114,9 +100,9 @@ function keys() {
   return k;
 }
 
-const PINNED_TIMING = new Set(['drone', 'vision']);
+const PINNED_TIMING = new Set(['drone']);
 // Chapter handoffs printed as a risograph wipe: [section, centre, half-width]
-const RISO = [['drone', 0.03, 0.05], ['vision', 0, 0.045], ['lock', 0.02, 0.05], ['launch', 0.04, 0.06]];
+const RISO = [['drone', 0.03, 0.05], ['launch', 0.04, 0.06]];
 const smoother = (t) => t * t * t * (t * (t * 6 - 15) + 10);
 const clamp01 = (t) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
@@ -140,7 +126,7 @@ export class Director {
 
   s(id, p) { return ORDER.indexOf(id) + p; }
 
-  // Drone and vision are timed against their pinned stretch, like the captions and HUD over them.
+  // The exploded drone is timed against its pinned stretch.
   sp(id, p) {
     const i = ORDER.indexOf(id);
     return PINNED_TIMING.has(id) ? i + p * Math.max(1, this.heights[i] - this.vh) / Math.max(1, this.heights[i]) : i + p;
@@ -212,7 +198,7 @@ export class Director {
     const heroIdle = s < this.s('drone', 0) ? 0 : 1 - clamp01((s - this.sp('drone', 0.6)) * 4);
     st.drone[1] += Math.sin(time * 1.3) * 0.012 * heroIdle;
     st.droneYaw += time * 0.12 * heroIdle * (1 - st.explode);
-    if (s > this.sp('vision', 0.85) && s < this.s('lock', .8)) {
+    if (s > this.s('lock', .06) && s < this.s('lock', .8)) {
       const settle = 1 - smoother(clamp01((s - 5.65) / .15));
       st.drone[0] += Math.sin(time * 0.9) * 0.15 * settle;
       st.drone[1] += Math.sin(time * 1.4) * 0.06 * settle;
@@ -225,21 +211,26 @@ export class Director {
     st.garage = s < this.s('drone', 0) || s > this.s('about', 0.8);
     st.lineup = !(s > this.s('launch', 0.1) && s < this.s('about', 0.8));
     st.droneVisible = (s > this.s('drone', 0) && s < this.s('work', 0)) || s > this.s('about', 0.8);
-    st.marker = s > this.sp('vision', 0.4) && s < this.s('work', 0);
-    st.pilot = s >= 5 && s < 5.8;
-    st.iris = s >= 5.94 && s < 6 ? smoother(clamp01((s - 5.94) / .06)) : 0;
-    // Inside the drone: the camera rides on its nose, a hard cut hidden by the feed's static.
-    if (st.thermal > 0.5) {
-      const d = st.drone, yaw = st.droneYaw;
-      const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
-      st.cam = [d[0] + fx * 0.2, d[1] - 0.04, d[2] + fz * 0.2];
-      // Track the person's torso until the avoidance turn. Banking must not aim below the floor.
-      const detect = 1 - smoother(clamp01((this.pinned('vision', y) - .66) / .12));
-      const flightLook = [d[0] + fx * 6 + st.droneRoll * -4, d[1] - 1.1, d[2] + fz * 6];
-      st.look = flightLook.map((v, i) => v + ([st.personX, .95, -9.5][i] - v) * detect);
-      st.fov = 58;
-      st.parallax = 0;
-      st.droneVisible = false;
+    st.mazeVisible = s >= this.sp('drone', .82) && s < 5;
+    st.framing = s >= 3.8 && s < 5 ? smoother(clamp01((s - 3.8) / .2))
+      : s >= 5.8 && s < 6 ? smoother(clamp01((s - 5.8) / .08)) : 0;
+    st.mazeProgress = clamp01((s - 4.14) / .68);
+    st.pilot = s >= 5.06 && s < 5.8;
+    st.iris = s >= 4.9 && s < 5 ? smoother(clamp01((s - 4.9) / .08))
+      : s >= 5 && s < 5.06 ? 1 - smoother(clamp01((s - 5) / .06)) : 0;
+    st.portal = s >= 5.88 && s < 6 ? smoother(clamp01((s - 5.88) / .10)) : 0;
+    if (s >= 4 && s < 5) {
+      const p = s - 4, enter = smoother(clamp01(p / .14));
+      const portrait = window.innerWidth < window.innerHeight;
+      const height = portrait ? 3.4 / (window.innerWidth / window.innerHeight) : 4.0;
+      const targetCam = [portrait ? 0 : .05, height, -3.1];
+      st.cam = st.cam.map((v, i) => v + (targetCam[i] - v) * enter);
+      st.look = [0, .01, -3.5];
+      st.fov = 44; st.parallax = 0; st.grid = 0; st.analytic = 0;
+      st.drone = [0, 2.6 + enter * 4, -2.2 - enter * 3.0];
+      st.droneVisible = p < .14;
+      st.light = 95; st.lightDist = 2; st.lightLift = 1.6;
+      st.env = .8; st.fog = .018; st.bloom = .10; st.veil = 0;
     }
     st.gallery = s >= 6 && s < 7;
     st.galleryProgress = Math.max(0, Math.min(1, s - 6));
@@ -247,11 +238,11 @@ export class Director {
       const p = st.galleryProgress;
       Object.assign(st, galleryCamera(p, galleryPortrait(window.innerWidth, window.innerHeight)));
       st.fade = clamp01((p - 0.94) / 0.055);
-      st.iris = 1 - smoother(clamp01(p / .04));
+      st.portal = p < .055 ? 1 + smoother(clamp01(p / .055)) : 0;
       st.speed = 0; st.road = 0; st.shake = 0; st.roll = 0;
       st.aberration = 0; st.parallax = 0; st.veil = 0;
       st.fog = 0.018; st.bloom = 0.14; st.light = 0; st.kick = 0;
-      st.garage = false; st.droneVisible = false; st.marker = false; st.person = 0;
+      st.garage = false; st.droneVisible = false; st.mazeVisible = false;
     }
     st.riso = 0;
     for (const [id, c, w] of RISO) {

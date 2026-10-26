@@ -2,6 +2,7 @@
 export class Audio {
   constructor() {
     this.enabled = false;
+    this.loopDucked = false;
     this.ctx = null;
     this.buffers = {};
     this.lastPlayed = {};
@@ -115,6 +116,7 @@ export class Audio {
 
   // the score steps aside while the title sequence replays
   duckLoop(on) {
+    this.loopDucked = on;
     if (!this.loopGain) return;
     this.loopGain.gain.setTargetAtTime(on ? 0 : 0.64, this.ctx.currentTime, on ? 0.08 : 1);
   }
@@ -127,7 +129,7 @@ export class Audio {
     src.loop = true;
     const g = this.ctx.createGain();
     g.gain.value = 0;
-    g.gain.setTargetAtTime(0.64, this.ctx.currentTime, Math.max(0.01, fade / 3));
+    g.gain.setTargetAtTime(this.loopDucked ? 0 : 0.64, this.ctx.currentTime, Math.max(0.01, fade / 3));
     src.connect(g).connect(this.music);
     src.start();
     this.loopSrc = src;
@@ -254,7 +256,7 @@ export class Audio {
     this.prop.bp.frequency.setTargetAtTime(300 + spin * 650, now, 0.16);
     this.prop.whine.frequency.setTargetAtTime(110 + spin * 180, now, 0.16);
 
-    if (this.loopGain) {
+    if (this.loopGain && !this.loopDucked) {
       this.loopGain.gain.setTargetAtTime(0.64 - Math.min(0.12, sp * 0.1), now, 0.4);
     }
   }

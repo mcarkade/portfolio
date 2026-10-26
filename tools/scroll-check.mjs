@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { createManualScroll } from '../src/scroll.js';
 
+const RATE = .90; // Viewports per second.
+const BURST_PIXELS = 45; // .045 viewport at the fixture's 1000 px height.
+
 // Exercise installed Lenis handlers with a small DOM substitute, without a browser.
 class ElementStub extends EventTarget {
   classList = new Set();
@@ -35,7 +38,7 @@ function fixture({ quantize = false } = {}) {
   callbacks = [];
   let time = 0, lenis, notifiedScroll = browser.scrollY;
   const policy = createManualScroll(() => lenis, { height: () => 1000, now: () => time });
-  lenis = new Lenis({ autoResize: false, wheelMultiplier: .35, touchMultiplier: .7, lerp: .045, virtualScroll: policy.virtualScroll });
+  lenis = new Lenis({ autoResize: false, wheelMultiplier: .55, touchMultiplier: .9, lerp: .045, virtualScroll: policy.virtualScroll });
   lenis.on('scroll', policy.onScroll);
   function event(type, extra = {}) {
     return { type, cancelable: true, ctrlKey: false, defaultPrevented: false,
@@ -80,7 +83,7 @@ for (const hz of [30, 60, 120, 240]) {
     f.at(i * 1000 / hz);
     f.wheel();
     f.frame(i * 1000 / hz);
-    assert.ok(f.y - 5000 <= i * 450 / hz + 1, 'pixel rounding bypasses speed cap');
+    assert.ok(f.y - 5000 <= i * RATE * 1000 / hz + 1, 'pixel rounding bypasses speed cap');
   }
   const start = f.y;
   for (let i = hz * 6 + 1; i <= hz * 9; i++) {
@@ -88,7 +91,7 @@ for (const hz of [30, 60, 120, 240]) {
     f.wheel();
     f.frame(i * 1000 / hz);
   }
-  assert.ok(Math.abs(f.y - start - 1350) <= 1, `${hz} Hz rounded positions change sustained speed`);
+  assert.ok(Math.abs(f.y - start - RATE * 3 * 1000) <= 1, `${hz} Hz rounded positions change sustained speed`);
   f.close();
 }
 
@@ -118,16 +121,16 @@ for (const frameHz of [30, 60, 120, 240]) {
         input++;
       } else {
         f.frame(frame * 1000 / frameHz);
-        assert.ok(f.y - last <= 450 / frameHz + 1e-7, `${inputHz}/${frameHz} Hz exceeds frame speed`);
+        assert.ok(f.y - last <= RATE * 1000 / frameHz + 1e-7, `${inputHz}/${frameHz} Hz exceeds frame speed`);
         assert.ok(f.y >= last);
         if (frame === frameHz * 3) steadyStart = f.y;
         last = f.y;
         frame++;
       }
     }
-    assert.ok(f.y - start <= 2725, 'six-second travel exceeds rate plus burst');
+    assert.ok(f.y - start <= RATE * 6 * 1000 + BURST_PIXELS + 1e-7, 'six-second travel exceeds rate plus burst');
     const speed = (f.y - steadyStart) / 3000;
-    assert.ok(speed > .44 && speed <= .45 + 1e-8, `sustained ${inputHz}/${frameHz} Hz speed ${speed}`);
+    assert.ok(speed > RATE - .01 && speed <= RATE + 1e-8, `sustained ${inputHz}/${frameHz} Hz speed ${speed}`);
     rates.push(speed);
     f.at(6001);
     f.wheel(-100000);
@@ -135,7 +138,7 @@ for (const frameHz of [30, 60, 120, 240]) {
     f.frame(6000 + 1000 / frameHz);
     assert.ok(f.y <= reverse, 'reversal plays old forward travel');
     f.drain(6100);
-    assert.ok(f.y >= reverse - 25 - 1e-7, 'reversal mints a new input budget');
+    assert.ok(f.y >= reverse - BURST_PIXELS - 1e-7, 'reversal mints a new input budget');
     f.close();
   }
 }
@@ -145,7 +148,7 @@ for (const deltaMode of [0, 1, 2]) {
   const start = f.y;
   for (let i = 0; i < 1000; i++) f.wheel(1e12, { deltaMode });
   f.drain(0);
-  assert.ok(f.y - start <= 25 + 1e-7, 'same-time bursts or large wheel modes bypass admission');
+  assert.ok(f.y - start <= BURST_PIXELS + 1e-7, 'same-time bursts or large wheel modes exceed the burst');
   f.close();
 }
 
@@ -154,7 +157,7 @@ for (const deltaMode of [0, 1, 2]) {
   const start = f.y;
   f.wheel(10);
   f.drain(0);
-  assert.ok(f.y > start + 3.4 && f.y <= start + 3.5, 'wheel sensitivity changed');
+  assert.ok(f.y > start + 5.4 && f.y <= start + 5.5, 'wheel sensitivity no longer matches the .55 Lenis multiplier');
   f.close();
 }
 
@@ -167,13 +170,13 @@ for (const hz of [30, 60, 120, 240]) {
     assert.equal(e.defaultPrevented, true, 'vertical touch moves natively');
     const before = f.y;
     f.frame(i * 1000 / hz);
-    assert.ok(f.y - before <= 450 / hz + 1e-7);
+    assert.ok(f.y - before <= RATE * 1000 / hz + 1e-7);
   }
   const released = f.y;
   assert.equal(f.touch('touchend', 0, 0, 0).defaultPrevented, true);
   for (let i = 0; i < 100; i++) f.touch('touchend', 0, 0, 0);
   f.drain(3000);
-  assert.ok(f.y - released <= 25 + 1e-7, 'touchend repeats velocity or creates unbounded inertia');
+  assert.ok(f.y - released <= BURST_PIXELS + 1e-7, 'touchend repeats velocity or exceeds the burst');
   assert.ok(f.y > released, 'touch has no eased release');
   f.close();
 }
@@ -236,7 +239,7 @@ for (const extra of [{ ctrlKey: true }, { deltaX: 1000, deltaY: 0 }, { cancelabl
   const f = fixture();
   assert.equal(f.wheel(10000, { deltaX: 100000 }).defaultPrevented, true, 'diagonal wheel bypasses vertical speed cap');
   f.drain(0);
-  assert.ok(f.y - 5000 <= 25 + 1e-7);
+  assert.ok(f.y - 5000 <= BURST_PIXELS + 1e-7);
   f.close();
 }
 
@@ -290,7 +293,7 @@ for (const reset of [f => f.policy.reset(), f => f.frame(3600000)]) {
   f.at(3600020);
   f.wheel();
   f.drain(3600020);
-  assert.ok(f.y - before <= 25 + 1e-7, 'pause creates a large input allowance');
+  assert.ok(f.y - before <= BURST_PIXELS + 1e-7, 'pause creates a large input allowance');
   f.close();
 }
 
@@ -328,7 +331,7 @@ for (const reset of [f => f.policy.reset(), f => f.frame(3600000)]) {
   f.frame(117);
   assert.ok(f.y < before, 'manual input does not interrupt navigation');
   f.drain(117);
-  assert.ok(f.y >= before - 25 - 1e-7, 'navigation continues after manual takeover');
+  assert.ok(f.y >= before - BURST_PIXELS - 1e-7, 'navigation continues after manual takeover');
   f.lenis.scrollTo('bottom', { immediate: true });
   const end = f.y;
   f.at(2200);
@@ -338,4 +341,4 @@ for (const reset of [f => f.policy.reset(), f => f.frame(3600000)]) {
   f.close();
 }
 
-console.log(`PASS: installed Lenis wheel/touch integration, 20 input/frame-rate combinations, sustained ${Math.min(...rates).toFixed(4)} to ${Math.max(...rates).toFixed(4)} viewport/s. Reverse, burst, sensitivity, touch release/pinch/pilot, nested controls, locks, reduced motion, pauses, navigation, Tour and replay passed.`);
+console.log(`PASS: installed Lenis wheel/touch integration, 20 input/frame-rate combinations, sustained ${Math.min(...rates).toFixed(4)} to ${Math.max(...rates).toFixed(4)} viewport/s. Reverse, ${BURST_PIXELS}px burst, .55 wheel sensitivity, touch release/pinch/pilot, nested controls, locks, reduced motion, pauses, navigation, Tour and replay passed.`);

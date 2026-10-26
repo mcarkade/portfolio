@@ -27,10 +27,17 @@ try {
   report.entryMs = Date.now() - started;
   const loader = await page.evaluate(() => {
     const samples = window.__loadingSamples.map(x => x.p), deltas = samples.slice(1).map((x, i) => x - samples[i]);
-    return { value: Number(document.querySelector('[role="progressbar"]').getAttribute('aria-valuenow')), p: Number(document.getElementById('loader').style.getPropertyValue('--loader-p')), samples: samples.length, maxJump: Math.max(0, ...deltas), backwards: deltas.some(x => x < -.00001), cars: window.__mc ? [...window.__mc.world.garage.prepared] : [], bytes: performance.getEntriesByType('resource').reduce((n, r) => n + r.transferSize, 0) };
+    const w = window.__mc?.world;
+    const meshes = root => { let count = 0; root?.traverse(o => { if (o.isMesh && o.geometry?.attributes.position?.count > 0) count++; }); return count; };
+    return { value: Number(document.querySelector('[role="progressbar"]').getAttribute('aria-valuenow')), p: Number(document.getElementById('loader').style.getPropertyValue('--loader-p')), samples: samples.length, maxJump: Math.max(0, ...deltas), backwards: deltas.some(x => x < -.00001), cars: w ? [...w.garage.prepared] : [], ready: w ? [...w.garage.ready] : [], models: w ? { mp45: meshes(w.garage.hero), ...Object.fromEntries(w.garage.slots.map(s => [s.car.id, meshes(s.model)])), drone: meshes(w.drone.group), turret: meshes(w.turret.root), maze: meshes(w.maze.group), robot: meshes(w.maze.robot) } : {}, bytes: performance.getEntriesByType('resource').reduce((n, r) => n + r.transferSize, 0) };
   });
   check('Loader fills smoothly and finishes before Enter', loader.value === 100 && loader.p === 1 && !loader.backwards && loader.maxJump < .085, loader);
-  if (!fallback) check('All three cars ready before Enter', ['mp45', 'rb19', 'w11'].every(x => loader.cars.includes(x)), loader.cars);
+  if (!fallback) {
+    check('All three cars prepared before Enter', loader.cars.length === 3 && loader.ready.length === 3 && ['mp45', 'rb19', 'w11'].every(x => loader.cars.includes(x) && loader.ready.includes(x)), { prepared: loader.cars, ready: loader.ready });
+    check('Every scene model has geometry before Enter', ['mp45', 'rb19', 'w11', 'drone', 'turret', 'maze', 'robot'].every(x => loader.models[x] > 0), loader.models);
+  }
+  const removed = await page.evaluate(() => ({ elements: document.querySelectorAll('#vision, #vision-box, .vision, .hudframe, [class*="aruco"], [id*="aruco"], [class*="thermal"], [id*="thermal"]').length, labels: /\b(?:ArUco|thermal|person\s+0\.\d+)\b/i.test(document.body.textContent), person: !!window.__mc?.world.person }));
+  check('Vision subject and detection UI are removed', removed.elements === 0 && !removed.labels && !removed.person, removed);
   await page.click('[data-enter="silent"]');
   if (!reduced) { await page.waitForTimeout(1000); await page.keyboard.press('Escape'); }
   await page.waitForFunction(() => !document.body.matches('.is-loading, .is-intro'), null, { timeout: 20000 });
@@ -41,15 +48,50 @@ try {
   if (!fallback) {
     const opening = await page.evaluate(() => { const s = window.__mc.director.state; return { shake: s.shake, roll: s.roll, cars: window.__mc.world.garage.ready.size }; });
     check('Opening remains steady', opening.shake === 0 && opening.roll === 0, opening);
-    const jump = async (s, pinned = false) => {
-      await page.evaluate(([s, pinned]) => { const d = window.__mc.director, i = Math.floor(s); scrollTo(0, d.tops[i] + (d.heights[i] - (pinned ? innerHeight : 0)) * (s - i)); }, [s, pinned]);
+    const jump = async s => {
+      await page.evaluate(s => { const d = window.__mc.director, i = Math.floor(s); scrollTo(0, d.tops[i] + d.heights[i] * (s - i)); }, s);
       await page.waitForTimeout(1700);
     };
-    for (const p of [.28, .45, .64]) {
-      await jump(4 + p, true);
-      const person = await page.evaluate(() => { const w = window.__mc.world; const head = w.person.children.at(-1).getWorldPosition(w.camera.position.clone()); const foot = w.person.position.clone(); foot.y = .05; return { head: w.project(head), foot: w.project(foot), h: innerHeight, width: innerWidth }; });
-      check(`Thermal subject stays visible at ${p}`, person.head && person.foot && person.head.y > 0 && person.foot.y < person.h && person.head.x > 0 && person.head.x < person.width, person);
-      if (p === .45) await shot('thermal');
+    const maze = await page.evaluate(() => {
+      const { world: w, director: d } = window.__mc, m = w.maze;
+      const saved = structuredClone(d.state), savedS = d.sNow;
+      const sample = s => {
+        const st = d.update(d.tops[4] + d.heights[4] * (s - 4), 0);
+        m.update(st); m.group.updateWorldMatrix(true, true);
+        const bounds = [Infinity, -Infinity, Infinity, -Infinity], v = w.camera.position.clone();
+        m.robot.traverse(o => {
+          if (!o.isMesh) return;
+          o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox;
+          for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {
+            m.group.worldToLocal(v.set(x, y, z).applyMatrix4(o.matrixWorld));
+            bounds[0] = Math.min(bounds[0], v.x); bounds[1] = Math.max(bounds[1], v.x);
+            bounds[2] = Math.min(bounds[2], v.z); bounds[3] = Math.max(bounds[3], v.z);
+          }
+        });
+        return { s, progress: st.mazeProgress, visible: st.mazeVisible && m.group.visible, position: m.robot.position.toArray(), yaw: m.robot.rotation.y, wheels: m.wheels.map(x => x.rotation.x), route: m.routeMaterial.uniforms.uDistance.value, bounds };
+      };
+      try {
+        const steps = Array.from({ length: 81 }, (_, i) => 4.14 + .68 * i / 80);
+        const forward = steps.map(sample), reverse = [...steps].reverse().map(sample).reverse();
+        return { origin: m.group.position.toArray(), forward, deterministic: JSON.stringify(forward) === JSON.stringify(reverse) };
+      } finally { Object.assign(d.state, saved); d.sNow = savedS; m.update(saved); m.group.updateWorldMatrix(true, true); }
+    });
+    check('Maze robot stays inside its board throughout the route', maze.origin.every((v, i) => Math.abs(v - [0, .006, -3.5][i]) < 1e-9) && maze.forward.every(x => x.visible && x.bounds.every(Number.isFinite) && x.bounds[0] >= -1.155 && x.bounds[1] <= 1.155 && x.bounds[2] >= -1.155 && x.bounds[3] <= 1.155), maze);
+    check('Maze advances with scroll and reverses without drift', maze.forward[0].progress < .001 && maze.forward.at(-1).progress > .999 && maze.forward.every((x, i, a) => !i || x.progress > a[i - 1].progress) && new Set(maze.forward.map(x => x.position.join(','))).size > 10 && maze.forward.at(-1).route > maze.forward[0].route && maze.deterministic, { samples: maze.forward.length, start: maze.forward[0], end: maze.forward.at(-1), deterministic: maze.deterministic });
+    for (const s of [4.18, 4.46, 4.78]) {
+      await jump(s);
+      const board = await page.evaluate(() => {
+        const w = window.__mc.world;
+        const corners = [-1.15, 1.15].flatMap(x => [-1.15, 1.15].map(z => w.project(w.maze.group.localToWorld(w.camera.position.clone().set(x, 0, z)))));
+        return { visible: w.maze.group.visible, progress: window.__mc.director.state.mazeProgress, corners, width: innerWidth, height: innerHeight };
+      });
+      check(`Maze board stays in frame at ${s}`, board.visible && board.corners.every(p => p && p.x > 0 && p.x < board.width && p.y > 0 && p.y < board.height), board);
+      if (s === 4.46) await shot('maze');
+    }
+    for (const s of [4.94, 4.99, 5.03, 5.08]) {
+      await jump(s); await shot(`iris-${s}`);
+      const effect = await page.evaluate(() => ({ iris: window.__mc.world.final.uniforms.uIris.value, portal: window.__mc.world.final.uniforms.uPortal.value, state: window.__mc.director.state.iris }));
+      check(`${reduced ? 'Reduced motion suppresses' : 'Maze handoff drives'} iris at ${s}`, effect.portal === 0 && (reduced ? effect.iris === 0 : Math.abs(effect.iris - effect.state) < 1e-6 && (s < 5.06 ? effect.iris > 0 : effect.iris === 0)), effect);
     }
     await jump(5.4);
     if (mobile) {
@@ -63,21 +105,28 @@ try {
     await page.waitForTimeout(700);
     await shot('lock');
     check('Game reports a readable state', ['Locked', 'Escaped'].includes(await page.locator('#lock-time').innerText()));
-    for (const s of [5.88, 5.95, 6.02]) {
-      await jump(s); await shot(`iris-${s}`);
-      if (reduced) check(`Reduced motion suppresses iris at ${s}`, await page.evaluate(() => window.__mc.world.final.uniforms.uIris.value === 0));
+    for (const s of [5.9, 5.96, 6.025, 6.08]) {
+      await jump(s); await shot(`portal-${s}`);
+      const effect = await page.evaluate(() => ({ portal: window.__mc.world.final.uniforms.uPortal.value, iris: window.__mc.world.final.uniforms.uIris.value, state: window.__mc.director.state.portal }));
+      check(`${reduced ? 'Reduced motion suppresses' : 'Lens dive drives'} portal at ${s}`, effect.iris === 0 && (reduced ? effect.portal === 0 : Math.abs(effect.portal - effect.state) < 1e-6 && (s < 6 ? effect.portal > 0 && effect.portal <= 1 : s < 6.055 ? effect.portal > 1 && effect.portal <= 2 : effect.portal === 0)), effect);
     }
-    const dive = await page.evaluate(() => { const d = window.__mc.director; return [5.8, 5.88, 5.95, 5.99].map(s => { const st = d.update(d.tops[5] + d.heights[5] * (s - 5), 0); return { s, fade: st.fade, iris: st.iris, pilot: st.pilot }; }); });
-    check('Lens dive has no leftover fade or pilot input', dive.every(x => x.fade === 0 && !x.pilot), dive);
-    for (const s of [6.04, 6.18, 6.36, 6.54, 6.72, 6.9]) {
+    const dive = await page.evaluate(() => {
+      const d = window.__mc.director, saved = structuredClone(d.state), savedS = d.sNow;
+      try { return [5.81, 5.9, 5.95, 5.99].map(s => { const st = d.update(d.tops[5] + d.heights[5] * (s - 5), 0); return { s, fade: st.fade, iris: st.iris, pilot: st.pilot }; }); }
+      finally { Object.assign(d.state, saved); d.sNow = savedS; }
+    });
+    check('Lens dive has no leftover fade, iris or pilot input', dive.every(x => x.fade === 0 && x.iris === 0 && !x.pilot), dive);
+    for (const s of [6.08, 6.225, 6.45, 6.675, 6.9]) {
       await jump(s);
       const panels = await page.evaluate(() => window.__mc.world.gallery.panels.map(x => ({ name: x.link.dataset.gallery, playing: x.playing, paused: x.video?.paused ?? true })));
       check(`At most one focused video at ${s}`, panels.filter(x => x.playing && !x.paused).length <= 1, panels);
-      if ([6.04, 6.54, 6.9].includes(s)) await shot(`gallery-${s}`);
+      if ([6.08, 6.45, 6.9].includes(s)) await shot(`gallery-${s}`);
     }
     const links = page.locator('.gallery-access [data-gallery]');
-    check('All six projects remain available', await links.count() === 6);
-    for (let i = 0; i < 6; i++) {
+    const projects = await links.evaluateAll(els => els.map(el => el.dataset.gallery));
+    check('All five projects remain available', projects.length === 5 && ['Multiroads', 'Counter-drone turret', 'Meshmerize', 'Reaper', 'NXP Cup'].every(x => projects.includes(x)), projects);
+    check('Gallery has five panels and no ThetaShift project', await page.evaluate(() => window.__mc.world.gallery.panels.length === 5 && ![...document.querySelectorAll('[data-gallery]')].some(el => /theta\s*shift/i.test(el.dataset.gallery))));
+    for (let i = 0; i < projects.length; i++) {
       if ((await links.nth(i).getAttribute('href')).startsWith('#')) continue;
       await links.nth(i).focus();
       await page.waitForTimeout(300);

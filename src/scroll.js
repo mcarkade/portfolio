@@ -1,6 +1,6 @@
-const RATE = .45; // Viewports per second, shared by every manual input source.
-const BURST = .025;
-const RESPONSE = .18;
+const RATE = .90; // Viewports per second, shared by every manual input source.
+const BURST = .045;
+const RESPONSE = .14;
 
 export function createManualScroll(getLenis, { height = () => innerHeight, now = () => performance.now() } = {}) {
   let pending = 0, budget = BURST, inputTime = null, frameTime = null;

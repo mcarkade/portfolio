@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { galleryRail, GALLERY_END, galleryPortrait } from './gallery-path.js';
+import { galleryRail, GALLERY_END, GALLERY_LAST, galleryPortrait } from './gallery-path.js';
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 const vertex = `uniform float uVelocity; varying vec2 vUv; varying vec3 vView;
@@ -83,7 +83,7 @@ export class Gallery {
         if (!world.director) return;
         this.focusIndex = i;
         const d = world.director;
-        window.scrollTo(0, d.tops[6] + d.heights[6] * GALLERY_END * i / 5);
+        window.scrollTo(0, d.tops[6] + d.heights[6] * GALLERY_END * i / GALLERY_LAST);
       });
       link.addEventListener('blur', () => { this.focusIndex = -1; });
     });
@@ -246,7 +246,7 @@ export class Gallery {
   }
 
   makeSpace() {
-    // One continuous twisted metal ribbon, threaded through the six projects.
+    // One continuous twisted metal ribbon, threaded through the projects.
     const pos = [], indices = [];
     for (let i = 0; i <= 600; i++) {
       const t = i / 600, a = t * Math.PI * 7;
@@ -272,7 +272,7 @@ export class Gallery {
     if (!on) { if (this.active) this.hide(); return; }
     this.active = true; this.group.visible = true; this.overlay.hidden = false;
     document.body.classList.add('in-gallery');
-    const t = THREE.MathUtils.clamp(state.galleryProgress / GALLERY_END * 5, 0, 5);
+    const t = THREE.MathUtils.clamp(state.galleryProgress / GALLERY_END * GALLERY_LAST, 0, GALLERY_LAST);
     const focused = Math.round(t);
     const k = 1 - Math.exp(-dt * 7);
     const motion = !reduce.matches;

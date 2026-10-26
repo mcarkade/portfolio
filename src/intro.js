@@ -16,7 +16,6 @@ const DOCK_AT = 1.55, DOCK_LEN = 0.8;
 const IMAGE_HOLD = 0.25, FACE_FADE = 0.28, PUSH_IN = 1.04;
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-const easeInOutQuart = (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2);
 const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
 const clamp01 = (t) => Math.max(0, Math.min(1, t));
 const lerp = (a, b, k) => a + (b - a) * k;
@@ -61,14 +60,14 @@ export class Intro {
     this._resize();
   }
 
-  // Flip times accelerate from slow to a blur, the way a title sequence builds.
+  // Keep the opening cue ticks, then cap the acceleration so later images can still read.
   _flipSchedule() {
     const times = [];
     let t = 0.15, gap = 0.34;
     while (t < this.hit + IMAGE_HOLD) {
       times.push(t);
       t += gap;
-      gap = Math.max(0.042, gap * 0.86);
+      gap = Math.max(0.08, gap * 0.86);
     }
     return times;
   }
@@ -177,7 +176,7 @@ export class Intro {
   // Scene transform: big push-in at the start, pulling back to the full word at the hit.
   _camera(t) {
     const u = clamp01(t / this.hit);
-    const pull = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+    const pull = easeInOutSine(u);
     const scale = 5.2 - 4.2 * pull;
     const rot = (1 - pull) * -0.08;
     const pan = (1 - pull) * this.size * this.wEm * 0.28;
@@ -396,11 +395,12 @@ export class Intro {
     let S = this.size * lerp(1, PUSH_IN, easeInOutSine(clamp01(a / SETTLE)));
     let cx = w / 2 + (Math.random() - 0.5) * 14 * shake;
     let cy = h / 2 + (Math.random() - 0.5) * 10 * shake;
-    const du = clamp01((a - DOCK_AT) / DOCK_LEN);
+    // Compare absolute times so subtraction roundoff cannot miss the flat final frame.
+    const du = t >= this.hit + DOCK_AT + DOCK_LEN ? 1 : clamp01((a - DOCK_AT) / DOCK_LEN);
     if (du > 0) {
       this.dock ||= this._measureDock();
       if (this.dock) {
-        const e = easeInOutQuart(du);
+        const e = easeInOutSine(du);
         S = this.size * PUSH_IN * Math.pow(this.dock.S / (this.size * PUSH_IN), e);
         cx = lerp(w / 2, this.dock.cx, e);
         cy = lerp(h / 2, this.dock.cy, e);
@@ -409,7 +409,7 @@ export class Intro {
     // at rest and on arrival the box sits on whole device pixels, like the DOM mark it hands over to
     const L = this._lockup(S, cx, cy, settled && (du === 0 || du === 1));
     // the bloom swells on impact, then fades as the logo flies to the nav
-    const glow = (0.55 + 0.45 * Math.max(0, 1 - a / 0.6)) * (1 - easeInOutQuart(du));
+    const glow = (0.55 + 0.45 * Math.max(0, 1 - a / 0.6)) * (1 - easeInOutSine(du));
     if (du < 1) this._logo(ctx, L, (a - SWEEP_AT) / SWEEP_LEN, glow, t);
     else {
       // docked: exactly the flat DOM mark it hands over to
@@ -419,7 +419,7 @@ export class Intro {
       ctx.fillStyle = BONE;
       ctx.fillText(WORD, L.tx, L.base);
     }
-    this._grain(ctx, t, 0.024 * (1 - easeInOutQuart(du)));
+    this._grain(ctx, t, 0.024 * (1 - easeInOutSine(du)));
     // white flash on impact
     const flash = Math.max(0, 1 - a / 0.22);
     if (flash > 0) {

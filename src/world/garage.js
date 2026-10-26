@@ -228,7 +228,7 @@ export class Garage {
     this.setHeroExplode(state.carExplode);
     // Wheels roll during the launch
     if (this.heroWheels?.length && state.carExplode === 0) {
-      this.wheelAngle = (this.wheelAngle || 0) - state.speed * dt * 38;
+      this.wheelAngle = (this.wheelAngle || 0) + state.speed * dt * 38;
       for (const w of this.heroWheels) {
         const b = w.userData.baseRot || (w.userData.baseRot = w.rotation.clone());
         w.rotation.x = b.x + this.wheelAngle;

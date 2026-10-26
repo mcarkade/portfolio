@@ -64,7 +64,7 @@ button { font: inherit; color: inherit; }
 }
 /* no z-index: the pinned type below has to blend with the canvas itself, not with main's own layer */
 main { position: relative; }
-.drone .sticky, .vision .sticky, .lock .sticky { mix-blend-mode: difference; }
+.drone .sticky, .maze .sticky, .lock .sticky { mix-blend-mode: difference; }
 
 /* ---------- Loader ---------- */
 @property --loader-p { syntax: '<number>'; inherits: true; initial-value: 0; }
@@ -262,19 +262,8 @@ main { position: relative; }
 .drone__head { position: absolute; left: 0; top: 18vh; max-width: 40rem; }
 
 
-.vision { height: 220vh; }
-.hudframe { position: absolute; inset: 14vh 8vw 16vh; pointer-events: none; font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; opacity: 0; transition: opacity .6s var(--ease); }
-.vision.is-active .hudframe { opacity: 1; }
-.hudframe__c { position: absolute; width: 2.2rem; height: 2.2rem; border: 1px solid rgba(237,233,227,.6); }
-.hudframe__c.tl { left: 0; top: 0; border-right: 0; border-bottom: 0; }
-.hudframe__c.tr { right: 0; top: 0; border-left: 0; border-bottom: 0; }
-.hudframe__c.bl { left: 0; bottom: 0; border-right: 0; border-top: 0; }
-.hudframe__c.br { right: 0; bottom: 0; border-left: 0; border-top: 0; }
-.hudframe__box { position: fixed; left: 0; top: 0; border: 1.5px solid var(--red); opacity: 0; transition: opacity .3s; }
-.hudframe__box.is-on { opacity: 1; }
-.hudframe__box span { position: absolute; left: -1.5px; top: -1.6rem; background: var(--red); padding: .15rem .4rem; color: var(--bone); white-space: nowrap; }
-.vision__title { position: absolute; left: 0; bottom: 10vh; max-width: 14ch; transition: opacity .5s var(--ease); }
-.vision.is-pov .vision__title { opacity: 0; }
+.maze { height: 300vh; }
+.maze__title { position: absolute; left: 0; bottom: 10vh; max-width: 14ch; }
 
 .lock { height: 230vh; }
 .lock__copy { position: absolute; left: 0; bottom: 12vh; max-width: 34rem; }
@@ -308,7 +297,7 @@ main { position: relative; }
 .launch__speed small { font-size: .9rem; color: var(--ash); letter-spacing: .06em; }
 .launch__title { position: absolute; left: 0; top: 16vh; max-width: 12ch; }
 
-.work { height: 1100svh; padding: 0; pointer-events: none; }
+.work { height: 900svh; padding: 0; pointer-events: none; }
 .sr-only, .gallery-access { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .gallery-labels { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; perspective-origin: 50% 50%; }
 .gallery-hit { position: absolute; left: 0; top: 0; display: block; color: transparent; text-decoration: none; transform-origin: 0 0; pointer-events: auto; border-radius: 22px; }
@@ -316,7 +305,7 @@ main { position: relative; }
 .no-webgl .work { height: auto; padding: 15vh var(--pad); pointer-events: auto; }
 .no-webgl .gallery-access { position: static; clip-path: none; width: auto; height: auto; margin: 0; white-space: normal; list-style: none; }
 .no-webgl .gallery-access a { display: block; padding: 1.5rem 0; font-size: 1.5rem; }
-@media (max-width: 600px) { .work { height: 1050svh; } }
+@media (max-width: 600px) { .work { height: 850svh; } }
 
 /* compact menu for small screens */
 .menu-btn { display: none; margin-left: auto; background: none; border: 1px solid var(--line); padding: .7rem 1rem; font-family: var(--mono); font-size: .75rem; letter-spacing: .06em; cursor: pointer; }
@@ -364,10 +353,10 @@ kbd { font-family: var(--mono); border: 1px solid var(--line); padding: 0 .35em;
   .about { grid-template-columns: 1fr; gap: 0; padding-top: 8vh; }
   .about__portrait { grid-column: 1; grid-row: 1; height: auto; min-height: 0; max-height: 80svh; aspect-ratio: 1 / 1.05; }
   .about__copy { grid-column: 1; grid-row: 2; position: static; margin-top: 1.5rem; }
-  .drone .sticky, .vision .sticky, .lock .sticky { mix-blend-mode: normal; }
-  .drone__head .title, .vision__title, .lock__copy { color: var(--bone); text-shadow: 0 2px 3px #000, 0 0 18px #000, 0 0 36px #000b; }
+  .drone .sticky, .maze .sticky, .lock .sticky { mix-blend-mode: normal; }
+  .drone__head .title, .maze__title, .lock__copy { color: var(--bone); text-shadow: 0 2px 3px #000, 0 0 18px #000, 0 0 36px #000b; }
   .drone__head { max-width: calc(100% - 1rem); }
-  .vision__title, .lock__copy { bottom: max(144px, 18svh); max-width: calc(100% - 1rem); }
+  .maze__title, .lock__copy { bottom: max(144px, 18svh); max-width: calc(100% - 1rem); }
   .contact { padding-bottom: max(144px, 18svh); }
   .footer__cols { grid-template-columns: 1fr; }
 }
@@ -384,13 +373,13 @@ kbd { font-family: var(--mono); border: 1px solid var(--line); padding: 0 .35em;
 .clean main, .clean .hud, .clean #cursor, .clean .grain, .clean .veil { visibility: hidden !important; }
 
 /* no WebGL: a static, readable portfolio */
-.no-webgl #gl, .no-webgl .hudframe, .no-webgl .launch__speed { display: none; }
+.no-webgl #gl, .no-webgl .launch__speed { display: none; }
 .no-webgl .hero { background: url(/media/portrait.webp) right center / contain no-repeat; }
 .no-webgl .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, #000, transparent 60%); }
 .no-webgl .hero__copy { z-index: 1; }
-.no-webgl .drone, .no-webgl .vision, .no-webgl .lock, .no-webgl .garage, .no-webgl .launch { height: auto; min-height: 100vh; }
+.no-webgl .drone, .no-webgl .maze, .no-webgl .lock, .no-webgl .garage, .no-webgl .launch { height: auto; min-height: 100vh; }
 .no-webgl .sticky { position: relative; height: auto; min-height: 100vh; }
-.no-webgl .drone__head, .no-webgl .garage__head, .no-webgl .garage__plate, .no-webgl .garage__cta, .no-webgl .launch__title, .no-webgl .vision__title, .no-webgl .lock__copy { position: relative; inset: auto; padding-top: 2rem; }
+.no-webgl .drone__head, .no-webgl .garage__head, .no-webgl .garage__plate, .no-webgl .garage__cta, .no-webgl .launch__title, .no-webgl .maze__title, .no-webgl .lock__copy { position: relative; inset: auto; padding-top: 2rem; }
 
 /* Film controls */
 .chapter-rail {

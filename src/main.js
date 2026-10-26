@@ -29,9 +29,9 @@ const quality = lowEnd || small || !finePointer ? 'low' : 'high';
 const hasGL = webglOK();
 
 const INTRO_IMAGES = [
-  'intro/drone', 'mr-tunnel', 'portrait', 'intro/rb19', 'theta-shell', 'mr-suzuka', 'intro/explode', 'mr-forest-night',
-  'mesh-electronics', 'intro/mp45', 'reaper', 'theta-cart', 'intro/w11', 'mr-forest-dash', 'mesh-arena', 'intro/lift',
-  'theta-hub', 'mesh-plate', 'nxp-track',
+  'intro/drone', 'mr-tunnel', 'portrait', 'intro/rb19', 'mr-suzuka', 'intro/explode', 'mr-forest-night',
+  'mesh-electronics', 'intro/mp45', 'reaper', 'intro/w11', 'mr-forest-dash', 'mesh-arena', 'intro/lift',
+  'mesh-plate', 'nxp-track',
 ].map((n) => `/media/${n}.webp`);
 if (new URLSearchParams(location.search).has('clean')) document.documentElement.classList.add('clean');
 
@@ -115,6 +115,7 @@ async function boot() {
       await withTimeout(world.warm(), 8000);
       await galleryReady;
       // Exercise the gallery's real vertex buffers and composer draw behind the loader.
+      world.render(director.update(director.tops[4] + director.heights[4] * .5, 0));
       world.render(director.update(director.tops[6], 0));
       world.render(director.update(0, 0));
       // the film opens on the cars, so they load behind the loader on every device
@@ -225,7 +226,7 @@ function begin() {
   if (!reducedMotion) {
     manualScroll = createManualScroll(() => lenis);
     lenis = new Lenis({
-      lerp: .045, wheelMultiplier: .35, touchMultiplier: .7, smoothWheel: true,
+      lerp: .045, wheelMultiplier: .55, touchMultiplier: .9, smoothWheel: true,
       virtualScroll: manualScroll.virtualScroll,
     });
     lenis.on('scroll', manualScroll.onScroll);
@@ -346,8 +347,7 @@ copyEmail();
 
 const progressEl = $('#readout-bar');
 const navLinks = [...document.querySelectorAll('.nav a')];
-const visionSection = $('#vision');
-const visionBox = $('#vision-box');
+const mazeTitle = $('.maze__title');
 const carName = $('#car-name');
 const speedEl = $('#speed');
 const launchTitle = $('.launch__title');
@@ -361,25 +361,11 @@ function measureDom() {
 }
 
 const tmpV = new THREE.Vector3();
-const tmpBox = new THREE.Box3();
 const P = { x: 0, y: 0, z: 0 };
-
-function projectBox(obj) {
-  tmpBox.setFromObject(obj);
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (let i = 0; i < 8; i++) {
-    tmpV.set(i & 1 ? tmpBox.max.x : tmpBox.min.x, i & 2 ? tmpBox.max.y : tmpBox.min.y, i & 4 ? tmpBox.max.z : tmpBox.min.z);
-    const p = world.project(tmpV, P);
-    if (!p) return null;
-    x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
-  }
-  return { x0, y0, x1, y1 };
-}
 
 let lastChapter = -1;
 let lastCar = null;
 let lastY = 0;
-let lastTarget = null;
 
 function domFrame(st, y, dt) {
   const vh = innerHeight;
@@ -392,7 +378,7 @@ function domFrame(st, y, dt) {
   if (st.chapter !== lastChapter) {
     lastChapter = st.chapter;
     const id = director.ids[st.chapter];
-    navLinks.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === `#${id}` || (id === 'launch' && a.getAttribute('href') === '#garage') || (id === 'vision' && a.getAttribute('href') === '#drone')));
+    navLinks.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === `#${id}` || (id === 'launch' && a.getAttribute('href') === '#garage') || (id === 'maze' && a.getAttribute('href') === '#drone')));
     if (lenis && audio.enabled) audio.play('whoosh', 0.35);
     // pinned headings can sit outside the reveal observer's band after a jump; show them on arrival
     document.querySelectorAll(`#${id} .sticky .split`).forEach((el) => el.classList.add('is-in'));
@@ -406,26 +392,8 @@ function domFrame(st, y, dt) {
   }
   progressEl.style.setProperty('--progress', Math.min(1, y / maxScroll));
 
-  // vision HUD
-  const pv = director.pinned('vision', y);
   const at = director.ids[st.chapter];
-  const inVision = at === 'vision';
-  visionSection.classList.toggle('is-active', inVision && pv > 0.02 && pv < 0.99);
-  visionSection.classList.toggle('is-pov', st.thermal > 0.5);
-  if (inVision) {
-    let target = null, tag = '';
-    if (pv > 0.22 && pv < 0.66) { target = world.person; tag = pv < 0.33 ? 'person 0.71' : 'person 0.94'; }
-    else if (pv > 0.78 && pv < 0.96) { target = world.marker; tag = 'aruco id 23'; }
-    if (target !== lastTarget) { lastTarget = target; if (target && audio.enabled) audio.play('lock', 0.4); }
-    const b = target && projectBox(target);
-    visionBox.classList.toggle('is-on', !!b);
-    if (b) {
-      visionBox.style.transform = `translate(${b.x0}px, ${b.y0}px)`;
-      visionBox.style.width = `${b.x1 - b.x0}px`;
-      visionBox.style.height = `${b.y1 - b.y0}px`;
-      setText(visionBox.firstElementChild, tag);
-    }
-  }
+  mazeTitle.style.opacity = (1 - THREE.MathUtils.smoothstep(director.sNow, 4.03, 4.15)).toFixed(3);
 
   // garage name plate
   if (at === 'garage' || at === 'launch') {

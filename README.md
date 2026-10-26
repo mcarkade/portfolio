@@ -11,14 +11,14 @@ Abhinav Pullela's portfolio, built as one continuous scroll-driven film.
 1. **Title sequence.** Frames of my projects flip through the letters of MCARKADE, then slam into a red block. Click the logo to replay it.
 2. **Multiroads.** The McLaren MP4/5 from my browser racing game opens the film, then the RB19 and W11, then the MP4/5 comes apart and launches through the light gates.
 3. **The drone.** My F450 quadcopter comes apart into a risograph technical print and takes off.
-4. **Vision and lock-on.** The drone flies its mission through its thermal camera, then you fly it while a counter-drone turret tries to hold it in the crosshair.
+4. **Meshmerize and lock-on.** The camera follows the drone onto the white-line map. A Pico robot runs the shortest route, then you fly the drone while a counter-drone turret tracks it.
 5. **Work, about and contact.**
 
 Press `L` for the lights and `M` for sound.
 
-All three cars load, upload their textures, compile their shaders and draw behind the loading screen before Enter appears. The drone's camera dive opens into the project gallery through a scroll-controlled aperture. Reduced motion disables that aperture and the intro.
+All three cars load, upload their textures, compile their shaders and draw behind the loading screen before Enter appears. The drone's camera dive opens into the project gallery through a black-hole lens pull and a white-hole reveal. Reduced motion disables the lens effects and the intro.
 
-Manual wheel and touch scrolling share a 0.45 viewport-per-second limit and an eased response. Menu links and Tour keep their own navigation timing.
+Manual wheel and touch scrolling share a 0.90 viewport-per-second limit and an eased response. Menu links and Tour keep their own navigation timing.
 
 ## Run it
 
@@ -29,6 +29,8 @@ npm run build
 ```
 
 For browser checks, serve the build with `npm run preview -- --port 5192`, then run `node tools/verify.mjs http://localhost:5192/ <output-folder> desktop`. Repeat with `phone`, `reduced` or `fallback`. Captures and JSON reports go to the chosen folder. Gallery stills can be regenerated with `python tools/gallery-art/build.py`.
+
+`node tools/maze-path-check.mjs <Meshmerize-source>` checks the traced map, shortest route and reversible robot motion. `node tools/intro-check.mjs http://localhost:5192/ <output-folder>` checks natural docking, sound entry and replay ducking.
 
 `node tools/scroll-check.mjs` checks the scroll policy against installed Lenis handlers. `node tools/check-interactions.mjs http://localhost:5192/ <output-folder>` checks portrait layouts, wheel bursts and native phone touch gestures. Rebuild the supplied portrait with `python tools/portrait/build.py <original-photo>`.
 
