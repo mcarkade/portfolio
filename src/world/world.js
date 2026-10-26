@@ -21,6 +21,7 @@ const FinalShader = {
     uTrail: { value: Array.from({ length: 20 }, () => new THREE.Vector2(-1, -1)) },
     uTrailOn: { value: 0 },
     uRiso: { value: 0 },
+    uAnalytic: { value: 0 },
     uTime: { value: 0 },
     uAberration: { value: 0.0015 },
     uSpeed: { value: 0 },
@@ -39,7 +40,7 @@ const FinalShader = {
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse; uniform float uTime, uAberration, uSpeed, uVignette, uFade, uFlash;
     #define TRAIL 20
-    uniform vec2 uTrail[TRAIL]; uniform float uTrailOn, uRiso;
+    uniform vec2 uTrail[TRAIL]; uniform float uTrailOn, uRiso, uAnalytic;
     uniform float uThermal, uStatic;
     varying vec2 vUv;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -69,6 +70,21 @@ const FinalShader = {
       float bl = luma(texture2D(tDiffuse, uv + px * vec2(-1., -1.)).rgb), b = luma(texture2D(tDiffuse, uv + px * vec2(0., -1.)).rgb), br = luma(texture2D(tDiffuse, uv + px * vec2(1., -1.)).rgb);
       float gx = tr + 2. * r + br - tl - 2. * l - bl, gy = tl + 2. * t + tr - bl - 2. * b - br;
       return length(vec2(gx, gy));
+    }
+    // The frame reprinted as a two-drum risograph: saturated reds go to the red drum, everything lit
+    // to the blue drum as a dot screen, edges in blue, a few pixels out of register. ground: how much
+    // red screen the dark room gets; grid: a faint printed drafting grid.
+    vec3 risoPrint(vec2 uv, vec3 col, float ground, float grid, float fill){
+      vec2 fc = gl_FragCoord.xy, px = 1.0 / uResolution, mis = vec2(3.0, -2.0);
+      float lit = clamp(pow(luma(texture2D(tDiffuse, uv + mis * px).rgb) * 4.0, 0.7), 0.0, 1.0);
+      float l0 = luma(col);
+      float redness = clamp((col.r - max(col.g, col.b)) / max(col.r, 1e-4) * 1.7 - 0.35, 0.0, 1.0) * clamp(l0 * 14.0, 0.0, 1.0);
+      float red = max(screen(fc, 0.26, 6.0, ground * (1.0 - clamp(pow(l0 * 4.0, 0.7), 0.0, 1.0))), screen(fc, 0.26, 4.5, redness));
+      float blue = max(screen(fc + mis, 1.31, 6.0, lit * fill * (1.0 - redness)), smoothstep(0.05, 0.22, edges(uv + mis * px, px * 1.5)));
+      vec2 g = abs(fract((fc + mis) / 56.0 + 0.5) - 0.5) * 56.0;
+      blue = max(blue, grid * 0.32 * (1.0 - smoothstep(0.0, 0.9, min(g.x, g.y))));
+      vec3 paper = vec3(1.55, 1.48, 1.36);
+      return paper * mix(vec3(1.0), vec3(1.0, 0.12, 0.14), red) * mix(vec3(1.0), vec3(0.08, 0.2, 0.72), blue);
     }
     void main(){
       vec2 uv = vUv;
@@ -110,21 +126,12 @@ const FinalShader = {
         float field = vUv.x * 0.72 + (1.0 - vUv.y) * 0.28 + (noise(vec3(vUv * vec2(3.2, 2.4), 7.0)) - 0.5) * 0.3;
         float head = mix(-0.25, 1.75, uRiso), tail = head - 0.62;
         float band = smoothstep(head + 0.012, head - 0.012, field) * smoothstep(tail - 0.012, tail + 0.012, field);
-        if (band > 0.0) {
-          vec2 fc = gl_FragCoord.xy;
-          vec2 px = 1.0 / uResolution;
-          // printed as a negative: the lit subject takes the blue ink, the dark room only a light red screen
-          vec2 mis = vec2(3.0, -2.0);
-          float lit = clamp(pow(luma(texture2D(tDiffuse, uv + mis * px).rgb) * 4.0, 0.7), 0.0, 1.0);
-          float red = screen(fc, 0.26, 6.0, 0.16 + 0.3 * (1.0 - clamp(pow(luma(col) * 4.0, 0.7), 0.0, 1.0)));
-          float blue = max(screen(fc + mis, 1.31, 6.0, lit * 0.95), smoothstep(0.05, 0.22, edges(uv + mis * px, px * 1.5)));
-          vec3 paper = vec3(1.55, 1.48, 1.36);
-          vec3 riso = paper * mix(vec3(1.0), vec3(1.0, 0.12, 0.14), red) * mix(vec3(1.0), vec3(0.08, 0.2, 0.72), blue);
-          col = mix(col, riso, band);
-        }
+        if (band > 0.0) col = mix(col, risoPrint(uv, col, 0.46, 0.0, 0.95), band);
         // the leading edge is a hot red line
         col += vec3(2.4, 0.18, 0.2) * exp(-pow((field - head) * 260.0, 2.0)) * step(0.0, head);
       }
+      // the exploded drone, printed as a technical sheet
+      if (uAnalytic > 0.001) col = mix(col, risoPrint(uv, col, 0.1, 1.0, 0.45), uAnalytic);
       // the cursor's light trail: a hot core with a soft red glow, thinning toward its tail
       if (uTrailOn > 0.001) {
         vec2 asp = vec2(uResolution.x / uResolution.y, 1.0);
@@ -670,6 +677,7 @@ export class World {
     d.group.rotation.y = state.droneYaw;
     d.body.rotation.set(state.dronePitch, 0, state.droneRoll);
     d.setExplode(state.explode);
+    d.setAnalytic(state.analytic);
     d.update(dt, state.spin);
     d.group.visible = state.droneVisible;
 
@@ -723,6 +731,7 @@ export class World {
     const u = this.final.uniforms;
     this._trail(dt);
     u.uRiso.value = this.motion.matches ? 0 : state.riso;
+    u.uAnalytic.value = state.analytic;
     u.uTime.value = t;
     u.uSpeed.value = this.quality === 'high' ? speed : 0; // radial blur is desktop-only
     u.uAberration.value = 0.0001 + state.aberration * .35;

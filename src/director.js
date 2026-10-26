@@ -19,7 +19,7 @@ const DEFAULTS = {
   drone: [0, 1.1, 0], droneYaw: 0, dronePitch: 0, droneRoll: 0, explode: 0, spin: 0,
   grid: 0.6, person: 0, personX: 0,
   heroYaw: 0.6, heroZ: 0, turntable: 0, carExplode: 0, strip: 0, stripX: 0,
-  speed: 0, road: 0, veil: 0, thermal: 0, rim: 0.22,
+  speed: 0, road: 0, veil: 0, thermal: 0, rim: 0.22, analytic: 0,
   warmth: 0, haze: 1, transition: 0, sweep: 0, riso: 0,
   roadPos: [HERO_X, 0, GZ],
 };
@@ -72,6 +72,11 @@ function keys() {
     ['drone', 0, { fade: 1, speed: 0, road: 0, heroZ: 0, shake: 0, roll: 0, aberration: 0, strip: 0, turntable: 0, carExplode: 0, heroYaw: 3 * Math.PI, stripX: HERO_X,
       cam: [0.35, 1.32, 0.92], look: [0, 1.12, 0], fov: 36, drone: [0, 1.1, 0], light: 55, lightDist: 1.5, lightLift: 0, lightAngle: 0.4, fog: 0.075, env: 0.32, bloom: 0.35, kick: 1.2, parallax: 1, veil: 0 }],
     ['drone', 0.05, { fade: 0 }],
+    // taken apart, the drone is printed as a technical sheet; it returns to the room as it reassembles
+    ['drone', 0.14, { analytic: 0, bloom: 0.35 }],
+    ['drone', 0.26, { analytic: 1, bloom: 0.04 }],
+    ['drone', 0.52, { analytic: 1, bloom: 0.04 }],
+    ['drone', 0.63, { analytic: 0, bloom: 0.35 }],
     ['drone', 0.1, { cam: [0.62, 1.45, 0.95], look: [0, 1.13, 0], explode: 0, light: 60 }],
     ['drone', 0.36, { cam: [1.05, 1.95, 1.5], look: [0, 1.22, 0], fov: 41, explode: 1, lightDist: 2.3, light: 95, lightAngle: 0.55 }],
     ['drone', 0.5, { cam: [-0.35, 1.8, 1.75], look: [0, 1.2, 0], explode: 1 }],

@@ -600,6 +600,31 @@ export class Drone {
     setLod(quality === 'high' ? 1 : 0.6);
     this.M = materials();
     this._build();
+    this._edges();
+  }
+
+  // CAD-style feature lines on every part, shown while the drone is taken apart
+  _edges() {
+    this.edgeMat = new THREE.LineBasicMaterial({ color: new THREE.Color(0.55, 0.62, 0.78), transparent: true, opacity: 0, depthWrite: false, fog: false });
+    const meshes = [];
+    for (const p of this.parts) p.traverse((o) => {
+      if (!o.isMesh || o.material?.userData?.decal || o.material?.transparent) return;
+      if (this.props.some((pr) => pr.userData.blur === o)) return;
+      meshes.push(o);
+    });
+    this.edges = meshes.map((m) => {
+      const l = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 28), this.edgeMat);
+      l.raycast = () => {};
+      l.visible = false;
+      m.add(l);
+      return l;
+    });
+  }
+
+  setAnalytic(a) {
+    this.edgeMat.opacity = a;
+    const on = a > 0.01;
+    if (this.edges[0]?.visible !== on) this.edges.forEach((l) => { l.visible = on; });
   }
 
   _part(name, obj, offset, rot = [0, 0, 0], delay = 0, label = null, anchor = [0, 0, 0]) {
