@@ -13,7 +13,7 @@ A dark studio with one light, and the cursor controls it. You scroll through the
 1. **Title sequence.** Frames of my projects flip through the letters of MCARKADE until it slams into a red block, timed to an original score.
 2. **The drone.** My F450 quadcopter, modelled part by part in code. It assembles itself, comes apart into its labelled components as you scroll, goes back together, and takes off.
 3. **Vision.** The drone flies its mission. It detects a person, brakes and reroutes around them, then locks onto its ArUco marker. The HUD follows the real state machine.
-4. **Lock-on.** A counter-drone turret, played with your cursor. A PD controller chases you; try to escape the crosshair.
+4. **Lock-on.** A counter-drone turret. You fly the drone with your cursor while a PD controller swings the crosshair after it; try to escape. On phones the turret tracks the drone by itself.
 5. **The Multiroads garage.** Cars from my browser racing game, each lit as you pass. The McLaren MP4/5 waits on a turntable, explodes into 65 parts, and reassembles.
 6. **Launch.** The MP4/5 goes flat out on a procedural road, with a synthesised engine note that follows the speed.
 7. **Work, about and contact,** then the car and the drone together for the finale.
@@ -30,6 +30,7 @@ Everything is a pure function of scroll position, so the whole film plays backwa
 | Cars | Multiroads GLBs, recompressed with meshopt and WebP textures (25 MB down to 3.4 MB for the MP4/5). The MP4/5 was split into 65 parts with real pivots, so it can explode and roll its wheels |
 | Title sequence | `src/intro.js` is a 2D canvas compositor: masked image flips, a pull-back camera, red tint, impact and light sweep, all synced to the audio clock |
 | Sound | Score and UI sounds synthesised in Python (`tools/audio/compose.py`, no samples). The engine and prop sounds are live Web Audio synths driven by the scene |
+| Performance | Adaptive resolution (drops pixel ratio, then the mirror floor and bloom, if frames run slow); phones fetch the car models only after the drone chapter |
 | Mobile | Portrait-aware camera framing, lighter quality tier, touch-safe interactions |
 | Accessibility | Semantic sections, skip link, visible focus, reduced-motion path (no intro, no shake), keyboard shortcuts, no-WebGL fallback |
 
@@ -59,7 +60,7 @@ The car models are third-party works, used under Creative Commons licences for t
 - McLaren MP4/5: vecarz, CC BY 4.0
 - Red Bull RB19: vecarz, CC BY-NC-SA 4.0
 - Mercedes W11: Tyler_Kevin, CC BY 4.0
-- Ferrari F40: Ddiaz Design, CC BY 4.0
+- Ferrari F40 (title-sequence still only): Ddiaz Design, CC BY 4.0
 - Porsche 911 GT3 (992.2): Ddiaz Design, CC BY-NC-SA 4.0
 - Ferrari 488 GT3: Ddiaz Design, CC BY 4.0
 - Aston Martin Vantage GT3: OUTPISTON, CC BY-NC-SA 4.0
