@@ -382,8 +382,8 @@ function domFrame(st, y, dt) {
     if (r.bottom > 0 && r.top < vh) portrait.style.transform = `translateY(${((r.top + r.height / 2 - vh / 2) / vh) * -8}%)`;
   }
 
-  // on touch screens the turret tracks the 3D drone by itself
-  if (!finePointer && st.chapter === 3 && st.droneVisible) {
+  // the turret always chases the 3D drone (flown by the cursor on desktop, by itself on touch)
+  if (st.chapter === 3 && st.droneVisible) {
     world.drone.group.getWorldPosition(tmpV);
     const p = world.project(tmpV, P);
     if (p) lock.setTarget(p.x, p.y);
@@ -397,6 +397,24 @@ function domFrame(st, y, dt) {
 function setText(el, v) { if (el.textContent !== v) el.textContent = v; }
 
 // ---------- Main loop ----------
+// Lock chapter on desktop: the cursor flies the drone, with inertia and banking.
+const pilot = { w: 0, x: 0, y: 0 };
+function flyDrone(st, dt) {
+  const on = finePointer && !reducedMotion && st.chapter === 3;
+  pilot.w += ((on ? 1 : 0) - pilot.w) * (1 - Math.exp(-dt * 2.5));
+  if (pilot.w < 0.001) return;
+  const k = 1 - Math.exp(-dt * 2.4);
+  const px = pilot.x;
+  pilot.x += (world.mouse.x * 1.7 - pilot.x) * k;
+  pilot.y += (world.mouse.y * 0.75 - pilot.y) * k;
+  st.drone[0] += pilot.x * pilot.w;
+  st.drone[1] += pilot.y * pilot.w;
+  // bank into the turn: a roll about world Z, expressed in the yawed body frame
+  const bank = Math.max(-0.5, Math.min(0.5, -(pilot.x - px) / Math.max(dt, 1e-3) * 0.12)) * pilot.w;
+  st.dronePitch -= bank * Math.sin(st.droneYaw);
+  st.droneRoll += bank * Math.cos(st.droneYaw);
+}
+
 let last = performance.now();
 let running = false;
 function startLoop() {
@@ -415,6 +433,7 @@ function startLoop() {
       if (asm > 0) { st.explode = Math.max(st.explode, asm); st.droneYaw += asm * 1.4; }
       // fast scrolling smears the colour channels a little
       if (lenis) st.aberration += Math.min(0.0035, Math.abs(lenis.velocity) * 0.00006);
+      flyDrone(st, dt);
       if (reducedMotion) { st.shake = 0; st.aberration = 0; st.roll = 0; st.speed = 0; st.spin = Math.min(st.spin, 0.2); }
       if (st.fade < 0.999) { world.render(st); world.blank = false; if (!document.hidden) world.adapt(dt); }
       else {

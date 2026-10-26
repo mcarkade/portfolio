@@ -42,14 +42,14 @@ function keys() {
     ['vision', 0.93, { drone: [0, 1.2, -19], cam: [0.7, 2.6, -16.9], look: [0, 0.6, -19], droneYaw: 1.6, dronePitch: 0, person: 0 }],
     ['vision', 0.18, { personX: -1.8 }],
     ['vision', 0.5, { personX: 0.3 }],
-    ['lock', 0, { drone: [0, 1.45, -19], cam: [0.6, 0.35, -15.4], look: [0, 1.45, -19], fov: 40, veil: 0.45, droneYaw: 2.4, grid: 0.5 }],
+    ['lock', 0, { drone: [0, 1.45, -19], cam: [0.5, 0.4, -16.0], look: [0, 1.45, -19], fov: 40, veil: 0.45, droneYaw: 2.4, grid: 0.5 }],
     ['lock', 0.95, { kick: 1.2, drone: [0.3, 1.75, -19.4], dronePitch: 0, droneYaw: 3.6 }],
     // the drone leads the camera out of the dark and into the garage, then sweeps up over the first car
     ['garage', 0, { drone: [0.5, 2.15, -26.6], dronePitch: -0.28, droneYaw: 3.14 }],
     ['garage', 0.025, { drone: [0.5, 2.4, -41] }],
     ['garage', 0.06, { drone: [0.8, 4.6, -60], dronePitch: -0.32 }],
     ['garage', 0.14, { drone: [9, 7, -75] }],
-    ['lock', 0.8, { drone: [0.3, 1.7, -19.2], cam: [0.9, 0.3, -15.8], look: [0.2, 1.6, -19], veil: 0.55, droneYaw: 3.4 }],
+    ['lock', 0.8, { drone: [0.3, 1.7, -19.2], cam: [0.8, 0.35, -16.3], look: [0.2, 1.6, -19], veil: 0.55, droneYaw: 3.4 }],
     ['garage', 0, { cam: [1.6, 2.4, -24], look: [0.6, 1.9, -34], veil: 0, kick: 0, fov: 40, light: 70, lightDist: 2.2, lightLift: 0.8, fog: 0.075, strip: 0, stripX: L(0), grid: 0.5 }],
     ['garage', 0.07, { cam: [L(0) + 3.6, 1.45, GZ + 5.9], look: [L(0), 0.6, GZ], fov: 34, strip: 1, stripX: L(0), light: 26, lightDist: 3.0, lightLift: 1.8, lightAngle: 0.34, fog: 0.05, grid: 0.2, env: 0.26, kick: 0 }],
   ];
