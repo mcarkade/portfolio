@@ -27,7 +27,7 @@ const hasGL = webglOK();
 const INTRO_IMAGES = [
   'intro/drone', 'mr-tunnel', 'portrait', 'intro/rb19', 'theta-shell', 'mr-suzuka', 'intro/explode', 'mr-forest-night',
   'mesh-electronics', 'intro/mp45', 'reaper', 'theta-cart', 'intro/w11', 'mr-forest-dash', 'mesh-arena', 'intro/lift',
-  'theta-hub', 'intro/p911', 'mesh-plate', 'intro/f40',
+  'theta-hub', 'mesh-plate', 'nxp-track',
 ].map((n) => `/media/${n}.webp`);
 if (new URLSearchParams(location.search).has('clean')) document.documentElement.classList.add('clean');
 
@@ -111,14 +111,19 @@ function showEnter(images, cues) {
     setSound(withSound);
     $('#loader').classList.add('is-done');
     $('#loader').inert = true;
+    introAssets = { images, cues };
     await playIntro(images, cues, withSound);
     begin();
   });
 }
 
-async function playIntro(images, cues, withSound) {
+let introAssets = null;
+// onCovered runs once the title sequence fills the screen, to change the page behind it unseen
+async function playIntro(images, cues, withSound, onCovered) {
   const root = $('#intro');
-  if (reducedMotion || images.length < 4) return;
+  if (reducedMotion || images.length < 4) { onCovered?.(); return; }
+  root.getAnimations().forEach((a) => a.cancel());
+  root.classList.remove('is-hit');
   body.classList.add('is-intro');
   const hit = cues.hitTime ?? 4.4;
   const intro = new Intro(root, images, { hit, duration: hit + 2.1 });
@@ -129,14 +134,40 @@ async function playIntro(images, cues, withSound) {
   const clockFn = audioClock ? () => Math.max(audioClock(), wall() - 0.25) : wall;
   const skip = root.querySelector('.intro__skip');
   skip.focus({ preventScroll: true });
+  const listen = new AbortController();
   const onSkip = () => { intro.skip(); audio.stopIntro(); };
-  skip.addEventListener('click', onSkip, { once: true });
-  const onKey = (e) => { if (e.key === 'Escape') onSkip(); };
-  addEventListener('keydown', onKey);
-  await intro.play(clockFn);
-  removeEventListener('keydown', onKey);
-  root.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
-  setTimeout(() => root.remove(), 950);
+  skip.addEventListener('click', onSkip, { signal: listen.signal });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') onSkip(); }, { signal: listen.signal });
+  const played = intro.play(clockFn);
+  onCovered?.();
+  await played;
+  listen.abort();
+  const fade = root.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+  fade.finished.then(() => { root.classList.remove('is-on', 'is-hit'); fade.cancel(); }, () => {});
+}
+
+// The nav mark plays the title sequence again, landing back at the top of the page.
+let replaying = false;
+async function replayIntro() {
+  if (replaying || !introAssets || reducedMotion) return false;
+  replaying = true;
+  closeMenu();
+  lenis?.stop();
+  setInert(true);
+  audio.duckLoop(true);
+  await playIntro(introAssets.images, introAssets.cues, audio.enabled, () => {
+    if (lenis) lenis.scrollTo(0, { immediate: true, force: true }); else window.scrollTo(0, 0);
+    body.classList.remove('hud-away');
+    if (location.hash) history.pushState(null, '', location.pathname);
+  });
+  body.classList.remove('is-intro');
+  setInert(false);
+  audio.duckLoop(false);
+  lenis?.start();
+  assembleStart = performance.now() - 250;
+  $('#hero').focus({ preventScroll: true });
+  replaying = false;
+  return true;
 }
 
 // The drone flies together out of its parts as the title sequence clears.
@@ -174,6 +205,7 @@ function begin() {
   });
   document.querySelectorAll('a[href^="#"]').forEach((a) => {
     a.addEventListener('click', (e) => {
+      if (a.classList.contains('mark') && introAssets && !reducedMotion) { e.preventDefault(); replayIntro(); return; }
       const id = a.getAttribute('href').slice(1);
       const target = id === 'top' ? 0 : document.getElementById(id);
       if (target === null) return;
@@ -258,12 +290,8 @@ copyEmail();
 const progressEl = $('#readout-bar');
 const navLinks = [...document.querySelectorAll('.nav a')];
 const visionSection = $('#vision');
-const visionState = $('#vision-state');
 const visionBox = $('#vision-box');
-const visionAlt = $('#vision-alt');
-const visionWp = $('#vision-wp');
 const carName = $('#car-name');
-const carYear = $('#car-year');
 const speedEl = $('#speed');
 const launchTitle = $('.launch__title');
 const portrait = $('.about__portrait img');
@@ -291,14 +319,10 @@ function projectBox(obj) {
   return { x0, y0, x1, y1 };
 }
 
-const VISION_STATES = [
-  [0, 'CRUISE'], [0.24, 'DETECT'], [0.33, 'CONFIRM 5/7'], [0.42, 'BRAKE'], [0.5, 'REROUTE +5 m'],
-  [0.68, 'RESUME'], [0.8, 'ARUCO 23 LOCK'], [0.93, 'RETURN TO LAUNCH'],
-];
 let lastChapter = -1;
 let lastCar = null;
 let lastY = 0;
-let lastVision = '';
+let lastTarget = null;
 
 function domFrame(st, y, dt) {
   const vh = innerHeight;
@@ -329,14 +353,10 @@ function domFrame(st, y, dt) {
   visionSection.classList.toggle('is-active', inVision && pv > 0.02 && pv < 0.99);
   visionSection.classList.toggle('is-pov', st.thermal > 0.5);
   if (inVision) {
-    let label = VISION_STATES[0][1];
-    for (const [p, l] of VISION_STATES) if (pv >= p) label = l;
-    if (label !== lastVision) { visionState.textContent = label; lastVision = label; if (audio.enabled && (label.startsWith('DETECT') || label.startsWith('ARUCO'))) audio.play('lock', 0.4); }
-    setText(visionAlt, `ALT ${(st.drone[1] * 3.1).toFixed(1)} m`);
-    setText(visionWp, `WP ${pv < 0.3 ? 2 : pv < 0.78 ? 3 : 4}/4`);
     let target = null, tag = '';
     if (pv > 0.22 && pv < 0.66) { target = world.person; tag = pv < 0.33 ? 'person 0.71' : 'person 0.94'; }
     else if (pv > 0.78 && pv < 0.96) { target = world.marker; tag = 'aruco id 23'; }
+    if (target !== lastTarget) { lastTarget = target; if (target && audio.enabled) audio.play('lock', 0.4); }
     const b = target && projectBox(target);
     visionBox.classList.toggle('is-on', !!b);
     if (b) {
@@ -358,7 +378,6 @@ function domFrame(st, y, dt) {
       carName.animate([{ opacity: 0, transform: 'translateY(0.6rem)' }, { opacity: 1, transform: 'none' }], { duration: 600, easing: 'cubic-bezier(.22,1,.36,1)' });
       carName.textContent = car.name;
     }
-    setText(carYear, world.garage.ready.has(car.id) ? car.year : 'Loading');
   }
 
   // launch

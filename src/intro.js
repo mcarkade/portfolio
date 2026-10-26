@@ -10,7 +10,7 @@ const BONE = '#ede9e3';
 const PAD_X = 0.28, PAD_TOP = 0.18, PAD_BOTTOM = 0.14, SPACING = -0.005;
 
 // Seconds after the hit.
-const SWEEP_AT = 0.14, SWEEP_LEN = 1.0;
+const SWEEP_AT = 0.12, SWEEP_LEN = 1.15;
 const SETTLE = 1.4;
 const DOCK_AT = 1.55, DOCK_LEN = 0.8;
 
@@ -173,36 +173,104 @@ export class Intro {
     return { scale, rot, pan };
   }
 
-  // A raking glint: a soft shoulder and a thin hot core, added to the light already in the block.
-  _sweep(ctx, r, p) {
-    const dx = 0.92, dy = 0.39; // gradient direction, so the band leans like a "/"
-    const reach = r.w + r.h * 0.5;
-    const pos = r.x - r.h * 0.25 + reach * easeInOutSine(p);
-    const my = r.y + r.h / 2;
-    const band = (half, stops) => {
-      const g = ctx.createLinearGradient(pos - dx * half, my - dy * half, pos + dx * half, my + dy * half);
-      for (const [o, c] of stops) g.addColorStop(o, c);
-      return g;
-    };
+  // The finished logo, lit like a physical badge: a block with a soft bloom and a lit top edge,
+  // letters with depth and a bevelled rim, and a specular glint that travels through the letters.
+  // p: glint progress (0..1, outside = no glint), glow: bloom strength.
+  _logo(ctx, L, p, glow) {
+    const { octx, w, h, dpr } = this;
+    const S = L.S;
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(r.x, r.y, r.w, r.h);
-    ctx.clip();
-    ctx.globalCompositeOperation = 'lighter';
-    // three nested bands (shoulder, body, core) with smooth falloff, so the glint has depth instead of one hard line
-    const layers = [
-      [0.17, 0.2, '255,120,100'],
-      [0.05, 0.3, '255,170,150'],
-      [0.012, 0.5, '255,244,238'],
-    ];
-    for (const [half, peak, rgb] of layers) {
-      ctx.fillStyle = band(r.w * half, [
-        [0, `rgba(${rgb},0)`], [0.25, `rgba(${rgb},${peak * 0.18})`], [0.4, `rgba(${rgb},${peak * 0.6})`],
-        [0.5, `rgba(${rgb},${peak})`], [0.6, `rgba(${rgb},${peak * 0.6})`], [0.75, `rgba(${rgb},${peak * 0.18})`], [1, `rgba(${rgb},0)`],
-      ]);
-      ctx.fillRect(r.x, r.y, r.w, r.h);
+    // bloom: the red light spilling around the block
+    if (glow > 0.01) {
+      ctx.shadowColor = `rgba(227,38,47,${0.55 * glow})`;
+      ctx.shadowBlur = L.h * 0.9;
+      ctx.fillStyle = RED;
+      ctx.fillRect(L.x, L.y, L.w, L.h);
+      ctx.shadowBlur = 0;
     }
+    // block: lit from above, falling off toward the bottom corners
+    const g = ctx.createLinearGradient(0, L.y, 0, L.y + L.h);
+    g.addColorStop(0, '#f2343c'); g.addColorStop(0.45, RED); g.addColorStop(1, '#a8171f');
+    ctx.fillStyle = g;
+    ctx.fillRect(L.x, L.y, L.w, L.h);
+    const v = ctx.createRadialGradient(L.x + L.w * 0.5, L.y + L.h * 0.35, L.h * 0.2, L.x + L.w * 0.5, L.y + L.h * 0.5, L.w * 0.62);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(40,0,4,0.38)');
+    ctx.fillStyle = v;
+    ctx.fillRect(L.x, L.y, L.w, L.h);
+    // a hairline of light along the top edge, a shade along the bottom
+    const e = Math.max(1 / dpr, S * 0.006);
+    ctx.fillStyle = 'rgba(255,190,180,0.55)';
+    ctx.fillRect(L.x, L.y, L.w, e);
+    ctx.fillStyle = 'rgba(60,0,6,0.5)';
+    ctx.fillRect(L.x, L.y + L.h - e, L.w, e);
+
+    // letter depth: stacked dark copies below the face
+    this._setFont(ctx, S);
+    const depth = S * 0.022;
+    for (let i = 4; i >= 1; i--) {
+      ctx.fillStyle = `rgba(${70 + i * 6},${4 + i},${10 + i},${0.55 + i * 0.08})`;
+      ctx.fillText(WORD, L.tx + depth * 0.35 * (i / 4), L.base + depth * (i / 4));
+    }
+    // face: warm bone, brighter toward the top
+    const fg = ctx.createLinearGradient(0, L.base - S * this.fa * 0.8, 0, L.base);
+    fg.addColorStop(0, '#fffaf2'); fg.addColorStop(0.55, BONE); fg.addColorStop(1, '#d6cfc4');
+    ctx.fillStyle = fg;
+    ctx.fillText(WORD, L.tx, L.base);
     ctx.restore();
+
+    // bevel rim and glint, built in the offscreen buffer so they stay inside the letters
+    const mask = (fill) => {
+      octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      octx.globalCompositeOperation = 'source-over';
+      octx.clearRect(0, 0, w, h);
+      this._setFont(octx, S);
+      octx.fillStyle = '#fff';
+      octx.fillText(WORD, L.tx, L.base);
+      octx.globalCompositeOperation = 'source-in';
+      fill(octx);
+    };
+    // top rim: the face minus itself shifted down leaves a thin lit edge
+    mask((c) => { c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); });
+    octx.globalCompositeOperation = 'destination-out';
+    octx.fillText(WORD, L.tx, L.base + Math.max(1 / dpr, S * 0.012));
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 0.85;
+    ctx.drawImage(this.off, 0, 0);
+    ctx.restore();
+
+    if (p > 0 && p < 1) {
+      // the glint: a broad sheen with a hot core, leaning like a "/", only on the letters
+      const reach = L.w + L.h;
+      const pos = L.x - L.h * 0.5 + reach * easeInOutSine(p);
+      const dx = 0.92, dy = 0.39, my = L.y + L.h / 2;
+      const band = (c, half, stops) => {
+        const gr = c.createLinearGradient(pos - dx * half, my - dy * half, pos + dx * half, my + dy * half);
+        for (const [o, col] of stops) gr.addColorStop(o, col);
+        return gr;
+      };
+      mask((c) => {
+        c.fillStyle = band(c, L.w * 0.16, [
+          [0, 'rgba(255,230,200,0)'], [0.3, 'rgba(255,232,206,0.22)'], [0.46, 'rgba(255,240,222,0.6)'],
+          [0.5, 'rgba(255,255,255,1)'], [0.54, 'rgba(255,240,222,0.6)'], [0.7, 'rgba(255,232,206,0.22)'], [1, 'rgba(255,230,200,0)'],
+        ]);
+        c.fillRect(0, 0, w, h);
+      });
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.drawImage(this.off, 0, 0);
+      ctx.restore();
+      // the block itself only catches a faint, wide sheen
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(L.x, L.y, L.w, L.h);
+      ctx.clip();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = band(ctx, L.w * 0.3, [[0, 'rgba(255,120,110,0)'], [0.5, 'rgba(255,120,110,0.16)'], [1, 'rgba(255,120,110,0)']]);
+      ctx.fillRect(L.x, L.y, L.w, L.h);
+      ctx.restore();
+    }
   }
 
   frame(t) {
@@ -287,13 +355,17 @@ export class Intro {
     }
     // at rest and on arrival the box sits on whole device pixels, like the DOM mark it hands over to
     const L = this._lockup(S, cx, cy, settled && (du === 0 || du === 1));
-    ctx.fillStyle = RED;
-    ctx.fillRect(L.x, L.y, L.w, L.h);
-    this._setFont(ctx, S);
-    ctx.fillStyle = BONE;
-    ctx.fillText(WORD, L.tx, L.base);
-    const sweep = (a - SWEEP_AT) / SWEEP_LEN;
-    if (sweep > 0 && sweep < 1) this._sweep(ctx, L, sweep);
+    // the bloom swells on impact, then fades as the logo flies to the nav
+    const glow = (0.55 + 0.45 * Math.max(0, 1 - a / 0.6)) * (1 - easeInOutQuart(du));
+    if (du < 1) this._logo(ctx, L, (a - SWEEP_AT) / SWEEP_LEN, glow);
+    else {
+      // docked: exactly the flat DOM mark it hands over to
+      ctx.fillStyle = RED;
+      ctx.fillRect(L.x, L.y, L.w, L.h);
+      this._setFont(ctx, S);
+      ctx.fillStyle = BONE;
+      ctx.fillText(WORD, L.tx, L.base);
+    }
     // white flash on impact
     const flash = Math.max(0, 1 - a / 0.22);
     if (flash > 0) {

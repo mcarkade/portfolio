@@ -105,6 +105,12 @@ export class Audio {
     try { this.introSrc.stop(now + 0.04); } catch { /* already stopped */ }
   }
 
+  // the score steps aside while the title sequence replays
+  duckLoop(on) {
+    if (!this.loopGain) return;
+    this.loopGain.gain.setTargetAtTime(on ? 0 : 0.64, this.ctx.currentTime, on ? 0.08 : 1);
+  }
+
   startLoop(fade = 3) {
     const b = this.buffers.loop;
     if (!b || !this.ctx || this.loopSrc) return;

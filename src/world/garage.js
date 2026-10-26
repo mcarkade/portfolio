@@ -10,7 +10,7 @@ export const SPACING = 7;
 // Lineup order = scroll order. The hero (index 0 in HERO) sits at the end of the row.
 export const CARS = [
   { id: 'rb19', file: '/models/rb19.glb', name: 'Red Bull RB19', year: '2023', length: 5.3 },
-  { id: 'p911', file: '/models/p911.glb', name: 'Porsche 911 GT3', year: '2025', length: 4.57 },
+  { id: 'w11', file: '/models/w11.glb', name: 'Mercedes W11', year: '2020', length: 5.4 },
 ];
 export const HERO = { id: 'mp45', file: '/models/mp45.glb', name: 'McLaren MP4/5', year: '1989', length: 4.5 };
 

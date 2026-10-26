@@ -76,7 +76,7 @@ main { position: relative; z-index: 2; }
 #loader > :not(.loader__sr) { transition: opacity .9s var(--ease); }
 #loader:not(.is-set) > :not(.loader__sr) { opacity: 0; }
 .loader__sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-.loader__name, .loader__count { margin: 0; font-size: 1rem; font-weight: 600; font-stretch: 112%; line-height: 1.2; color: var(--bone); }
+.loader__count { margin: 0; font-size: 1rem; font-weight: 600; font-stretch: 112%; line-height: 1.2; color: var(--bone); }
 .loader__count { grid-column: 2; font-variant-numeric: tabular-nums; color: var(--ash); }
 .loader__count::before { content: attr(data-n) '%'; }
 #loader:has(.loader__enter:not([hidden])) .loader__count { opacity: 0; }
@@ -122,7 +122,6 @@ main { position: relative; z-index: 2; }
   transition: color .4s var(--ease), text-decoration-color .4s var(--ease);
 }
 .loader__quiet:hover { color: var(--bone); text-decoration-color: var(--red); }
-.loader__hint { margin: 0 0 0 auto; color: var(--ash); font-size: .95rem; }
 
 /* Entering: the word keeps its place, then rushes the camera as the title sequence takes over. */
 #loader.is-done { background-color: transparent; visibility: hidden; pointer-events: none; transition: background-color .7s linear .1s, visibility 0s linear 1s; }
@@ -134,7 +133,6 @@ main { position: relative; z-index: 2; }
   .loader__enter { flex-direction: column; align-items: stretch; gap: .4rem; }
   .loader__go { justify-content: center; min-height: 4rem; }
   .loader__quiet { align-self: center; }
-  .loader__hint { order: 3; margin: .2rem 0 0; text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) {
   .loader__eq i { animation: none; transform: scaleY(.7); }
@@ -253,13 +251,11 @@ main { position: relative; z-index: 2; }
 
 .hero { height: 135vh; }
 .hero__copy { position: absolute; left: var(--pad); top: 0; height: 100vh; height: 100svh; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 15vh; max-width: min(64rem, 92vw); }
-.hero__name { margin: 0 0 1.2rem; font-family: var(--mono); font-size: .8rem; color: var(--ash); letter-spacing: .06em; }
 .hero__title {
   margin: 0; font-size: clamp(3.2rem, min(10.4vw, 15.5vh), 12rem); font-weight: 800; font-stretch: 72%; line-height: .86; letter-spacing: -.02em; max-width: 6.6em; /* always breaks after "machines", clear of the drone */
 }
 .has-scene-type .hero__title { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .has-scene-type .hero__copy { width: min(64rem, 92vw); }
-.has-scene-type .hero__name { position: absolute; top: 51vh; }
 .hero__cue { position: absolute; right: var(--pad); top: calc(100svh - 15vh - 3rem); margin: 0; display: flex; align-items: center; gap: .8rem; font-size: .85rem; color: var(--ash); }
 .cue-line { width: 1px; height: 3rem; background: linear-gradient(var(--red), transparent); animation: cue 2.2s var(--ease) infinite; transform-origin: top; }
 @keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
@@ -276,11 +272,9 @@ main { position: relative; z-index: 2; }
 .hudframe__c.tr { right: 0; top: 0; border-left: 0; border-bottom: 0; }
 .hudframe__c.bl { left: 0; bottom: 0; border-right: 0; border-top: 0; }
 .hudframe__c.br { right: 0; bottom: 0; border-left: 0; border-top: 0; }
-.hudframe__state { position: absolute; left: 50%; top: 1rem; transform: translateX(-50%); padding: .35rem .7rem; background: rgba(0,0,0,.55); border: 1px solid var(--red); color: var(--bone); }
 .hudframe__box { position: fixed; left: 0; top: 0; border: 1.5px solid var(--red); opacity: 0; transition: opacity .3s; }
 .hudframe__box.is-on { opacity: 1; }
 .hudframe__box span { position: absolute; left: -1.5px; top: -1.6rem; background: var(--red); padding: .15rem .4rem; color: var(--bone); white-space: nowrap; }
-.hudframe__meta { position: absolute; right: 1rem; bottom: 1rem; display: flex; gap: 1.5rem; color: var(--ash); }
 .vision__title { position: absolute; left: 0; bottom: 10vh; max-width: 14ch; transition: opacity .5s var(--ease); }
 .vision.is-pov .vision__title { opacity: 0; }
 
@@ -288,8 +282,9 @@ main { position: relative; z-index: 2; }
 .lock__copy { position: absolute; left: 0; bottom: 12vh; max-width: 34rem; }
 .lock__copy p { max-width: 30rem; color: var(--ash); }
 .lock__copy .title { margin-bottom: 1.5rem; }
-.lock__status { font-family: var(--mono); font-size: .8rem; letter-spacing: .06em; color: var(--bone) !important; display: flex; gap: 1rem; }
-#lock-state.is-locked { color: var(--red); }
+.lock__status { margin: .6rem 0 0; font-size: clamp(2.2rem, 4.4vw, 4rem); font-weight: 800; font-stretch: 72%; line-height: 1; font-variant-numeric: tabular-nums; color: var(--bone) !important; }
+#lock-time { transition: color .2s; }
+#lock-time.is-locked { color: var(--red); }
 #reticle { position: fixed; left: 0; top: 0; z-index: 4; width: 5.5rem; height: 5.5rem; margin: -2.75rem 0 0 -2.75rem; pointer-events: none; opacity: 0; transition: opacity .4s; }
 #reticle.is-on { opacity: 1; }
 #reticle::before, #reticle::after, #reticle span::before, #reticle span::after { content: ''; position: absolute; width: 1.1rem; height: 1.1rem; border: 2px solid var(--red); }
@@ -301,12 +296,11 @@ main { position: relative; z-index: 2; }
 #reticle.is-locked { animation: lockpulse .5s ease-in-out infinite alternate; }
 @keyframes lockpulse { to { scale: .86; } }
 
-.garage { height: 440vh; }
+.garage { height: 560vh; }
 .garage__head { position: absolute; left: 0; top: 15vh; display: flex; gap: 1.4rem; align-items: center; }
 .garage__logo { width: 4.2rem; height: 4.2rem; object-fit: cover; filter: invert(1); mix-blend-mode: screen; }
 .garage__plate { position: absolute; right: 0; bottom: 14vh; text-align: right; }
 .garage__car { margin: 0; font-size: clamp(1.6rem, 3vw, 3rem); font-weight: 700; font-stretch: 118%; letter-spacing: -.03em; line-height: 1; }
-.garage__year { margin: .4rem 0 0; font-family: var(--mono); font-size: .8rem; color: var(--red); letter-spacing: .08em; }
 .garage__cta { position: absolute; left: 0; bottom: 14vh; }
 .garage__plate, .garage__cta { transition: opacity .6s var(--ease); }
 .garage:not(.is-formed) .garage__plate, .garage:not(.is-formed) .garage__cta { opacity: 0; visibility: hidden; }
@@ -319,22 +313,22 @@ main { position: relative; z-index: 2; }
 
 .work { height: 1100svh; padding: 0; pointer-events: none; }
 .sr-only, .gallery-access { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-.gallery-caption { position: fixed; bottom: 6.5rem; left: var(--pad); right: var(--pad); display: flex; justify-content: space-between; color: var(--ash); font-size: .75rem; opacity: 0; transition: opacity .4s; }
-.in-gallery .gallery-caption { opacity: 1; }
 .gallery-labels { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; perspective-origin: 50% 50%; }
 .gallery-hit { position: absolute; left: 0; top: 0; display: block; color: transparent; text-decoration: none; transform-origin: 0 0; pointer-events: auto; border-radius: 22px; }
 .gallery-hit[hidden], .gallery-labels[hidden] { display: none; }
 .no-webgl .work { height: auto; padding: 15vh var(--pad); pointer-events: auto; }
 .no-webgl .gallery-access { position: static; clip-path: none; width: auto; height: auto; margin: 0; white-space: normal; list-style: none; }
 .no-webgl .gallery-access a { display: block; padding: 1.5rem 0; font-size: 1.5rem; }
-.no-webgl .gallery-caption { display: none; }
-@media (max-width: 600px) { .work { height: 1050svh; } .gallery-caption { bottom: 5rem; font-size: .65rem; } }
+@media (max-width: 600px) { .work { height: 1050svh; } }
 
 /* compact menu for small screens */
 .menu-btn { display: none; margin-left: auto; background: none; border: 1px solid var(--line); padding: .7rem 1rem; font-family: var(--mono); font-size: .75rem; letter-spacing: .06em; cursor: pointer; }
-.about { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 7rem); align-items: end; padding-top: 18vh; padding-bottom: 18vh; }
-.about__portrait { margin: 0; overflow: hidden; aspect-ratio: 3 / 2; background: var(--coal); }
-.about__portrait img { width: 100%; height: 115%; object-fit: cover; will-change: transform; }
+.about { position: relative; padding-top: 18vh; padding-bottom: 18vh; }
+/* a full-bleed portrait with the words set into its shadow side */
+.about__portrait { position: relative; margin: 0; overflow: hidden; aspect-ratio: 16 / 9; max-height: 88vh; width: 100%; background: var(--coal); }
+.about__portrait::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.82) 0%, rgba(0,0,0,.35) 42%, transparent 65%), linear-gradient(0deg, var(--void) 0%, transparent 38%), linear-gradient(180deg, var(--void) 0%, transparent 18%); pointer-events: none; }
+.about__copy { position: absolute; left: calc(var(--pad) + clamp(1.5rem, 4vw, 4rem)); bottom: calc(18vh + clamp(1.5rem, 4vw, 4rem)); max-width: 34rem; z-index: 1; }
+.about__portrait img { width: 100%; height: 115%; object-fit: cover; object-position: 70% 40%; will-change: transform; }
 .about__copy .title { margin-bottom: 2rem; }
 .about__lede { font-size: clamp(1.3rem, 2vw, 1.9rem); line-height: 1.3; font-stretch: 105%; margin: 0 0 1.4rem; max-width: 28ch; }
 .about__copy p:not(.about__lede) { color: var(--ash); max-width: 34ch; }
@@ -375,7 +369,9 @@ kbd { font-family: var(--mono); border: 1px solid var(--line); padding: 0 .35em;
   .garage__cta { bottom: 10vh; }
   .launch__speed { top: auto; bottom: 34vh; right: 0; }
   .launch__title { top: 12vh; }
-  .about { grid-template-columns: 1fr; }
+  .about__portrait { aspect-ratio: 4 / 5; max-height: none; }
+  .about__portrait img { object-position: 50% 30%; }
+  .about__copy { position: static; margin-top: 2rem; }
   .footer__cols { grid-template-columns: 1fr; }
 }
 

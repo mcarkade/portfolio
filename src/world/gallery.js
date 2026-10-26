@@ -127,7 +127,7 @@ export class Gallery {
     g.textAlign = 'left';
     g.font = `650 ${mobile ? 97 : 140}px "Archivo Variable", sans-serif`;
     g.letterSpacing = '-4px';
-    const lines = link.dataset.gallery === 'Counter-drone turret' ? ['Counter-drone', 'turret'] : link.dataset.gallery === 'Medicine box' && mobile ? ['Medicine', 'box'] : [link.dataset.gallery];
+    const lines = link.dataset.gallery === 'Counter-drone turret' ? ['Counter-drone', 'turret'] : [link.dataset.gallery];
     lines.forEach((line, i) => g.fillText(line, pad, c.height - pad - (lines.length - 1 - i) * (mobile ? 100 : 135), c.width - pad * 2));
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
     return t;

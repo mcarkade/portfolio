@@ -150,7 +150,6 @@ export class LockGame {
   constructor(audio) {
     this.section = document.getElementById('lock');
     this.reticle = document.getElementById('reticle');
-    this.stateEl = document.getElementById('lock-state');
     this.timeEl = document.getElementById('lock-time');
     this.audio = audio;
     this.x = innerWidth / 2; this.y = innerHeight / 2;
@@ -188,9 +187,8 @@ export class LockGame {
     if (nowLocked && !this.locked) this.audio?.play('lock', 0.7);
     this.locked = nowLocked;
     this.reticle.classList.toggle('is-locked', nowLocked);
-    this.stateEl.classList.toggle('is-locked', nowLocked);
-    this.stateEl.textContent = nowLocked ? 'LOCKED' : err < 120 ? 'TRACKING' : 'SEARCHING';
-    this.timeEl.textContent = nowLocked ? `held ${this.lockedFor.toFixed(1)} s` : `escaped ${this.freeFor.toFixed(1)} s`;
+    this.timeEl.textContent = `${(nowLocked ? this.lockedFor : this.freeFor).toFixed(1)} s`;
+    this.timeEl.classList.toggle('is-locked', nowLocked);
   }
 }
 

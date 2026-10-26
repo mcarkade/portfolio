@@ -3,8 +3,10 @@
 import { galleryCamera, galleryPortrait } from './world/gallery-path.js';
 import { lineupX, HERO_X, GARAGE_Z, CARS, HERO } from './world/garage.js';
 
-// Leave the garage entrance for the drone-to-McLaren morph, then tour the lineup.
-const STEP = 0.105 / Math.max(1, CARS.length - 1);
+// After the drone-to-McLaren morph, each lineup car gets its own three-shot pass
+// (low nose, side dolly, high rear crane) before the camera returns to the McLaren.
+const TOUR_AT = 0.27, TOUR_SHOT = 0.06, TOUR_CAR = TOUR_SHOT * 3;
+const TOUR_END = TOUR_AT + TOUR_CAR * CARS.length;
 
 const ORDER = ['hero', 'drone', 'vision', 'lock', 'garage', 'launch', 'work', 'about', 'contact'];
 const GZ = GARAGE_Z;
@@ -39,7 +41,7 @@ function keys() {
     ['lock', .9, { haze: .12 }],
     ['garage', .08, { warmth: 1, haze: .12, grid: .035 }],
     ['garage', .17, { haze: 1.15 }],
-    ['garage', .89, { warmth: 1, haze: 1.0 }],
+    ['garage', .92, { warmth: 1, haze: 1.0 }],
     ['launch', .5, { warmth: .65, haze: .65 }],
     ['hero', 0, { cam: [0.04, 1.24, 1.42], look: [-0.36, 1.11, 0], fov: 34, drone: [0, 1.1, 0], light: 55, lightDist: 1.5, grid: 0.6, veil: 0 }],
     ['drone', 0, { cam: [0.35, 1.32, 0.92], look: [0, 1.12, 0], fov: 36 }],
@@ -71,20 +73,27 @@ function keys() {
     ['garage', 0.04, { morph: 0.68, cam: [M(-23), 6, -41], look: [M(-28), 4, -49], fov: 48, roll: 0.05, strip: 0, stripX: HERO_X, heroYaw: 0.6, heroZ: 0, carExplode: 0, turntable: 0 }],
     ['garage', 0.095, { morph: 0.87, cam: [HERO_X + 5.8, 2.6, GZ + 3.7], look: [HERO_X, 0.7, GZ], fov: 40, roll: 0, strip: 0.35, turntable: 1 }],
     ['garage', 0.14, { morph: 1, cam: [HERO_X + 5.6, 1.8, GZ + 2.8], look: [HERO_X, 0.7, GZ], strip: 1, light: 35, lightDist: 3.0, lightLift: 1.8, lightAngle: 0.34, fog: 0.05, env: 0.26, bloom: 0.35 }],
-    ['garage', 0.21, { cam: [HERO_X + 5.6, 1.8, GZ + 2.8], look: [HERO_X, 0.7, GZ], stripX: HERO_X, parallax: 1, aberration: 0 }],
-    ['garage', 0.3, { cam: [L(0) + 3.6, 1.45, GZ + 5.9], look: [L(0), 0.6, GZ], fov: 34, stripX: L(0), grid: 0.2, turntable: 0 }],
+    ['garage', 0.21, { cam: [HERO_X + 5.6, 1.8, GZ + 2.8], look: [HERO_X, 0.7, GZ], stripX: HERO_X, parallax: 1, aberration: 0, roll: 0 }],
   ];
   CARS.forEach((_, i) => {
-    const p = 0.3 + i * STEP;
-    k.push(['garage', p, { cam: [L(i) + 3.6, 1.45, GZ + 5.9], look: [L(i), 0.6, GZ], stripX: L(i) }]);
+    const p = TOUR_AT + i * TOUR_CAR, C = L(i);
+    k.push(
+      // low on the nose, wide open, the front wing filling the frame
+      ['garage', p, { cam: [C + 4.4, 0.42, GZ + 2.6], look: [C + 1.2, 0.42, GZ + 0.2], fov: 30, stripX: C, grid: 0.2, turntable: 0, roll: 0.035 }],
+      // tracking along the sidepod
+      ['garage', p + TOUR_SHOT, { cam: [C + 0.8, 0.72, GZ + 4.6], look: [C - 0.2, 0.5, GZ], fov: 30, roll: 0 }],
+      // craning up over the rear wing
+      ['garage', p + TOUR_SHOT * 2, { cam: [C - 3.6, 2.6, GZ + 3.4], look: [C - 0.6, 0.45, GZ], fov: 34, roll: -0.03 }],
+    );
   });
+  const H = TOUR_END + 0.07;
   k.push(
-    ['garage', 0.46, { heroYaw: 0.6, turntable: 0 }],
-    ['garage', 0.52, { cam: [HERO_X + 4.4, 1.6, GZ + 5.3], look: [HERO_X, 0.7, GZ], stripX: HERO_X, turntable: 1, fov: 36 }],
-    ['garage', 0.6, { cam: [HERO_X + 5.2, 2.6, GZ + 6.4], look: [HERO_X, 0.9, GZ], carExplode: 0, fov: 38, heroYaw: 3.0 }],
-    ['garage', 0.71, { cam: [HERO_X + 6.6, 4.4, GZ + 7.6], look: [HERO_X, 1.3, GZ], carExplode: 1, fov: 44, light: 80, lightDist: 4.5, lightAngle: 0.6 }],
-    ['garage', 0.79, { cam: [HERO_X - 5.8, 3.4, GZ + 6.0], look: [HERO_X, 1.2, GZ], carExplode: 1, heroYaw: 5.2 }],
-    ['garage', 0.89, { cam: [HERO_X - 3.8, 1.15, GZ + 4.2], look: [HERO_X, 0.6, GZ], carExplode: 0, fov: 36, light: 35, lightDist: 3.4, lightAngle: 0.4, heroYaw: 7.0 }],
+    ['garage', TOUR_END + 0.02, { heroYaw: 0.6, turntable: 0 }],
+    ['garage', H, { cam: [HERO_X + 4.4, 1.6, GZ + 5.3], look: [HERO_X, 0.7, GZ], stripX: HERO_X, turntable: 1, fov: 36, roll: 0 }],
+    ['garage', H + 0.05, { cam: [HERO_X + 5.2, 2.6, GZ + 6.4], look: [HERO_X, 0.9, GZ], carExplode: 0, fov: 38, heroYaw: 3.0 }],
+    ['garage', H + 0.12, { cam: [HERO_X + 6.6, 4.4, GZ + 7.6], look: [HERO_X, 1.3, GZ], carExplode: 1, fov: 44, light: 80, lightDist: 4.5, lightAngle: 0.6 }],
+    ['garage', H + 0.18, { cam: [HERO_X - 5.8, 3.4, GZ + 6.0], look: [HERO_X, 1.2, GZ], carExplode: 1, heroYaw: 5.2 }],
+    ['garage', H + 0.25, { cam: [HERO_X - 3.8, 1.15, GZ + 4.2], look: [HERO_X, 0.6, GZ], carExplode: 0, fov: 36, light: 35, lightDist: 3.4, lightAngle: 0.4, heroYaw: 7.0 }],
     ['launch', 0, { cam: [HERO_X + 0.4, 1.05, GZ + 5.8], look: [HERO_X, 0.7, GZ - 1], heroYaw: 3 * Math.PI, turntable: 1, fov: 40, road: 0, speed: 0, strip: 1 }],
     ['launch', 0.12, { turntable: 0, road: 1, strip: 0.4, fog: 0.04 }],
     ['launch', 0.5, { speed: 1, cam: [HERO_X + 1.5, 0.95, GZ + 7.2], look: [HERO_X, 0.5, GZ - 3], fov: 60, shake: 1, roll: 0.02, strip: 0, aberration: 0.002 }],
@@ -193,6 +202,11 @@ export class Director {
     if (window.innerWidth < window.innerHeight) {
       const k = clamp01(1 - (s - 1.0) / 0.3);
       st.look[0] += (0 - st.look[0]) * k;
+      // and in the closing shot the whole frame rises, so the car sits below the contact buttons.
+      // (world.js pulls the camera back about 1.5/aspect times, so the lift scales the same way)
+      const lift = clamp01((s - this.s('about', 0.85)) * 6) * Math.min(3.2, 1.5 * window.innerHeight / window.innerWidth) * 0.95;
+      st.look[1] += lift;
+      st.cam[1] += lift;
     }
 
     // Layered motion that keyframes can't express
@@ -241,8 +255,7 @@ export class Director {
   // which car the name plate should show in the garage
   carAt(y) {
     const p = (this.sAt(y) - ORDER.indexOf('garage'));
-    if (p < 0.25 || p >= 0.475) return HERO;
-    const i = Math.max(0, Math.min(CARS.length - 1, Math.round((p - 0.3) / STEP)));
-    return CARS[i];
+    if (p < TOUR_AT - 0.03 || p >= TOUR_END + 0.04) return HERO;
+    return CARS[Math.max(0, Math.min(CARS.length - 1, Math.floor((p - TOUR_AT + 0.03) / TOUR_CAR)))];
   }
 }
