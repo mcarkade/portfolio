@@ -10,8 +10,11 @@ import { Drone } from './drone.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { Garage, GARAGE_Z, HERO_X } from './garage.js';
 import { Fluid } from './fluid.js';
+import { Atmosphere, atmosphereNoise, atmosphereColor, atmosphereVolume } from './atmosphere.js';
+import { HeroType } from './hero-type.js';
 
 const FinalShader = {
+  defines: { VOLUME_STEPS: 8 },
   uniforms: {
     tDiffuse: { value: null },
     tFlow: { value: null },
@@ -22,18 +25,32 @@ const FinalShader = {
     uVignette: { value: 0.9 },
     uFade: { value: 0 },
     uFlash: { value: 0 },
+    uWarmth: { value: 0 },
+    uTransition: { value: 0 },
+    uSweep: { value: 0 },
+    uResolution: { value: new THREE.Vector2(1440, 900) },
+    uReducedMotion: { value: 0 },
   },
   vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse; uniform float uTime, uAberration, uSpeed, uVignette, uFade, uFlash;
     uniform sampler2D tFlow; uniform float uFlowStrength;
+    uniform float uWarmth, uTransition, uSweep, uReducedMotion;
+    uniform vec2 uResolution;
     varying vec2 vUv;
+    ${atmosphereNoise}
+    ${atmosphereVolume}
+    float grain(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
     void main(){
       vec3 flow = vec3(0.0);
       if (uFlowStrength > 0.0) flow = texture2D(tFlow, vUv).rgb * uFlowStrength;
       vec2 smear = flow.rg * 0.06;
       vec2 split = flow.rg * 0.0018;
       vec2 uv = clamp(vUv - smear, 0.001, 0.999);
+      float clouds=sin(vUv.y*9.+sin(vUv.x*13.)*.6)*.035;
+      float sweep=vUv.x*.78+vUv.y*.22+clouds-uSweep*1.35+.18;
+      float beam=exp(-sweep*sweep*240.)*uTransition;
+      uv=clamp(uv+vec2(beam*.012,beam*.003),.001,.999);
       vec2 c = vUv - 0.5;
       float r = length(c);
       vec2 dir = normalize(c + 1e-5);
@@ -61,8 +78,22 @@ const FinalShader = {
       col = col * (1.0 + flow.b * 0.12) + vec3(0.0006, 0.0008, 0.001) * flow.b;
       float vig = 1.0 - smoothstep(0.18, 0.95, r * uVignette);
       col *= mix(0.35, 1.0, vig);
+      col+=lightVolume(uv);
+      // Small shadow lift, warm highlights, and a cool toe preserve the dark room.
+      vec3 lift=mix(vec3(.001,.003,.005),vec3(.004,.0015,.0008),uWarmth);
+      vec3 gain=mix(vec3(.91,1.01,1.08),vec3(1.10,.98,.87),uWarmth);
+      col=pow(max(col+lift,vec3(0.)),vec3(1.025))*gain;
+      col+=beam*mix(vec3(.12,.25,.36),vec3(.35,.12,.035),uWarmth);
+      float n=grain(floor(vUv*uResolution)+floor(uTime*24.));
+      col+=(n-.5)*.003*sqrt(max(dot(col,vec3(.2126,.7152,.0722)),.015));
       col += uFlash;
-      col *= 1.0 - uFade;
+      if(uReducedMotion>.5) col*=1.-uFade;
+      else if(uFade>0.){
+        float field=vUv.x*.5+vUv.y*.15+noise(vec3(vUv*vec2(5.,4.),3.))*.35;
+        float edge=field-uFade*1.25;
+        col+=exp(-edge*edge*1800.)*vec3(.09,.035,.015)*sin(uFade*3.14159265);
+        col*=smoothstep(-.12,.04,edge);
+      }
       gl_FragColor = vec4(col, 1.0);
     }`,
 };
@@ -90,6 +121,8 @@ export class World {
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x000000, 0.075);
     this.scene = scene;
+    this.motion = matchMedia('(prefers-reduced-motion: reduce)');
+    this.atmosphere = new Atmosphere(scene);
 
     const pmrem = new THREE.PMREMGenerator(renderer);
     this.envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -110,6 +143,7 @@ export class World {
     this.drone = new Drone();
     this.drone.group.position.set(0, 1.1, 0);
     scene.add(this.drone.group);
+    this.heroType = new HeroType(scene, renderer);
 
     this.garage = new Garage(this);
     scene.add(this.garage.group);
@@ -117,12 +151,20 @@ export class World {
 
     // Post-processing
     const composer = new EffectComposer(renderer);
+    for (const target of [composer.renderTarget1, composer.renderTarget2]) {
+      target.depthTexture = new THREE.DepthTexture(1, 1, THREE.UnsignedIntType);
+    }
     composer.addPass(new RenderPass(scene, this.camera));
     if (quality === 'high') {
       this.bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), 0.35, 0.6, 0.9);
       composer.addPass(this.bloom);
     }
     this.final = new ShaderPass(FinalShader);
+    this.final.material.defines.VOLUME_STEPS = quality === 'high' ? 8 : 4;
+    Object.assign(this.final.uniforms, this.atmosphere.uniforms, {
+      tDepth: { value: null }, uCamera: { value: this.camera.position },
+      uCameraWorld: { value: this.camera.matrixWorld }, uProjectionInverse: { value: this.camera.projectionMatrixInverse },
+    });
     this.fluid = new Fluid(renderer, { quality, uniforms: this.final.uniforms });
     composer.addPass(this.final);
     composer.addPass(new OutputPass());
@@ -177,7 +219,17 @@ export class World {
   }
 
   _floor() {
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x080809, roughness: 0.5, metalness: 0.0, envMapIntensity: 0.12 });
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x080b10, roughness: 0.36, metalness: 0.35, envMapIntensity: 0.32 });
+    floorMat.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, this.atmosphere.uniforms);
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vFloorWorld; varying vec4 vFloorClip;').replace('#include <project_vertex>', '#include <project_vertex>\nvFloorClip=gl_Position; vFloorWorld=(modelMatrix*vec4(transformed,1.)).xyz;');
+      shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
+        varying vec3 vFloorWorld; varying vec4 vFloorClip;
+        uniform float uTime,uWarm,uStrength,uAspect; uniform vec2 uPointer;
+        ${atmosphereNoise} ${atmosphereColor}`).replace('#include <fog_fragment>', `#include <fog_fragment>
+        float hazeFade=smoothstep(1.8,10.,distance(vFloorWorld,cameraPosition));
+        gl_FragColor.rgb=mix(gl_FragColor.rgb,atmosphereAt(vFloorClip.xy/vFloorClip.w*.5+.5),hazeFade);`);
+    };
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
@@ -197,7 +249,7 @@ export class World {
           float minor = max(line(vW.x * 4.0, 1.0), line(vW.z * 4.0, 1.0)) * 0.35;
           float major = max(line(vW.x, 1.2), line(vW.z, 1.2));
           float d = length(vW.xz - uCenter.xz);
-          float fade = 1.0 - smoothstep(0.4, 4.5, d);
+          float fade = 1.0 - smoothstep(0.4, 3.0, d);
           float a = max(minor, major) * fade * uOpacity;
           gl_FragColor = vec4(vec3(0.92, 0.9, 0.87), a * 0.13);
         }`,
@@ -239,7 +291,7 @@ export class World {
   }
 
   _dust() {
-    const N = this.quality === 'high' ? 4200 : 1800;
+    const N = this.quality === 'high' ? 1400 : 450;
     const pos = new Float32Array(N * 3);
     const seed = new Float32Array(N);
     for (let i = 0; i < N; i++) {
@@ -266,8 +318,8 @@ export class World {
           p.z += cos(uTime * 0.12 + aSeed * 30.0) * 0.25;
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
           float lit = 1.0 - smoothstep(0.0, 3.5, distance(p, uLight));
-          vA = (0.08 + lit * 0.9) * (0.4 + aSeed * 0.6);
-          gl_PointSize = uPx * (1.0 + aSeed * 2.2) * (6.0 / -mv.z);
+          vA = (0.018 + lit * 0.38) * (0.4 + aSeed * 0.6);
+          gl_PointSize = min(4.0, uPx * (0.55 + aSeed * 1.1) * (6.0 / -mv.z));
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); float a = 1.0 - smoothstep(0.0, 0.5, d); gl_FragColor = vec4(vec3(1.0, 0.95, 0.9), a * vA); }`,
@@ -433,6 +485,8 @@ export class World {
     else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
     this.dust.material.uniforms.uPx.value = dpr * (h / 900);
+    this.final.uniforms.uResolution.value.set(w * dpr, h * dpr);
+    this.heroType.resize();
     this.aspect = w / h;
   }
 
@@ -452,16 +506,17 @@ export class World {
   render(state) {
     this.timer.update();
     const dt = Math.min(this.timer.getDelta(), 1 / 20);
-    const t = this.timer.getElapsed();
+    const t = this.motion.matches ? 0 : this.timer.getElapsed();
     const k = 1 - Math.exp(-dt * 6);
-    this.mouseSmooth.lerp(this.mouse, 1 - Math.exp(-dt * 3.5));
+    if (this.motion.matches) this.mouseSmooth.set(0, 0);
+    else this.mouseSmooth.lerp(this.mouse, 1 - Math.exp(-dt * 3.5));
 
     // Camera, with a little parallax from the pointer
     const cam = this.camera;
     const m = this.mouseSmooth;
     cam.position.set(state.cam[0] + m.x * 0.06 * state.parallax, state.cam[1] + m.y * 0.04 * state.parallax, state.cam[2]);
     // Narrow screens see less sideways, so back the camera off along its line of sight.
-    const pull = this.aspect < 1.25 ? Math.min(2.1, 1.25 / this.aspect) : 1;
+    const pull = this.aspect < 1.25 ? Math.min(state.garage ? 3.2 : 2.1, (state.garage ? 1.5 : 1.25) / this.aspect) : 1;
     if (pull > 1) {
       this._tmp = this._tmp || new THREE.Vector3();
       this._tmp.set(...state.look);
@@ -484,6 +539,9 @@ export class World {
     this.spot.target.position.copy(f);
     this.spot.intensity = state.light * 0.42;
     this.spot.angle = state.lightAngle;
+    this.spot.color.setRGB(1, 1 - state.warmth * .18, 1 - state.warmth * .38);
+    this.atmosphere.update(state, t, m, this.spot, this.aspect);
+    this.heroType.update(state, cam, m, t);
     this.kick.position.set(f.x + 1.4, f.y - 0.6, f.z + 1.0);
     this.kick.intensity = state.kick;
 
@@ -491,6 +549,7 @@ export class World {
     this.lightsOn += (this.lightsTarget - this.lightsOn) * k;
     this.fill.intensity = this.lightsOn * 1.6;
     this.scene.fog.density = state.fog * (1 - this.lightsOn * 0.75);
+    this.scene.fog.color.setRGB(.006 + state.warmth * .008, .011 - state.warmth * .005, .018 - state.warmth * .015);
     this.scene.environmentIntensity = state.env + this.lightsOn * 0.5;
 
     // Drone
@@ -504,7 +563,7 @@ export class World {
 
     // Grid, dust
     this.grid.material.uniforms.uCenter.value.copy(f);
-    this.grid.material.uniforms.uOpacity.value = state.grid;
+    this.grid.material.uniforms.uOpacity.value = state.grid * .12;
     this.dust.material.uniforms.uTime.value = t;
     this.dust.material.uniforms.uLight.value.copy(this.spot.position).lerp(f, 0.5);
 
@@ -547,12 +606,17 @@ export class World {
     this.fluid.update(dt, this.mouse.x, this.mouse.y);
     u.uTime.value = t;
     u.uSpeed.value = this.quality === 'high' ? speed : 0; // radial blur is desktop-only
-    u.uAberration.value = 0.0006 + state.aberration;
+    u.uAberration.value = 0.0001 + state.aberration * .35;
     u.uFade.value = state.fade;
     u.uFlash.value = state.flash;
+    u.uWarmth.value = state.warmth;
+    u.uTransition.value = this.motion.matches ? 0 : state.transition;
+    u.uSweep.value = state.sweep;
+    u.uReducedMotion.value = this.motion.matches ? 1 : 0;
     if (this.bloom) this.bloom.strength = state.bloom;
     this.renderer.toneMappingExposure = state.exposure;
 
+    this.final.uniforms.tDepth.value = this.composer.readBuffer.depthTexture;
     this.composer.render(dt);
   }
 }

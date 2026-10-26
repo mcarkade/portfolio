@@ -66,6 +66,9 @@ async function boot() {
     try {
       const { World } = await import('./world/world.js');
       world = new World($('#gl'), { quality });
+      await withTimeout(document.fonts.ready, 4000);
+      world.heroType.resize();
+      body.classList.add('has-scene-type');
       director = new Director();
       // warm up shaders behind the loader
       world.render(director.update(0, 0));
@@ -76,6 +79,7 @@ async function boot() {
     } catch (e) {
       console.warn('3D disabled', e);
       world = null; director = null;
+      body.classList.remove('has-scene-type');
     }
   }
   if (!world) body.classList.add('no-webgl');
@@ -396,7 +400,7 @@ function startLoop() {
     lenis?.raf(now);
     const y = lenis ? lenis.animatedScroll : window.scrollY;
     if (world && director) {
-      const st = director.update(y, now / 1000);
+      const st = director.update(y, reducedMotion ? 0 : now / 1000);
       const asm = assembleAt(now);
       if (asm > 0) { st.explode = Math.max(st.explode, asm); st.droneYaw += asm * 1.4; }
       // fast scrolling smears the colour channels a little

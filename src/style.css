@@ -54,7 +54,7 @@ button { font: inherit; color: inherit; }
   opacity: var(--veil);
 }
 .grain {
-  position: fixed; inset: -100%; z-index: 60; pointer-events: none; opacity: .07;
+  position: fixed; inset: -100%; z-index: 60; pointer-events: none; opacity: .035;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   animation: grain 1s steps(6) infinite;
 }
@@ -192,6 +192,9 @@ main { position: relative; z-index: 2; }
 .hero__title {
   margin: 0; font-size: clamp(3.2rem, min(10.4vw, 15.5vh), 12rem); font-weight: 800; font-stretch: 72%; line-height: .86; letter-spacing: -.02em; max-width: 6.6em; /* always breaks after "machines", clear of the drone */
 }
+.has-scene-type .hero__title { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.has-scene-type .hero__copy { width: min(64rem, 92vw); }
+.has-scene-type .hero__name { position: absolute; top: 51vh; }
 .hero__cue { position: absolute; right: var(--pad); top: calc(100svh - 15vh - 3rem); margin: 0; display: flex; align-items: center; gap: .8rem; font-size: .85rem; color: var(--ash); }
 .cue-line { width: 1px; height: 3rem; background: linear-gradient(var(--red), transparent); animation: cue 2.2s var(--ease) infinite; transform-origin: top; }
 @keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
