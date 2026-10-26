@@ -82,7 +82,6 @@
   </div>
 
   <div id="cursor" aria-hidden="true"><span class="cursor__ring"></span><span class="cursor__dot"></span><span class="cursor__label"></span></div>
-  <div id="callouts" aria-hidden="true"></div>
 
   <main id="main">
     <span id="top"></span>
@@ -94,21 +93,19 @@
         <h1 class="hero__title split">I build machines that move.</h1>
         <p class="hero__sub reveal">Drones, robots, race cars, and the code that drives them. Physics at BITS Pilani, Hyderabad.</p>
       </div>
-      <p class="hero__cue reveal"><span class="cue-line"></span>Scroll to take it apart</p>
-      <p class="hero__light reveal">Move your cursor.<br />It's the only light in here.</p>
+      <p class="hero__cue reveal"><span class="cue-line"></span>Scroll</p>
     </section>
 
     <!-- 02 Drone: explode, collapse, take off -->
     <section class="chapter drone" id="drone" tabindex="-1" data-chapter="Drone">
       <div class="sticky">
         <div class="drone__head">
-          <p class="kicker">F450 quadcopter, built summer 2026</p>
           <h2 class="title split">Every part, by hand.</h2>
         </div>
         <div class="drone__steps">
-          <p class="step" data-step="0">Every part here was chosen, wired and tuned by hand at T-Works, Hyderabad.</p>
-          <p class="step" data-step="1">Back together, it is built to think for itself: YOLOv8 spots people mid-flight, and it steers around them.</p>
-          <p class="step" data-step="2">Then it finds its marker and flies home. <a href="https://github.com/mcarkade/Autonomous-Drone" target="_blank" rel="noopener">Ground station code</a></p>
+          <p class="step" data-step="0">F450 quadcopter, built and tuned at T-Works, Hyderabad.</p>
+          <p class="step" data-step="1">YOLOv8 on board spots people and steers around them.</p>
+          <p class="step" data-step="2">Then it finds its marker and lands. <a href="https://github.com/mcarkade/Autonomous-Drone" target="_blank" rel="noopener">Code</a></p>
         </div>
       </div>
     </section>
@@ -130,9 +127,8 @@
     <section class="chapter lock" id="lock" tabindex="-1" data-chapter="Lock">
       <div class="sticky">
         <div class="lock__copy">
-          <p class="kicker">Counter-drone turret, built in a two-hour hackathon</p>
           <h2 class="title split">Try to escape.</h2>
-          <p>A Raspberry Pi 5 finds a drone with YOLO and steers a pan-tilt turret to keep it in the crosshair. In a simulated closed-loop test it held a still drone the whole time, and a sweeping one 78% of the time. <span class="only-fine">In here, the drone is you.</span><span class="only-touch">Here it tracks the drone on its own.</span></p>
+          <p>A counter-drone turret I built in a two-hour hackathon: a Raspberry Pi 5 finds the drone and holds it in the crosshair. <span class="only-fine">You're flying the drone.</span></p>
           <p class="lock__status" aria-live="polite"><span id="lock-state">SEARCHING</span> <span id="lock-time">escaped 0.0 s</span></p>
         </div>
       </div>
@@ -145,7 +141,7 @@
         <div class="garage__head">
           <img class="garage__logo" src="/media/multiroads-logo-sm.webp" alt="" width="120" height="120" loading="lazy" />
           <div>
-            <p class="kicker">A multiplayer racing game I built for the browser</p>
+            <p class="kicker">My multiplayer racing game, in the browser</p>
             <h2 class="title split">Multiroads</h2>
           </div>
         </div>
@@ -164,38 +160,39 @@
       <div class="sticky">
         <p class="launch__speed" aria-hidden="true"><span id="speed">0</span><small>km/h</small></p>
         <h2 class="launch__title title split">Real tracks. Eight players. One tab.</h2>
-        <div class="reel" aria-label="Multiroads screenshots">
-          <figure><img src="/media/mr-tunnel-sm.webp" alt="Cockpit view of the MP4/5 entering a tunnel at the Madrid circuit" loading="lazy" /></figure>
-          <figure><img src="/media/mr-suzuka-sm.webp" alt="Porsche 911 GT3 steering wheel view at Suzuka" loading="lazy" /></figure>
-          <figure><img src="/media/mr-forest-night-sm.webp" alt="Rally car at night in the forest stage" loading="lazy" /></figure>
-          <figure><img src="/media/mr-488-sm.webp" alt="Ferrari 488 GT3 on track" loading="lazy" /></figure>
-        </div>
       </div>
     </section>
 
     <!-- 06 Work -->
     <section class="chapter work" id="work" tabindex="-1" data-chapter="Work">
+      <a class="feature" href="https://multiroads.vercel.app" target="_blank" rel="noopener" data-cursor="Play">
+        <video class="feature__video" src="/media/mr-fpv.mp4" poster="/media/mr-fpv-poster.webp" muted loop playsinline preload="none" aria-label="Multiroads gameplay: a lap in cockpit view"></video>
+        <span class="feature__copy">
+          <span class="feature__name">Multiroads</span>
+          <span class="feature__what">Real tracks, real cars, up to eight players, no install.</span>
+          <span class="btn btn--solid">Play Multiroads</span>
+        </span>
+      </a>
       <h2 class="work__title title split">More things I made</h2>
       <ul class="work__list">
-        <li class="work__item" data-preview="/media/turret.webp">
+        <li class="work__item">
           <a href="#lock" class="work__link">
-            <img class="work__thumb" src="/media/turret.webp" alt="" loading="lazy" />
             <span class="work__name">Counter-drone turret</span>
             <span class="work__what">Detect, track, lock. Built in two hours.</span>
             <span class="work__year">2026</span>
           </a>
         </li>
-        <li class="work__item" data-preview="/media/theta-shell.webp" data-invert>
+        <li class="work__item" data-preview="/media/theta-shell-dark.webp">
           <div class="work__link">
-            <img class="work__thumb is-invert" src="/media/theta-shell.webp" alt="" loading="lazy" />
+            <img class="work__thumb" src="/media/theta-shell-dark.webp" alt="" loading="lazy" />
             <span class="work__name">ThetaShift</span>
             <span class="work__what">A robot that drives from inside a sphere</span>
             <span class="work__year">2026</span>
           </div>
         </li>
-        <li class="work__item" data-preview="/media/mesh-electronics.webp" data-invert>
+        <li class="work__item" data-preview="/media/mesh-electronics-dark.webp">
           <div class="work__link">
-            <img class="work__thumb is-invert" src="/media/mesh-electronics.webp" alt="" loading="lazy" />
+            <img class="work__thumb" src="/media/mesh-electronics-dark.webp" alt="" loading="lazy" />
             <span class="work__name">Meshmerize</span>
             <span class="work__what">A maze-solving line follower</span>
             <span class="work__year">2026</span>
@@ -215,21 +212,6 @@
             <span class="work__what">Reminds you, and remembers if you didn't</span>
             <span class="work__year">2026</span>
           </div>
-        </li>
-        <li class="work__item">
-          <a href="https://github.com/mcarkade/user-authenticated-telegram-chat-ingestion-and-rag-system" target="_blank" rel="noopener" class="work__link">
-            <span class="work__name">Chat memory</span>
-            <span class="work__what">Search your own Telegram history with an offline LLM</span>
-            <span class="work__year">2025</span>
-          </a>
-        </li>
-        <li class="work__item" data-preview="/media/mr-forest-dash.webp">
-          <a href="https://multiroads.vercel.app" target="_blank" rel="noopener" class="work__link">
-            <img class="work__thumb" src="/media/mr-forest-dash.webp" alt="" loading="lazy" />
-            <span class="work__name">Forest rally</span>
-            <span class="work__what">Multiroads goes off-road</span>
-            <span class="work__year">2026</span>
-          </a>
         </li>
       </ul>
     </section>
@@ -260,10 +242,7 @@
     <footer class="footer">
       <div class="footer__mark"><span>MCARKADE</span></div>
       <div class="footer__cols">
-        <details class="footer__made" open>
-          <summary>How this was made</summary>
-          <p>Built in one night with Claude Code. A lead agent designed and wrote the site. Helper agents built a dossier of my projects from my own files, compressed the car models, composed the soundtrack from code, and audited the result. The drone is modelled from scratch, and every scene runs live in your browser. <a href="https://github.com/mcarkade/portfolio" target="_blank" rel="noopener">Source on GitHub</a>.</p>
-        </details>
+        <p class="footer__small"><a href="https://github.com/mcarkade/portfolio" target="_blank" rel="noopener">Source on GitHub</a></p>
         <details class="footer__made">
           <summary>Credits</summary>
           <p>Car models are third-party works used under Creative Commons licences:</p>
@@ -272,8 +251,6 @@
             <li><a href="https://sketchfab.com/3d-models/redbull-rb19-oracle-wwwvecarzcom-9789fd7386ee4924bf8e7ed54577f8cf" target="_blank" rel="noopener">Red Bull RB19</a> by vecarz, <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY NC SA 4.0</a></li>
             <li><a href="https://sketchfab.com/3d-models/1987-ferrari-f40-80b0cdeb364b4223a006f3be12f16dc4" target="_blank" rel="noopener">Ferrari F40</a> by Ddiaz Design, <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></li>
             <li><a href="https://sketchfab.com/3d-models/2025-porsche-911-gt3-992-2-1503f8d08f154ec7ab52f95a99c55134" target="_blank" rel="noopener">Porsche 911 GT3</a> by Ddiaz Design, <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY NC SA 4.0</a></li>
-            <li><a href="https://sketchfab.com/3d-models/2018-ferrari-488-gt3-bb14ee3833564f349a317d704a506cd3" target="_blank" rel="noopener">Ferrari 488 GT3</a> by Ddiaz Design, <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></li>
-            <li><a href="https://sketchfab.com/3d-models/2013-aston-martin-vantage-gt3-2673986fc0484af28291d85548f3c976" target="_blank" rel="noopener">Aston Martin Vantage GT3</a> by OUTPISTON, <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY NC SA 4.0</a></li>
             <li><a href="https://sketchfab.com/3d-models/mercedec-f1-2020-0d97207d829441ba95952598f84e8d63" target="_blank" rel="noopener">Mercedes W11</a> by Kevin Love SketchFab, <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></li>
           </ul>
           <p>Fonts: Archivo and Geist Mono (SIL OFL). The drone, the music and the code are original.</p>

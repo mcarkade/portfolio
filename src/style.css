@@ -192,10 +192,8 @@ main { position: relative; z-index: 2; }
 .hero__cue { position: absolute; right: var(--pad); top: calc(100svh - 15vh - 3rem); margin: 0; display: flex; align-items: center; gap: .8rem; font-size: .85rem; color: var(--ash); }
 .cue-line { width: 1px; height: 3rem; background: linear-gradient(var(--red), transparent); animation: cue 2.2s var(--ease) infinite; transform-origin: top; }
 @keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
-.hero__light { position: absolute; right: var(--pad); top: 22vh; margin: 0; max-width: 14rem; text-align: right; font-size: .85rem; color: var(--ash); }
-@media (hover: none) { .hero__light { display: none; } }
 
-.drone { height: 520vh; }
+.drone { height: 380vh; }
 .drone__head { position: absolute; left: 0; top: 18vh; max-width: 40rem; }
 .drone__steps { position: absolute; left: 0; bottom: 14vh; width: min(25rem, 86vw); min-height: 6rem; }
 .step {
@@ -205,14 +203,8 @@ main { position: relative; z-index: 2; }
 }
 .step.is-on { opacity: 1; transform: none; }
 
-#callouts { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
-.callout { position: absolute; left: 0; top: 0; opacity: 0; transition: opacity .5s var(--ease); will-change: transform; }
-.callout.is-on { opacity: 1; }
-.callout__dot { position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 4px rgba(227,38,47,.22); }
-.callout__line { position: absolute; height: 1px; background: rgba(237,233,227,.45); transform-origin: 0 0; }
-.callout__text { position: absolute; white-space: nowrap; font-family: var(--mono); font-size: .7rem; letter-spacing: .05em; color: var(--bone); transform: translate(var(--tx, 0), -50%); }
 
-.vision { height: 300vh; }
+.vision { height: 220vh; }
 .hudframe { position: absolute; inset: 14vh 8vw 16vh; pointer-events: none; font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; opacity: 0; transition: opacity .6s var(--ease); }
 .vision.is-active .hudframe { opacity: 1; }
 .hudframe__c { position: absolute; width: 2.2rem; height: 2.2rem; border: 1px solid rgba(237,233,227,.6); }
@@ -244,7 +236,7 @@ main { position: relative; z-index: 2; }
 #reticle.is-locked { animation: lockpulse .5s ease-in-out infinite alternate; }
 @keyframes lockpulse { to { scale: .86; } }
 
-.garage { height: 640vh; }
+.garage { height: 440vh; }
 .garage__head { position: absolute; left: 0; top: 15vh; display: flex; gap: 1.4rem; align-items: center; }
 .garage__logo { width: 4.2rem; height: 4.2rem; object-fit: cover; filter: invert(1); mix-blend-mode: screen; }
 .garage__plate { position: absolute; right: 0; bottom: 14vh; text-align: right; }
@@ -252,15 +244,20 @@ main { position: relative; z-index: 2; }
 .garage__year { margin: .4rem 0 0; font-family: var(--mono); font-size: .8rem; color: var(--red); letter-spacing: .08em; }
 .garage__cta { position: absolute; left: 0; bottom: 14vh; }
 
-.launch { height: 360vh; }
+.launch { height: 300vh; }
 .launch__speed { position: absolute; right: 0; top: 16vh; margin: 0; font-family: var(--mono); font-weight: 500; font-size: clamp(3rem, 9vw, 8rem); line-height: 1; letter-spacing: -.04em; display: flex; align-items: baseline; gap: .6rem; font-variant-numeric: tabular-nums; }
 .launch__speed small { font-size: .9rem; color: var(--ash); letter-spacing: .06em; }
 .launch__title { position: absolute; left: 0; top: 16vh; max-width: 12ch; }
-.reel { position: absolute; left: 0; bottom: 10vh; display: flex; gap: .8rem; will-change: transform; }
-.reel figure { margin: 0; width: clamp(9rem, 15vw, 15rem); aspect-ratio: 16 / 9; overflow: hidden; background: var(--coal); opacity: .92; }
-.reel img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.15); }
 
 .work { padding-top: 22vh; padding-bottom: 18vh; }
+.feature { position: relative; display: block; aspect-ratio: 16 / 8.4; max-height: 82vh; width: 100%; margin: 0 0 clamp(6rem, 16vh, 11rem); overflow: hidden; background: var(--coal); text-decoration: none; }
+.feature__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.04); transition: transform 1.4s var(--ease); }
+.feature::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,0) 55%); pointer-events: none; }
+.feature__copy { position: absolute; left: clamp(1.2rem, 3vw, 3rem); bottom: clamp(1.2rem, 3vw, 3rem); right: clamp(1.2rem, 3vw, 3rem); z-index: 1; display: grid; justify-items: start; gap: 1rem; }
+.feature__name { font-size: clamp(3rem, 9vw, 9rem); font-weight: 800; font-stretch: 72%; line-height: .86; letter-spacing: -.02em; }
+.feature__what { color: var(--bone); max-width: 32rem; }
+@media (hover: hover) { .feature:hover .feature__video { transform: scale(1); } }
+@media (max-width: 860px) { .feature { aspect-ratio: 4 / 5; } }
 .work__title { margin-bottom: 4rem; }
 .work__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
 .work__item { border-bottom: 1px solid var(--line); }
@@ -283,7 +280,6 @@ main { position: relative; z-index: 2; }
   .only-fine { display: none; }
   .only-touch { display: inline; }
   .work__thumb { display: block; grid-column: 2; grid-row: 1 / span 3; align-self: center; width: 5.5rem; aspect-ratio: 4 / 3; object-fit: cover; background: var(--coal); }
-  .work__thumb.is-invert { filter: invert(1) hue-rotate(180deg); }
 }
 /* stacked rows: name, line, year on the left; thumbnail (touch only) on the right */
 @media (hover: none), (pointer: coarse), (max-width: 860px) {
@@ -299,7 +295,6 @@ main { position: relative; z-index: 2; }
 .preview { position: fixed; left: 0; top: 0; z-index: 5; width: 22rem; aspect-ratio: 4 / 3; pointer-events: none; overflow: hidden; opacity: 0; transform: scale(.85); transition: opacity .45s var(--ease), transform .6s var(--ease); background: var(--coal); }
 .preview.is-on { opacity: 1; transform: scale(1); }
 .preview img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
-.preview.is-invert img { filter: invert(1) hue-rotate(180deg) contrast(1.1); }
 
 .about { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 7rem); align-items: end; padding-top: 18vh; padding-bottom: 18vh; }
 .about__portrait { margin: 0; overflow: hidden; aspect-ratio: 3 / 2; background: var(--coal); }
@@ -347,7 +342,6 @@ kbd { font-family: var(--mono); border: 1px solid var(--line); padding: 0 .35em;
   .launch__title { top: 12vh; }
   .about { grid-template-columns: 1fr; }
   .footer__cols { grid-template-columns: 1fr; }
-  .callout__text { font-size: .6rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -357,15 +351,14 @@ kbd { font-family: var(--mono); border: 1px solid var(--line); padding: 0 .35em;
 }
 
 /* capture mode for stills (?clean) */
-.clean main, .clean .hud, .clean #cursor, .clean #callouts, .clean .grain, .clean .veil { visibility: hidden !important; }
+.clean main, .clean .hud, .clean #cursor, .clean .grain, .clean .veil { visibility: hidden !important; }
 
 /* no WebGL: a static, readable portfolio */
-.no-webgl #gl, .no-webgl #callouts, .no-webgl .hudframe, .no-webgl .launch__speed, .no-webgl .hero__light { display: none; }
+.no-webgl #gl, .no-webgl .hudframe, .no-webgl .launch__speed { display: none; }
 .no-webgl .hero { background: url(/media/portrait.webp) 70% 40% / cover no-repeat; }
 .no-webgl .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #000 20%, rgba(0,0,0,.2)); }
 .no-webgl .hero__copy { z-index: 1; }
 .no-webgl .drone, .no-webgl .vision, .no-webgl .lock, .no-webgl .garage, .no-webgl .launch { height: auto; min-height: 100vh; }
 .no-webgl .sticky { position: relative; height: auto; min-height: 100vh; }
-.no-webgl .drone__head, .no-webgl .drone__steps, .no-webgl .garage__head, .no-webgl .garage__plate, .no-webgl .garage__cta, .no-webgl .launch__title, .no-webgl .vision__title, .no-webgl .lock__copy, .no-webgl .reel { position: relative; inset: auto; padding-top: 2rem; }
+.no-webgl .drone__head, .no-webgl .drone__steps, .no-webgl .garage__head, .no-webgl .garage__plate, .no-webgl .garage__cta, .no-webgl .launch__title, .no-webgl .vision__title, .no-webgl .lock__copy { position: relative; inset: auto; padding-top: 2rem; }
 .no-webgl .step { position: static; opacity: 1; transform: none; margin-bottom: 1rem; }
-.no-webgl .reel { flex-wrap: wrap; transform: none !important; }

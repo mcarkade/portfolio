@@ -10,10 +10,7 @@ export const SPACING = 7;
 // Lineup order = scroll order. The hero (index 0 in HERO) sits at the end of the row.
 export const CARS = [
   { id: 'rb19', file: '/models/rb19.glb', name: 'Red Bull RB19', year: '2023', length: 5.3 },
-  { id: 'w11', file: '/models/w11.glb', name: 'Mercedes W11', year: '2020', length: 5.4 },
   { id: 'p911', file: '/models/p911.glb', name: 'Porsche 911 GT3', year: '2025', length: 4.57 },
-  { id: 'f488', file: '/models/f488.glb', name: 'Ferrari 488 GT3', year: '2018', length: 4.7 },
-  { id: 'vantage', file: '/models/vantage.glb', name: 'Aston Martin Vantage GT3', year: '2013', length: 4.4 },
 ];
 export const HERO = { id: 'mp45', file: '/models/mp45.glb', name: 'McLaren MP4/5', year: '1989', length: 4.5 };
 
@@ -39,6 +36,7 @@ export class Garage {
     this._turntable();
 
     const loader = new GLTFLoader();
+    MeshoptDecoder.useWorkers?.(2); // decode geometry off the main thread
     loader.setMeshoptDecoder(MeshoptDecoder);
     this.loader = loader;
 
@@ -75,11 +73,31 @@ export class Garage {
     this.ring = ring;
   }
 
-  // Load the hero first, then the lineup in scroll order.
+  // Load the hero first, then the lineup in scroll order. Each car is fully prepared
+  // (shaders compiled, textures uploaded a few per frame) long before it comes into view,
+  // so arriving in the garage never stalls on first-use GPU work.
   async loadAll() {
-    await this._load(HERO, this.heroSlot, true).catch((e) => console.warn('hero car', e));
+    await this._load(HERO, this.heroSlot, true).then((m) => this._warm(m)).catch((e) => console.warn('hero car', e));
     for (const s of this.slots) {
-      await this._load(s.car, s.slot, false).then((m) => { s.model = m; }).catch((e) => console.warn(s.car.id, e));
+      await this._load(s.car, s.slot, false).then((m) => { s.model = m; return this._warm(m); }).catch((e) => console.warn(s.car.id, e));
+    }
+  }
+
+  async _warm(model) {
+    const w = this.world;
+    await w.warm(model);
+    const textures = new Set();
+    model.traverse((o) => {
+      if (!o.isMesh) return;
+      for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+        for (const v of Object.values(m)) if (v && v.isTexture) textures.add(v);
+      }
+    });
+    const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+    let i = 0;
+    for (const t of textures) {
+      w.renderer.initTexture(t);
+      if (++i % 2 === 0) await frame();
     }
   }
 

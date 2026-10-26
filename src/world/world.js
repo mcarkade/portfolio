@@ -372,6 +372,22 @@ export class World {
     this.marker = marker;
   }
 
+  // Compile every shader the film will need, ahead of time. Programs depend on the render
+  // target (the composer draws offscreen, without tone mapping), so compile against the
+  // composer's buffer, not the canvas. Hidden meshes are shown for the compile only;
+  // lights stay as they are, because light counts are part of every program.
+  warm(root = this.scene) {
+    const hidden = [];
+    root.traverse((o) => { if (!o.visible && !o.isLight) { hidden.push(o); o.visible = true; } });
+    const r = this.renderer;
+    const prev = r.getRenderTarget();
+    r.setRenderTarget(this.composer.readBuffer);
+    const p = r.compileAsync(root, this.camera, this.scene);
+    r.setRenderTarget(prev);
+    hidden.forEach((o) => { o.visible = false; });
+    return p.catch(() => {});
+  }
+
   // Adaptive quality: if the median frame over a 1.5 s window is slower than ~48 fps,
   // render fewer pixels; once at 1x, drop the mirror floor and bloom. Only ever steps down.
   adapt(dt) {

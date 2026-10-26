@@ -104,7 +104,7 @@ export class Preview {
     this.x = 0; this.y = 0; this.px = 0; this.py = 0;
     addEventListener('pointermove', (e) => { this.x = e.clientX; this.y = e.clientY; }, { passive: true });
     document.querySelectorAll('.work__item').forEach((li) => {
-      li.addEventListener('pointerenter', () => { this.el.classList.toggle('is-invert', li.hasAttribute('data-invert')); this.show(li.dataset.preview); });
+      li.addEventListener('pointerenter', () => this.show(li.dataset.preview));
       li.addEventListener('pointerleave', () => this.el.classList.remove('is-on'));
     });
   }

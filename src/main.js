@@ -69,7 +69,7 @@ async function boot() {
       director = new Director();
       // warm up shaders behind the loader
       world.render(director.update(0, 0));
-      await withTimeout(world.renderer.compileAsync(world.scene, world.camera), 2500);
+      await withTimeout(world.warm(), 8000);
       // phones fetch the cars (about 15 MB) once the visitor heads past the drone
       if (quality === 'high') loadCars();
       window.__mc = { world, director };
@@ -181,7 +181,7 @@ function begin() {
 
 let carsP = null;
 function loadCars() {
-  carsP ||= world.garage.loadAll().then(() => withTimeout(world.renderer.compileAsync(world.scene, world.camera), 4000));
+  carsP ||= world.garage.loadAll();
 }
 
 // ---------- Sound toggle ----------
@@ -235,6 +235,11 @@ addEventListener('pointermove', (e) => {
 
 // ---------- Per-frame DOM ----------
 const cursor = new Cursor(audio);
+// the Multiroads film only plays (and downloads) while it is on screen
+const featureVideo = $('.feature__video');
+new IntersectionObserver(([e]) => {
+  if (e.isIntersecting && !reducedMotion) { featureVideo.preload = 'auto'; featureVideo.play().catch(() => {}); } else featureVideo.pause();
+}, { threshold: 0.2 }).observe(featureVideo);
 const preview = new Preview();
 const lock = new LockGame(audio);
 magnetic();
@@ -253,30 +258,13 @@ const visionWp = $('#vision-wp');
 const carName = $('#car-name');
 const carYear = $('#car-year');
 const speedEl = $('#speed');
-const reel = $('.reel');
 const portrait = $('.about__portrait img');
 const veil = $('.veil');
 const heroEl = $('#hero');
-const calloutRoot = $('#callouts');
 const CHAPTER_NAMES = ['Hello', 'Drone', 'Vision', 'Lock', 'Multiroads', 'Launch', 'Work', 'About', 'Contact'];
-const MOBILE_LABELS = new Set(['Pixhawk 2.4.8', 'Raspberry Pi 4', 'GPS', '4S LiPo', 'A2212 motor', 'Camera']);
 let maxScroll = 1;
-let reelSpan = 0;
 function measureDom() {
   maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
-  reelSpan = reel.scrollWidth - innerWidth * 0.55;
-}
-
-let callouts = null;
-function buildCallouts() {
-  callouts = world.drone.anchors.map((a) => {
-    const el = document.createElement('div');
-    el.className = 'callout';
-    el.innerHTML = '<span class="callout__dot"></span><span class="callout__line"></span><span class="callout__text"></span>';
-    el.querySelector('.callout__text').textContent = a.label;
-    calloutRoot.appendChild(el);
-    return { a, el, line: el.querySelector('.callout__line'), text: el.querySelector('.callout__text'), dot: el.querySelector('.callout__dot') };
-  });
 }
 
 const tmpV = new THREE.Vector3();
@@ -328,33 +316,6 @@ function domFrame(st, y, dt) {
   const stepIdx = pd < 0.06 ? -1 : pd < 0.56 ? 0 : pd < 0.65 ? -1 : pd < 0.81 ? 1 : pd < 0.84 ? -1 : 2;
   steps.forEach((s, i) => s.classList.toggle('is-on', i === stepIdx && pd < 0.995));
 
-  // callouts on the exploded drone
-  if (callouts) {
-    const show = st.explode > 0.8 && st.droneVisible && st.chapter === 1;
-    calloutRoot.style.visibility = st.chapter === 1 ? 'visible' : 'hidden';
-    for (const c of callouts) {
-      if (!show) { c.el.classList.remove('is-on'); continue; }
-      c.a.obj.localToWorld(tmpV.copy(c.a.local));
-      const p = world.project(tmpV, P);
-      if (!p) { c.el.classList.remove('is-on'); continue; }
-      const narrow = innerWidth < 700;
-      if (narrow && !MOBILE_LABELS.has(c.a.label)) { c.el.classList.remove('is-on'); continue; }
-      c.el.classList.add('is-on');
-      const right = p.x > innerWidth * 0.5;
-      const len = narrow ? 26 : 56;
-      const dx = right ? len : -len, dy = -len * 0.55;
-      // keep the label inside the viewport
-      const tw = c.tw || (c.tw = c.text.offsetWidth);
-      const tx = right ? Math.min(dx + 8, innerWidth - 12 - p.x - tw) : Math.max(dx - 8, 12 - p.x + tw);
-      c.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
-      c.line.style.width = `${Math.hypot(dx, dy)}px`;
-      c.line.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
-      c.text.style.left = `${tx}px`;
-      c.text.style.top = `${dy}px`;
-      c.text.style.setProperty('--tx', right ? '0' : '-100%');
-    }
-  }
-
   // vision HUD
   const pv = director.pinned('vision', y);
   const inVision = st.chapter === 2;
@@ -392,8 +353,6 @@ function domFrame(st, y, dt) {
   // launch
   if (st.chapter === 5 || st.chapter === 4) {
     setText(speedEl, String(Math.round(Math.min(1.4, st.speed) * 245)));
-    const pl = director.pinned('launch', y);
-    reel.style.transform = `translateX(${-reelSpan * pl}px)`;
   }
 
   // portrait parallax
@@ -440,7 +399,6 @@ let running = false;
 function startLoop() {
   if (running) return;
   running = true;
-  if (world) buildCallouts();
   cursor.enable();
   const frame = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000);
