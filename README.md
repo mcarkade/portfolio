@@ -18,6 +18,8 @@ Press `L` for the lights and `M` for sound.
 
 All three cars load, upload their textures, compile their shaders and draw behind the loading screen before Enter appears. The drone's camera dive opens into the project gallery through a scroll-controlled aperture. Reduced motion disables that aperture and the intro.
 
+Manual wheel and touch scrolling share a 0.45 viewport-per-second limit and an eased response. Menu links and Tour keep their own navigation timing.
+
 ## Run it
 
 ```bash
@@ -27,6 +29,8 @@ npm run build
 ```
 
 For browser checks, serve the build with `npm run preview -- --port 5192`, then run `node tools/verify.mjs http://localhost:5192/ <output-folder> desktop`. Repeat with `phone`, `reduced` or `fallback`. Captures and JSON reports go to the chosen folder. Gallery stills can be regenerated with `python tools/gallery-art/build.py`.
+
+`node tools/scroll-check.mjs` checks the scroll policy against installed Lenis handlers. `node tools/check-interactions.mjs http://localhost:5192/ <output-folder>` checks portrait layouts, wheel bursts and native phone touch gestures. Rebuild the supplied portrait with `python tools/portrait/build.py <original-photo>`.
 
 ## Credits
 

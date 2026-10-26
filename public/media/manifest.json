@@ -1,6 +1,6 @@
 {
  "generated": "2026-10-26",
- "totalBytes": 31064607,
+ "totalBytes": 31236399,
  "fileCount": 72,
  "files": [
   {
@@ -416,17 +416,19 @@
   },
   {
    "path": "/media/portrait-sm.webp",
-   "bytes": 12780,
+   "bytes": 58342,
    "type": "image",
    "width": 720,
-   "height": 480
+   "height": 673,
+   "alpha": true
   },
   {
    "path": "/media/portrait.webp",
-   "bytes": 31644,
+   "bytes": 157874,
    "type": "image",
-   "width": 1280,
-   "height": 853
+   "width": 1140,
+   "height": 1066,
+   "alpha": true
   },
   {
    "path": "/media/theta-cart-cut.webp",
@@ -1860,11 +1862,11 @@
   "mp45 wheels: wheel_front_L/R and wheel_rear_L/R pivots sit on the axle centre; spin about local X.",
   "Part roles in models.mp45.parts[] are heuristic (material, parent, position) and were not render-checked.",
   "NonCommercial licences (RB19, 911, Vantage; also ShareAlike) restrict commercial use of the site.",
-  "portrait.webp is landscape (1280x853, man holding a drone), not a portrait crop.",
+  "portrait.webp is the owner-supplied Standard pfp.png, 1140x1066, with a locally refined transparent matte. Face, clothing and drone pixels come from the supplied photograph.",
   "theta-shell-cut skipped: the render has a pale grey disc behind the model that a white-key cut left ragged. theta-cart-cut and theta-hub-cut are clean.",
   "Videos have no audio. mr-fpv is very dark (the whole night-forest source is dark). Loops are plain trims, not crossfaded. med-video is 480x864 (source resolution, not upscaled to 960w). cd-* are 1280x480 side-by-side proof videos at the source 7 fps.",
   "cd-key-N map to sorted key_*.jpg: 1 combined_sweep, 2 empty_background, 3 hidden, 4 horizontal, 5 reintroduced, 6 stationary, 7 vertical.",
-  "Images narrower than the target width keep native size (no upscaling): logo 528, mr-911/488/mp45 ~500-575, portrait 1280, arena 1024, cd-key 800.",
+  "Images narrower than the target width keep native size (no upscaling): logo 528, mr-911/488/mp45 ~500-575, portrait 1140, arena 1024, cd-key 800.",
   "Skipped: ShopEZ (no real UI screenshots anywhere in the project) and medicine-dispenser stills (PDFs only contain a logo; video frames were blurry 480 px grabs). Use med-video + poster."
  ]
 }

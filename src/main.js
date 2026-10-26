@@ -8,6 +8,7 @@ import { splitWords, observeReveals, Cursor, magnetic, LockGame, copyEmail, fine
 import { initViewer } from './viewer.js';
 import { initTour, initChapterRail } from './tour.js';
 import { initTouchPilot } from './touch-pilot.js';
+import { createManualScroll } from './scroll.js';
 
 history.scrollRestoration = 'manual';
 window.scrollTo(0, 0);
@@ -77,6 +78,7 @@ splitWords();
 let world = null;
 let director = null;
 let lenis = null;
+let manualScroll = null;
 
 const withTimeout = (p, ms) => Promise.race([Promise.resolve(p).catch(() => {}), new Promise((r) => setTimeout(r, ms))]);
 async function requireBeforeEnter(p, ms) {
@@ -221,13 +223,15 @@ function begin() {
   // the hero's own reveal, staged after the title sequence
   document.querySelectorAll('.hero .split, .hero .reveal').forEach((el, i) => setTimeout(() => el.classList.add('is-in'), 350 + i * 160));
   if (!reducedMotion) {
-    // a calmer, capped manual scroll: each wheel or touch step is limited, so a hard flick can't
-    // throw the film past a chapter; menu and rail navigation use scrollTo and are unaffected
+    manualScroll = createManualScroll(() => lenis);
     lenis = new Lenis({
-      lerp: 0.06, wheelMultiplier: 0.55, touchMultiplier: 1.0, smoothWheel: true,
-      virtualScroll: (e) => { const cap = innerHeight * 0.12; e.deltaY = Math.max(-cap, Math.min(cap, e.deltaY)); return true; },
+      lerp: .045, wheelMultiplier: .35, touchMultiplier: .7, smoothWheel: true,
+      virtualScroll: manualScroll.virtualScroll,
     });
-    lenis.on('scroll', () => {});
+    lenis.on('scroll', manualScroll.onScroll);
+    addEventListener('touchcancel', manualScroll.reset, { passive: true });
+    addEventListener('blur', manualScroll.reset);
+    document.addEventListener('visibilitychange', manualScroll.reset);
   }
   observeReveals();
   initChapterRail();
@@ -489,7 +493,7 @@ function flyDrone(st, dt) {
 const follow = { x: null, v: 0 };
 function smoothScroll(target, dt) {
   if (follow.x === null || reducedMotion || Math.abs(target - follow.x) > innerHeight * 4) { follow.x = target; follow.v = 0; return target; }
-  const w = 10;
+  const w = 8;
   const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
   for (let i = 0; i < n; i++) {
     follow.v += (w * w * (target - follow.x) - 2 * w * follow.v) * h;
@@ -508,12 +512,14 @@ function startLoop() {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     lenis?.raf(now);
+    manualScroll?.raf(now);
     const y = smoothScroll(lenis ? lenis.animatedScroll : window.scrollY, dt);
     if (world && director) {
       const st = director.update(y, reducedMotion ? 0 : now / 1000);
       // fast scrolling smears the colour channels a little
-      if (lenis) st.aberration += Math.min(0.0035, Math.abs(lenis.velocity) * 0.00006);
-      st.scrollVelocity = lenis?.velocity || 0;
+      const scrollVelocity = manualScroll?.velocity || lenis?.velocity || 0;
+      if (lenis) st.aberration += Math.min(0.0035, Math.abs(scrollVelocity) * 0.00006);
+      st.scrollVelocity = scrollVelocity;
       world.gallery.prepare(director.sNow);
       flyDrone(st, dt);
       if (reducedMotion) { st.shake = 0; st.aberration = 0; st.roll = 0; st.speed = 0; st.spin = Math.min(st.spin, 0.2); }
@@ -537,7 +543,7 @@ function startLoop() {
 }
 
 let resizeT;
-function remeasure() { director?.measure(); measureDom(); lenis?.resize(); }
+function remeasure() { manualScroll?.reset(); director?.measure(); measureDom(); lenis?.resize(); }
 addEventListener('resize', () => {
   clearTimeout(resizeT);
   resizeT = setTimeout(remeasure, 150);

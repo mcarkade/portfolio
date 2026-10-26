@@ -1,0 +1,11 @@
+{
+  "source": "Standard pfp.png",
+  "sourceSha256": "ca12972275b3c6ec067a30fb98874e0c2e897d64fdd4da22ab85be68dbb589a5",
+  "rgbSha256": "609d2b19596db7a39fd5080f952dc765dc650d66ef22f69a30fe2c62fb5e8608",
+  "size": [
+    1140,
+    1066
+  ],
+  "matte": "matte.png",
+  "method": "Locally refined alpha matte applied to the supplied original pixels; no face or hardware redraw."
+}
