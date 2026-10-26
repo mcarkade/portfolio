@@ -11,6 +11,7 @@ import { Reflector } from 'three/addons/objects/Reflector.js';
 import { Garage, GARAGE_Z, HERO_X } from './garage.js';
 import { Morph } from './morph.js';
 import { Fluid } from './fluid.js';
+import { LaunchFX, GATE_GAP } from './launch.js';
 
 const FinalShader = {
   uniforms: {
@@ -115,6 +116,7 @@ export class World {
     this.garage = new Garage(this);
     scene.add(this.garage.group);
     this.morph = new Morph(this);
+    this.launch = new LaunchFX(this);
     if (quality === 'high') this._showroomFloor();
 
     // Post-processing
@@ -284,10 +286,10 @@ export class World {
     // A strip of asphalt with kerbs and lane marks; it scrolls under the car during the launch.
     const roadMat = new THREE.ShaderMaterial({
       transparent: true,
-      uniforms: { uOffset: { value: 0 }, uOpacity: { value: 0 } },
+      uniforms: { uOffset: { value: 0 }, uOpacity: { value: 0 }, uGlow: { value: 0 } },
       vertexShader: `varying vec2 vUv; varying vec3 vW; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
       fragmentShader: `
-        varying vec2 vUv; varying vec3 vW; uniform float uOffset, uOpacity;
+        varying vec2 vUv; varying vec3 vW; uniform float uOffset, uOpacity, uGlow;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
         void main(){
           float x = (vUv.x - 0.5) * 14.0;   // metres across
@@ -304,6 +306,14 @@ export class World {
           // white edge lines
           float el = (1.0 - step(0.07, abs(edge - 4.8)));
           col = mix(col, vec3(0.85), el);
+          // wet tarmac: each light gate (at road coordinate n * GATE_GAP, see launch.js)
+          // smears a reflection back towards the camera
+          float gz = ceil(z / ${GATE_GAP.toFixed(1)});
+          float d = gz * ${GATE_GAP.toFixed(1)} - z;
+          float refl = exp(-d * 0.14) * smoothstep(0.0, 2.5, d) * (0.4 + 0.6 * smoothstep(3.5, 6.0, edge));
+          refl *= 0.7 + 0.3 * sin(x * 2.3 + sin(x * 5.1) * 0.8); // streaky, like light on wet asphalt
+          vec3 tint = mod(gz, 3.0) < 0.5 ? vec3(1.0, 0.1, 0.12) : vec3(0.9, 0.88, 0.85);
+          col += tint * refl * 0.4 * uGlow;
           float fade = 1.0 - smoothstep(5.9, 6.5, edge);
           gl_FragColor = vec4(col, uOpacity * fade);
         }`,
@@ -528,6 +538,7 @@ export class World {
     this.road.material.uniforms.uOpacity.value = state.road;
     this.road.position.set(state.roadPos[0], 0.004, state.roadPos[2] - 280);
     this.road.material.uniforms.uOffset.value -= speed * dt * 90;
+    this.launch.update(t, state);
     this.streaks.visible = speed > 0.02;
     if (this.streaks.visible) {
       const dummy = this._dummy || (this._dummy = new THREE.Object3D());

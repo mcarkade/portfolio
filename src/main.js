@@ -255,6 +255,7 @@ const visionWp = $('#vision-wp');
 const carName = $('#car-name');
 const carYear = $('#car-year');
 const speedEl = $('#speed');
+const launchTitle = $('.launch__title');
 const portrait = $('.about__portrait img');
 const veil = $('.veil');
 const heroEl = $('#hero');
@@ -352,6 +353,8 @@ function domFrame(st, y, dt) {
   // launch
   if (st.chapter === 5 || st.chapter === 4) {
     setText(speedEl, String(Math.round(Math.min(1.4, st.speed) * 245)));
+    // the line has been said by the time the car is flat out; let the light gates have the frame
+    launchTitle.style.opacity = (1 - Math.min(1, Math.max(0, (st.speed - 0.45) / 0.35))).toFixed(3);
   }
 
   // portrait parallax
