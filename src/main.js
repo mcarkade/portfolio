@@ -179,7 +179,12 @@ function begin() {
   // the hero's own reveal, staged after the title sequence
   document.querySelectorAll('.hero .split, .hero .reveal').forEach((el, i) => setTimeout(() => el.classList.add('is-in'), 350 + i * 160));
   if (!reducedMotion) {
-    lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, touchMultiplier: 1.4, smoothWheel: true });
+    // a calmer, capped manual scroll: each wheel or touch step is limited, so a hard flick can't
+    // throw the film past a chapter; menu and rail navigation use scrollTo and are unaffected
+    lenis = new Lenis({
+      lerp: 0.06, wheelMultiplier: 0.55, touchMultiplier: 1.0, smoothWheel: true,
+      virtualScroll: (e) => { const cap = innerHeight * 0.12; e.deltaY = Math.max(-cap, Math.min(cap, e.deltaY)); return true; },
+    });
     lenis.on('scroll', () => {});
   }
   observeReveals();

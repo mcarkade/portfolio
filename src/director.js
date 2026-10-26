@@ -30,6 +30,9 @@ function keys() {
   const k = [
     // grade: the warm garage first, then the cool drone room after the launch
     ['hero', 0, { warmth: 1, haze: .9, grid: .035, rim: .22 }],
+    // tracks keyed first later in the film would otherwise hold their first value back to the start
+    ['hero', 0, { shake: 0, roll: 0, aberration: 0, speed: 0, road: 0, heroZ: 0 }],
+    ['drone', 0, { droneYaw: 0, dronePitch: 0, droneRoll: 0, spin: 0, explode: 0, person: 0, personX: -1.8, thermal: 0, analytic: 0 }],
     ['garage', .92, { warmth: 1, haze: 1.0 }],
     ['launch', .5, { warmth: .65, haze: .65 }],
     ['drone', 0, { warmth: 0, haze: .5, grid: .6, rim: 1.6 }],
