@@ -7,6 +7,7 @@ import { Audio } from './audio.js';
 import { splitWords, observeReveals, Cursor, magnetic, LockGame, copyEmail, finePointer, reducedMotion } from './ui.js';
 import { initViewer } from './viewer.js';
 import { initTour, initChapterRail } from './tour.js';
+import { initTouchPilot } from './touch-pilot.js';
 
 history.scrollRestoration = 'manual';
 window.scrollTo(0, 0);
@@ -281,6 +282,10 @@ addEventListener('pointermove', (e) => {
   if (e.pointerType === 'touch' || body.classList.contains('viewer-open')) return;
   world?.setMouse((e.clientX / innerWidth) * 2 - 1, -((e.clientY / innerHeight) * 2 - 1));
 }, { passive: true });
+const touchPilot = initTouchPilot({
+  isActive: () => !!world && !body.matches('.is-loading, .is-intro, .viewer-open') && director?.ids[director.state.chapter] === 'lock',
+  setMouse: (x, y) => world?.setMouse(x, y),
+});
 
 // ---------- Per-frame DOM ----------
 const cursor = new Cursor(audio);
@@ -410,10 +415,10 @@ function domFrame(st, y, dt) {
 function setText(el, v) { if (el.textContent !== v) el.textContent = v; }
 
 // ---------- Main loop ----------
-// The cursor flies the drone, with inertia and banking.
+// The cursor or a horizontal touch drag flies the drone, with inertia and banking.
 const pilot = { w: 0, x: 0, y: 0 };
 function flyDrone(st, dt) {
-  const on = finePointer && !reducedMotion && !body.classList.contains('viewer-open') && director.ids[st.chapter] === 'lock';
+  const on = (finePointer || touchPilot.active) && !reducedMotion && !body.classList.contains('viewer-open') && director.ids[st.chapter] === 'lock';
   pilot.w += ((on ? 1 : 0) - pilot.w) * (1 - Math.exp(-dt * 2.5));
   if (pilot.w < 0.001) return;
   const k = 1 - Math.exp(-dt * 2.4);
