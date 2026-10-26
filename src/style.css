@@ -383,6 +383,7 @@ kbd { font-family: var(--mono); border: 1px solid var(--line); padding: 0 .35em;
   .grain { animation: none; }
   .split .w > span, .reveal { transition: none; transform: none; opacity: 1; }
   .cue-line { animation: none; }
+  #reticle.is-locked { animation: none; }
 }
 
 /* capture mode for stills (?clean) */

@@ -166,6 +166,12 @@ export class World {
     this.drone = new Drone({ quality });
     this.drone.group.position.set(0, 1.1, 0);
     scene.add(this.drone.group);
+    // screws, pads and wires add shadow draws without adding a visible shadow
+    this.drone.group.traverse((o) => {
+      if (!o.isMesh || !o.castShadow) return;
+      o.geometry.computeBoundingSphere();
+      o.castShadow = o.geometry.boundingSphere.radius > 0.035;
+    });
     this.heroType = new HeroType(scene, renderer);
 
     this.garage = new Garage(this);
@@ -176,7 +182,9 @@ export class World {
     if (quality === 'high') this._showroomFloor();
 
     // Post-processing
-    const composer = new EffectComposer(renderer);
+    // The scene renders offscreen for post-processing, where the canvas's own antialiasing never
+    // applies, so the composer's buffers carry the multisampling instead.
+    const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
     for (const target of [composer.renderTarget1, composer.renderTarget2]) {
       target.depthTexture = new THREE.DepthTexture(1, 1, THREE.UnsignedIntType);
     }
@@ -366,20 +374,24 @@ export class World {
       fragmentShader: `
         varying vec2 vUv; varying vec3 vW; uniform float uOffset, uOpacity, uGlow;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
+        // thresholds softened by their screen-space footprint, so painted edges don't stair-step
+        float aastep(float t, float v){ float w = fwidth(v) * 0.75; return smoothstep(t - w, t + w, v); }
         void main(){
           float x = (vUv.x - 0.5) * 14.0;   // metres across
           float z = vUv.y * 600.0 + uOffset; // metres along
-          vec3 col = vec3(0.035) + hash(floor(vec2(x * 40.0, z * 40.0))) * 0.018;
+          // grain fades out where a texel would shrink below a pixel, instead of turning to moire
+          float grainVis = 1.0 - smoothstep(0.3, 1.0, fwidth(z) * 40.0);
+          vec3 col = vec3(0.035) + (hash(floor(vec2(x * 40.0, z * 40.0))) - 0.5) * 0.018 * grainVis + 0.009;
           float edge = abs(x);
           // red and white kerbs
-          float kerb = step(5.0, edge) * step(edge, 6.0);
-          float stripe = step(0.5, fract(z / 2.0));
+          float kerb = aastep(5.0, edge) * (1.0 - aastep(6.0, edge));
+          float stripe = aastep(0.5, abs(fract(z / 2.0) - 0.5) * 2.0);
           col = mix(col, mix(vec3(0.75, 0.05, 0.07), vec3(0.85), stripe), kerb);
           // dashed centre line
-          float dash = (1.0 - step(0.08, abs(x))) * step(0.55, fract(z / 9.0));
+          float dash = (1.0 - aastep(0.08, abs(x))) * aastep(0.55, fract(z / 9.0));
           col = mix(col, vec3(0.8), dash);
           // white edge lines
-          float el = (1.0 - step(0.07, abs(edge - 4.8)));
+          float el = 1.0 - aastep(0.07, abs(edge - 4.8));
           col = mix(col, vec3(0.85), el);
           // wet tarmac: each light gate (at road coordinate n * GATE_GAP, see launch.js)
           // smears a reflection back towards the camera
@@ -621,7 +633,7 @@ export class World {
     const speed = state.speed;
     this.road.visible = state.road > 0.001;
     this.road.material.uniforms.uOpacity.value = state.road;
-    this.road.position.set(state.roadPos[0], 0.004, state.roadPos[2] - 280);
+    this.road.position.set(state.roadPos[0], 0.004, state.roadPos[2] - 260); // runs 40 m behind the car, past a pulled-back phone camera
     this.road.material.uniforms.uOffset.value -= speed * dt * 90;
     this.launch.update(t, state);
     this.streaks.visible = speed > 0.02;

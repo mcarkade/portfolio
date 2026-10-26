@@ -222,16 +222,21 @@ setInert(true);
 // Small-screen menu
 const menuBtn = $('.menu-btn');
 const menu = $('#menu');
-function closeMenu() { menu.classList.remove('is-open'); menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.textContent = 'Menu'; }
+// while the menu is open, the page behind it can't take focus
+function menuInert(on) { document.querySelectorAll('main, footer').forEach((el) => { el.inert = on; }); }
+function closeMenu() { menu.classList.remove('is-open'); menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.textContent = 'Menu'; menuInert(false); }
 menuBtn.addEventListener('click', () => {
   const open = !menu.classList.contains('is-open');
   menu.classList.toggle('is-open', open);
+  menuInert(open);
   menuBtn.setAttribute('aria-expanded', String(open));
   menuBtn.textContent = open ? 'Close' : 'Menu';
   if (open) menu.querySelector('a').focus();
 });
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && menu.classList.contains('is-open')) { closeMenu(); menuBtn.focus(); } });
 soundBtn.addEventListener('click', () => setSound(!audio.enabled));
+// a keyboard user tabbing into the header brings it back into view
+$('.hud--top').addEventListener('focusin', () => body.classList.remove('hud-away'));
 
 addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea')) return;
