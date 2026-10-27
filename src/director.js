@@ -20,7 +20,7 @@ const DEFAULTS = {
   grid: 0.6,
   heroYaw: 0.6, heroZ: 0, turntable: 0, carExplode: 0, strip: 0, stripX: 0,
   speed: 0, road: 0, veil: 0, rim: 0.22, analytic: 0,
-  warmth: 0, haze: 1, transition: 0, sweep: 0, riso: 0, iris: 0, portal: 0, framing: 0,
+  warmth: 0, haze: 1, transition: 0, sweep: 0, riso: 0, iris: 0, framing: 0,
   roadPos: [HERO_X, 0, GZ],
 };
 
@@ -218,7 +218,7 @@ export class Director {
     st.pilot = s >= 5.06 && s < 5.8;
     st.iris = s >= 4.9 && s < 5 ? smoother(clamp01((s - 4.9) / .08))
       : s >= 5 && s < 5.06 ? 1 - smoother(clamp01((s - 5) / .06)) : 0;
-    st.portal = s >= 5.88 && s < 6 ? smoother(clamp01((s - 5.88) / .10)) : 0;
+    if (s >= 5.94 && s < 6) st.iris = smoother(clamp01((s - 5.94) / .06));
     if (s >= 4 && s < 5) {
       const p = s - 4, enter = smoother(clamp01(p / .14));
       const portrait = window.innerWidth < window.innerHeight;
@@ -238,7 +238,7 @@ export class Director {
       const p = st.galleryProgress;
       Object.assign(st, galleryCamera(p, galleryPortrait(window.innerWidth, window.innerHeight)));
       st.fade = clamp01((p - 0.94) / 0.055);
-      st.portal = p < .055 ? 1 + smoother(clamp01(p / .055)) : 0;
+      st.iris = 1 - smoother(clamp01(p / .04));
       st.speed = 0; st.road = 0; st.shake = 0; st.roll = 0;
       st.aberration = 0; st.parallax = 0; st.veil = 0;
       st.fog = 0.018; st.bloom = 0.14; st.light = 0; st.kick = 0;

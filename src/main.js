@@ -226,7 +226,7 @@ function begin() {
   if (!reducedMotion) {
     manualScroll = createManualScroll(() => lenis);
     lenis = new Lenis({
-      lerp: .045, wheelMultiplier: .55, touchMultiplier: .9, smoothWheel: true,
+      lerp: .045, wheelMultiplier: .85, touchMultiplier: 1.1, smoothWheel: true,
       virtualScroll: manualScroll.virtualScroll,
     });
     lenis.on('scroll', manualScroll.onScroll);

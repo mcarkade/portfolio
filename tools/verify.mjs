@@ -90,8 +90,8 @@ try {
     }
     for (const s of [4.94, 4.99, 5.03, 5.08]) {
       await jump(s); await shot(`iris-${s}`);
-      const effect = await page.evaluate(() => ({ iris: window.__mc.world.final.uniforms.uIris.value, portal: window.__mc.world.final.uniforms.uPortal.value, state: window.__mc.director.state.iris }));
-      check(`${reduced ? 'Reduced motion suppresses' : 'Maze handoff drives'} iris at ${s}`, effect.portal === 0 && (reduced ? effect.iris === 0 : Math.abs(effect.iris - effect.state) < 1e-6 && (s < 5.06 ? effect.iris > 0 : effect.iris === 0)), effect);
+      const effect = await page.evaluate(() => ({ iris: window.__mc.world.final.uniforms.uIris.value, state: window.__mc.director.state.iris }));
+      check(`${reduced ? 'Reduced motion suppresses' : 'Maze handoff drives'} iris at ${s}`, (reduced ? effect.iris === 0 : Math.abs(effect.iris - effect.state) < 1e-6 && (s < 5.06 ? effect.iris > 0 : effect.iris === 0)), effect);
     }
     await jump(5.4);
     if (mobile) {
@@ -105,17 +105,17 @@ try {
     await page.waitForTimeout(700);
     await shot('lock');
     check('Game reports a readable state', ['Locked', 'Escaped'].includes(await page.locator('#lock-time').innerText()));
-    for (const s of [5.9, 5.96, 6.025, 6.08]) {
-      await jump(s); await shot(`portal-${s}`);
-      const effect = await page.evaluate(() => ({ portal: window.__mc.world.final.uniforms.uPortal.value, iris: window.__mc.world.final.uniforms.uIris.value, state: window.__mc.director.state.portal }));
-      check(`${reduced ? 'Reduced motion suppresses' : 'Lens dive drives'} portal at ${s}`, effect.iris === 0 && (reduced ? effect.portal === 0 : Math.abs(effect.portal - effect.state) < 1e-6 && (s < 6 ? effect.portal > 0 && effect.portal <= 1 : s < 6.055 ? effect.portal > 1 && effect.portal <= 2 : effect.portal === 0)), effect);
+    for (const s of [5.9, 5.96, 6.02, 6.08]) {
+      await jump(s); await shot(`aperture-${s}`);
+      const effect = await page.evaluate(() => ({ iris: window.__mc.world.final.uniforms.uIris.value, state: window.__mc.director.state.iris }));
+      check(`${reduced ? 'Reduced motion suppresses' : 'Lens dive drives'} aperture at ${s}`, reduced ? effect.iris === 0 : Math.abs(effect.iris - effect.state) < 1e-6 && ([5.96, 6.02].includes(s) ? effect.iris > 0 : effect.iris === 0), effect);
     }
     const dive = await page.evaluate(() => {
       const d = window.__mc.director, saved = structuredClone(d.state), savedS = d.sNow;
       try { return [5.81, 5.9, 5.95, 5.99].map(s => { const st = d.update(d.tops[5] + d.heights[5] * (s - 5), 0); return { s, fade: st.fade, iris: st.iris, pilot: st.pilot }; }); }
       finally { Object.assign(d.state, saved); d.sNow = savedS; }
     });
-    check('Lens dive has no leftover fade, iris or pilot input', dive.every(x => x.fade === 0 && x.iris === 0 && !x.pilot), dive);
+    check('Lens dive closes its aperture without fade or pilot input', dive.every(x => x.fade === 0 && !x.pilot && (x.s < 5.94 ? x.iris === 0 : x.iris > 0)), dive);
     for (const s of [6.08, 6.225, 6.45, 6.675, 6.9]) {
       await jump(s);
       const panels = await page.evaluate(() => window.__mc.world.gallery.panels.map(x => ({ name: x.link.dataset.gallery, playing: x.playing, paused: x.video?.paused ?? true })));

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { createManualScroll } from '../src/scroll.js';
 
-const RATE = .90; // Viewports per second.
-const BURST_PIXELS = 45; // .045 viewport at the fixture's 1000 px height.
+const RATE = 1.8; // Viewports per second.
+const BURST_PIXELS = 60; // .06 viewport at the fixture's 1000 px height.
 
 // Exercise installed Lenis handlers with a small DOM substitute, without a browser.
 class ElementStub extends EventTarget {
@@ -38,7 +38,7 @@ function fixture({ quantize = false } = {}) {
   callbacks = [];
   let time = 0, lenis, notifiedScroll = browser.scrollY;
   const policy = createManualScroll(() => lenis, { height: () => 1000, now: () => time });
-  lenis = new Lenis({ autoResize: false, wheelMultiplier: .55, touchMultiplier: .9, lerp: .045, virtualScroll: policy.virtualScroll });
+  lenis = new Lenis({ autoResize: false, wheelMultiplier: .85, touchMultiplier: 1.1, lerp: .045, virtualScroll: policy.virtualScroll });
   lenis.on('scroll', policy.onScroll);
   function event(type, extra = {}) {
     return { type, cancelable: true, ctrlKey: false, defaultPrevented: false,
@@ -157,7 +157,7 @@ for (const deltaMode of [0, 1, 2]) {
   const start = f.y;
   f.wheel(10);
   f.drain(0);
-  assert.ok(f.y > start + 5.4 && f.y <= start + 5.5, 'wheel sensitivity no longer matches the .55 Lenis multiplier');
+  assert.ok(f.y > start + 8.4 && f.y <= start + 8.5, 'wheel sensitivity no longer matches the .85 Lenis multiplier');
   f.close();
 }
 
@@ -341,4 +341,4 @@ for (const reset of [f => f.policy.reset(), f => f.frame(3600000)]) {
   f.close();
 }
 
-console.log(`PASS: installed Lenis wheel/touch integration, 20 input/frame-rate combinations, sustained ${Math.min(...rates).toFixed(4)} to ${Math.max(...rates).toFixed(4)} viewport/s. Reverse, ${BURST_PIXELS}px burst, .55 wheel sensitivity, touch release/pinch/pilot, nested controls, locks, reduced motion, pauses, navigation, Tour and replay passed.`);
+console.log(`PASS: installed Lenis wheel/touch integration, 20 input/frame-rate combinations, sustained ${Math.min(...rates).toFixed(4)} to ${Math.max(...rates).toFixed(4)} viewport/s. Reverse, ${BURST_PIXELS}px burst, .85 wheel sensitivity, touch release/pinch/pilot, nested controls, locks, reduced motion, pauses, navigation, Tour and replay passed.`);

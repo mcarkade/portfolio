@@ -1,6 +1,6 @@
-const RATE = .90; // Viewports per second, shared by every manual input source.
-const BURST = .045;
-const RESPONSE = .14;
+const RATE = 1.8; // Viewports per second, shared by every manual input source.
+const BURST = .06;
+const RESPONSE = .18;
 
 export function createManualScroll(getLenis, { height = () => innerHeight, now = () => performance.now() } = {}) {
   let pending = 0, budget = BURST, inputTime = null, frameTime = null;
@@ -96,7 +96,7 @@ export function createManualScroll(getLenis, { height = () => innerHeight, now =
       if (frameTime === null) frameTime = time;
       if (position === null) position = lenis.animatedScroll;
       if (lenis.isScrolling) lenis.reset(); // Manual input takes over from navigation.
-      pending = sign * Math.min(.15, Math.abs(pending) + admitted);
+      pending = sign * Math.min(RATE * RESPONSE * 1.25, Math.abs(pending) + admitted);
     }
     return false;
   }

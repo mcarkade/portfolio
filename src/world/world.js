@@ -24,7 +24,6 @@ const FinalShader = {
     uTrailOn: { value: 0 },
     uRiso: { value: 0 },
     uIris: { value: 0 },
-    uPortal: { value: 0 },
     uAnalytic: { value: 0 },
     uTime: { value: 0 },
     uAberration: { value: 0.0015 },
@@ -42,7 +41,7 @@ const FinalShader = {
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse; uniform float uTime, uAberration, uSpeed, uVignette, uFade, uFlash;
     #define TRAIL 20
-    uniform vec2 uTrail[TRAIL]; uniform float uTrailOn, uRiso, uAnalytic, uIris, uPortal;
+    uniform vec2 uTrail[TRAIL]; uniform float uTrailOn, uRiso, uAnalytic, uIris;
     varying vec2 vUv;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     uniform float uWarmth, uTransition, uSweep, uReducedMotion;
@@ -84,15 +83,6 @@ const FinalShader = {
     }
     void main(){
       vec2 uv = vUv;
-      // Lens pull accelerates into the event horizon, then unwinds on emergence.
-      vec2 polar = (vUv - .5) * vec2(uResolution.x / uResolution.y, 1.0);
-      float pr = length(polar);
-      if (uPortal > 0.0) {
-        float pull = uPortal <= 1.0 ? uPortal : 2.0 - uPortal;
-        float a = atan(polar.y, polar.x) + pull * pull * .55 * exp(-pr * 2.0);
-        float radius = pr * (1.0 + pull * .35 * exp(-pr * 2.0));
-        uv = clamp(.5 + vec2(cos(a), sin(a)) * radius / vec2(uResolution.x / uResolution.y, 1.0), .001, .999);
-      }
       float clouds=sin(vUv.y*9.+sin(vUv.x*13.)*.6)*.035;
       float sweep=vUv.x*.78+vUv.y*.22+clouds-uSweep*1.35+.18;
       float beam=exp(-sweep*sweep*240.)*uTransition;
@@ -178,24 +168,6 @@ const FinalShader = {
         float aa = 1.5 / uResolution.y;
         col *= 1.0 - smoothstep(-aa, aa, edge);
         col += vec3(.32, .012, .018) * exp(-abs(edge) * uResolution.y * .6) * sin(uIris * 3.14159265);
-      }
-      if (uPortal > 0.0) {
-        float extent = length(vec2(uResolution.x / uResolution.y, 1.0)) * .52;
-        float entering = 1.0 - step(1.00001, uPortal);
-        float phase = entering > .5 ? uPortal : uPortal - 1.0;
-        float radius = mix(-.015, extent, phase);
-        float edge = pr - radius;
-        float aa = 2.0 / uResolution.y;
-        float aperture = smoothstep(-aa, aa, edge);
-        col *= entering > .5 ? aperture : 1.0 - aperture;
-        float ring = exp(-abs(edge) * 170.0) * sin(phase * 3.14159265);
-        vec3 tint = entering > .5 ? vec3(.7,.16,.045) : vec3(.52,.65,.72);
-        col += tint * ring * .7;
-        if (entering < .5) {
-          float angle = atan(polar.y, polar.x);
-          float rays = pow(max(0.0, sin(angle * 29.0 + phase * 8.0)), 16.0);
-          col += vec3(.06,.08,.10) * rays * exp(-abs(edge)*18.0) * sin(phase*3.14159265);
-        }
       }
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -754,7 +726,6 @@ export class World {
     this._trail(dt);
     u.uRiso.value = this.motion.matches ? 0 : state.riso;
     u.uIris.value = this.motion.matches ? 0 : state.iris || 0;
-    u.uPortal.value = this.motion.matches ? 0 : state.portal || 0;
     u.uAnalytic.value = state.analytic;
     u.uTime.value = t;
     u.uSpeed.value = this.quality === 'high' ? speed : 0; // radial blur is desktop-only

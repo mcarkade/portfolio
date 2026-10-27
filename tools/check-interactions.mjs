@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const [url = 'http://127.0.0.1:5192/', out = '../portrait-checks'] = process.argv.slice(2);
-const manualRate = .90, manualBurst = .045;
+const manualRate = 1.8, manualBurst = .06;
 fs.mkdirSync(out, { recursive: true });
 const report = { url, checks: [], errors: [] };
 const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });

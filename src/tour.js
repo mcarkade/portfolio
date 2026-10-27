@@ -60,38 +60,24 @@ export function initTour({ getLenis }) {
 export function initChapterRail() {
   const rail = document.querySelector('.chapter-rail');
   const links = [...rail.querySelectorAll('a')];
-  const mobile = matchMedia('(max-width: 860px)');
-  function measure() {
-    const max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
-    const length = Math.max(1, mobile.matches ? rail.clientWidth : rail.clientHeight);
-    const positions = links.map(link => {
-      const section = document.querySelector(link.getAttribute('href'));
-      return Math.min(1, section.offsetTop / max) * length;
-    });
-    const gap = Math.min(44, length / Math.max(1, links.length - 1));
-    for (let i = 1; i < positions.length; i++) positions[i] = Math.max(positions[i], positions[i - 1] + gap);
-    positions[positions.length - 1] = Math.min(length, positions.at(-1));
-    for (let i = positions.length - 2; i >= 0; i--) positions[i] = Math.min(positions[i], positions[i + 1] - gap);
-    links.forEach((link, i) => {
-      link.style.setProperty('--at', `${positions[i] / length * 100}%`);
-    });
-  }
+  const sections = links.map(link => document.querySelector(link.getAttribute('href')));
   let pending = 0;
+
   function update() {
     pending = 0;
-    let current = null;
-    for (const link of links) {
-      if (document.querySelector(link.getAttribute('href')).getBoundingClientRect().top <= innerHeight * .25) current = link;
-    }
-    links.forEach(link => {
-      if (link === current) link.setAttribute('aria-current', 'location');
+    const y = window.scrollY + innerHeight * .25;
+    let current = 0;
+    sections.forEach((section, i) => { if (section.offsetTop <= y) current = i; });
+    links.forEach((link, i) => {
+      if (i === current) link.setAttribute('aria-current', 'location');
       else link.removeAttribute('aria-current');
     });
   }
-  addEventListener('scroll', () => { if (!pending) pending = requestAnimationFrame(update); }, { passive: true });
-  new ResizeObserver(measure).observe(document.querySelector('main'));
-  mobile.addEventListener('change', measure);
-  addEventListener('resize', measure);
-  measure();
+  function scheduleUpdate() {
+    if (!pending) pending = requestAnimationFrame(update);
+  }
+  addEventListener('scroll', scheduleUpdate, { passive: true });
+  addEventListener('resize', scheduleUpdate);
+  new ResizeObserver(scheduleUpdate).observe(document.querySelector('main'));
   update();
 }

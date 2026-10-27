@@ -16,9 +16,9 @@ Abhinav Pullela's portfolio, built as one continuous scroll-driven film.
 
 Press `L` for the lights and `M` for sound.
 
-All three cars load, upload their textures, compile their shaders and draw behind the loading screen before Enter appears. The drone's camera dive opens into the project gallery through a black-hole lens pull and a white-hole reveal. Reduced motion disables the lens effects and the intro.
+All three cars load, upload their textures, compile their shaders and draw behind the loading screen before Enter appears. The drone's camera dive opens into the project gallery through a hexagonal aperture. Reduced motion disables the aperture and the intro.
 
-Manual wheel and touch scrolling share a 0.90 viewport-per-second limit and an eased response. Menu links and Tour keep their own navigation timing.
+Manual wheel and touch scrolling share a 1.8 viewport-per-second limit and a 0.18-second eased response. Meshmerize runs through a compact 180vh chapter. Menu links and Tour keep their own navigation timing.
 
 ## Run it
 
@@ -28,7 +28,7 @@ npm run dev      # http://localhost:5173
 npm run build
 ```
 
-For browser checks, serve the build with `npm run preview -- --port 5192`, then run `node tools/verify.mjs http://localhost:5192/ <output-folder> desktop`. Repeat with `phone`, `reduced` or `fallback`. Captures and JSON reports go to the chosen folder. Gallery stills can be regenerated with `python tools/gallery-art/build.py`.
+For browser checks, serve the build with `npm run preview -- --port 5192`, then run `node tools/verify.mjs http://localhost:5192/ <output-folder> desktop`. Repeat with `phone`, `reduced` or `fallback`. Run `node tools/navigation-check.mjs http://localhost:5192/ <output-folder>` for section navigation, keyboard, history and overlay recovery at desktop and phone sizes. Captures and JSON reports go to the chosen folder. Gallery stills can be regenerated with `python tools/gallery-art/build.py`.
 
 `node tools/maze-path-check.mjs <Meshmerize-source>` checks the traced map, shortest route and reversible robot motion. `node tools/intro-check.mjs http://localhost:5192/ <output-folder>` checks natural docking, sound entry and replay ducking.
 
