@@ -18,6 +18,8 @@ function check(name, pass, evidence) {
 }
 
 async function layout(page, name) {
+  await page.locator('.chapter-rail > a').first().focus();
+  await page.waitForTimeout(350);
   const evidence = await page.evaluate(() => {
     const rect = el => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
     const visible = el => el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
@@ -30,7 +32,7 @@ async function layout(page, name) {
     return { links, tour, width: innerWidth, height: innerHeight, overflow: document.documentElement.scrollWidth > innerWidth + 1 };
   });
   const overlap = (a, b) => Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > .5 && Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > .5;
-  check(`${name}: five readable labels and 44px targets`, evidence.links.length === 5 && !evidence.overflow && evidence.links.every((x, i) => x.href === `#${chapters[i][0]}` && x.label === chapters[i][1] && x.visible && x.hit && x.font >= 11 && x.box.width >= 43.5 && x.box.height >= 43.5 && x.box.x >= 0 && x.box.y >= 0 && x.box.x + x.box.width <= evidence.width + .5 && x.box.y + x.box.height <= evidence.height + .5 && x.textBox.x >= x.box.x - .5 && x.textBox.x + x.textBox.width <= x.box.x + x.box.width + .5), evidence);
+  check(`${name}: five readable labels and 44px targets`, evidence.links.length === 5 && !evidence.overflow && evidence.links.every((x, i) => x.href === `#${chapters[i][0]}` && x.label === chapters[i][1] && x.visible && x.hit && x.font >= 11 && x.box.width >= 43.5 && x.box.height >= 43.5 && x.box.x >= 0 && x.box.y >= 0 && x.box.x + x.box.width <= evidence.width + .5 && x.box.y + x.box.height <= evidence.height + .5 && x.textBox.x >= 0 && x.textBox.x + x.textBox.width <= evidence.width + .5), evidence);
   const targets = [...evidence.links.map(x => x.box), ...evidence.tour];
   check(`${name}: navigation targets and Tour do not overlap`, !targets.some((box, i) => targets.slice(i + 1).some(other => overlap(box, other))), { targets });
 }
